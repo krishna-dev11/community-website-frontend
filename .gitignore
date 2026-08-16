@@ -1,0 +1,103 @@
+# ----------------------------
+# Node Modules
+# ----------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ----------------------------
+# Build / Production
+# ----------------------------
+dist/
+build/
+.out/
+.next/
+.vercel/
+.cache/
+
+# ----------------------------
+# Environment Variables
+# ----------------------------
+.env
+.env.*
+!.env.example
+
+# ----------------------------
+# Logs
+# ----------------------------
+logs/
+*.log
+
+# ----------------------------
+# OS Files
+# ----------------------------
+.DS_Store
+Thumbs.db
+
+# ----------------------------
+# IDE / Editor Files
+# ----------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ----------------------------
+# Testing
+# ----------------------------
+coverage/
+jest-cache/
+
+# ----------------------------
+# Temporary Files
+# ----------------------------
+tmp/
+temp/
+
+# ----------------------------
+# Parcel / Vite Cache
+# ----------------------------
+.parcel-cache/
+.vite/
+
+# ----------------------------
+# TypeScript
+# ----------------------------
+*.tsbuildinfo
+
+# ----------------------------
+# Misc
+# ----------------------------
+*.local
+*.cache
+*.bak
+
+# ----------------------------
+# Storybook (if used)
+# ----------------------------
+storybook-static/
+
+# ----------------------------
+# Cypress / Playwright
+# ----------------------------
+cypress/videos/
+cypress/screenshots/
+playwright-report/
+
+# ----------------------------
+# ESLint Cache
+# ----------------------------
+.eslintcache
+
+# ----------------------------
+# Firebase / Amplify (optional)
+# ----------------------------
+.firebase/
+.amplify/
+
+# ----------------------------
+# Mac / Linux hidden files
+# ----------------------------
+.*.swp
