@@ -13,6 +13,7 @@ import {
 import { useSelector } from "react-redux";
 import { apiConnector } from "../../../../services/apiConnector";
 import { paymentEndpoints } from "../../../../services/apis";
+import FileUploadWithPreview from "../../../Common/FileUploadWithPreview";
 
 const tabs = [
   { key: "campaigns", label: "Campaigns", icon: FaDonate },
@@ -20,45 +21,45 @@ const tabs = [
   { key: "contributions", label: "Contributions", icon: FaFileInvoiceDollar },
 ];
 
-const inputClass =
-  "h-11 border border-white/10 bg-white/[0.03] px-3 text-sm text-white outline-none placeholder:text-gray-600 focus:border-emerald-400/40";
-const textareaClass =
-  "min-h-24 resize-none border border-white/10 bg-white/[0.03] px-3 py-3 text-sm text-white outline-none placeholder:text-gray-600 focus:border-emerald-400/40";
+const inputClass = "ka-input";
+const textareaClass = "ka-input !min-h-24 resize-none !py-3";
 
 const Button = ({ children, icon: Icon, tone = "neutral", className = "", ...props }) => {
-  const tones = {
-    neutral: "border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]",
-    success: "border-emerald-400/30 bg-emerald-400/10 text-emerald-200 hover:bg-emerald-400/20",
-    warning: "border-amber-400/30 bg-amber-400/10 text-amber-200 hover:bg-amber-400/20",
-    danger: "border-red-400/30 bg-red-400/10 text-red-200 hover:bg-red-400/20",
+  const toneClasses = {
+    neutral: "btn-secondary !py-2 !px-4 !text-xs",
+    success: "btn-primary !py-2 !px-5 !text-xs",
+    warning: "inline-flex items-center justify-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-400 font-bold text-xs uppercase tracking-wider px-4 py-2 transition-all hover:bg-amber-500/20 disabled:opacity-50 cursor-pointer",
+    danger: "inline-flex items-center justify-center gap-2 rounded-full border border-red-500/30 bg-red-500/10 text-red-400 font-bold text-xs uppercase tracking-wider px-4 py-2 transition-all hover:bg-red-500/20 disabled:opacity-50 cursor-pointer",
   };
 
   return (
     <button
       {...props}
-      className={`inline-flex h-11 items-center justify-center gap-2 border px-4 text-[11px] font-bold uppercase tracking-widest transition disabled:cursor-not-allowed disabled:opacity-50 ${tones[tone]} ${className}`}
+      className={`${toneClasses[tone] || toneClasses.neutral} ${className} cursor-pointer disabled:cursor-not-allowed disabled:opacity-50`}
     >
       {Icon && <Icon size={12} />}
-      {children}
+      <span>{children}</span>
     </button>
   );
 };
 
 const Field = ({ label, children }) => (
   <label className="flex min-w-0 flex-col gap-1.5">
-    <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">{label}</span>
+    <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--text-muted)]">{label}</span>
     {children}
   </label>
 );
 
 const Status = ({ value }) => (
-  <span className="inline-flex w-fit border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-gray-300">
+  <span className="inline-flex w-fit rounded-full border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">
     {value || "UNKNOWN"}
   </span>
 );
 
 const Empty = ({ text }) => (
-  <div className="border border-dashed border-white/10 bg-white/[0.02] px-5 py-8 text-sm text-gray-500">{text}</div>
+  <div className="rounded-2xl border border-dashed border-[var(--border-subtle)] bg-[var(--surface-raised)] px-5 py-8 text-center text-sm text-[var(--text-secondary)]">
+    {text}
+  </div>
 );
 
 const money = (value) => `Rs. ${Number(value || 0).toLocaleString("en-IN")}`;
@@ -68,8 +69,6 @@ const formatDate = (value) => {
   return new Date(value).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
 };
 
-const asset = (url) => (url?.trim() ? { url: url.trim() } : undefined);
-
 const initialCampaign = {
   title: "",
   description: "",
@@ -77,7 +76,6 @@ const initialCampaign = {
   startDate: "",
   endDate: "",
   status: "DRAFT",
-  coverImageUrl: "",
 };
 
 const initialGenerate = {
@@ -96,6 +94,7 @@ const FinanceAdmin = () => {
   const [donations, setDonations] = useState([]);
   const [contributions, setContributions] = useState([]);
   const [campaignForm, setCampaignForm] = useState(initialCampaign);
+  const [campaignCoverFile, setCampaignCoverFile] = useState(null);
   const [generateForm, setGenerateForm] = useState(initialGenerate);
   const [donationFilters, setDonationFilters] = useState({ status: "", campaign: "" });
   const [contributionFilters, setContributionFilters] = useState({
@@ -158,20 +157,27 @@ const FinanceAdmin = () => {
     event.preventDefault();
     setBusyId("campaign");
     try {
+      const formData = new FormData();
+      formData.append("title", campaignForm.title);
+      formData.append("description", campaignForm.description);
+      if (campaignForm.goalAmount) formData.append("goalAmount", Number(campaignForm.goalAmount));
+      if (campaignForm.startDate) formData.append("startDate", campaignForm.startDate);
+      if (campaignForm.endDate) formData.append("endDate", campaignForm.endDate);
+      formData.append("status", campaignForm.status);
+
+      if (campaignCoverFile instanceof File) {
+        formData.append("coverImage", campaignCoverFile);
+      }
+
       await apiConnector(
         "POST",
         paymentEndpoints.DONATION_CAMPAIGNS_API,
-        {
-          ...campaignForm,
-          goalAmount: campaignForm.goalAmount ? Number(campaignForm.goalAmount) : undefined,
-          startDate: campaignForm.startDate || undefined,
-          endDate: campaignForm.endDate || undefined,
-          coverImage: asset(campaignForm.coverImageUrl),
-        },
+        formData,
         authConfig
       );
       toast.success("Campaign saved");
       setCampaignForm(initialCampaign);
+      setCampaignCoverFile(null);
       await loadCampaigns();
     } catch (error) {
       toast.error(error.response?.data?.message || "Unable to save campaign");
@@ -276,14 +282,17 @@ const FinanceAdmin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black px-3 py-8 text-white md:px-8">
+    <div className="min-h-screen bg-[var(--bg)] px-3 py-6 text-[var(--text-primary)] md:px-6 transition-colors duration-300">
       <div className="mx-auto flex max-w-6xl flex-col gap-6">
-        <div className="flex flex-col gap-4 border-b border-white/10 pb-5">
+        <div className="flex flex-col gap-4 border-b border-[var(--border-subtle)] pb-6">
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-emerald-300">Finance</p>
-              <h1 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">Finance Admin</h1>
-              <p className="mt-2 max-w-2xl text-sm text-gray-400">
+              <div className="eyebrow-badge mb-2">
+                <FaFileInvoiceDollar size={12} />
+                <span>Financial Ops</span>
+              </div>
+              <h1 className="heading-hero text-[var(--text-primary)]">Finance <span className="text-gradient">Admin</span></h1>
+              <p className="mt-2 max-w-2xl text-xs sm:text-sm text-[var(--text-secondary)] font-normal">
                 Manage donation campaigns, inspect payment status, and operate monthly member contributions.
               </p>
             </div>
@@ -292,22 +301,22 @@ const FinanceAdmin = () => {
             </Button>
           </div>
 
-          <div className="grid gap-2 sm:grid-cols-3">
+          <div className="flex flex-wrap gap-2">
             {tabs.map((tab) => {
               const Icon = tab.icon;
-              const selected = activeTab === tab.key;
+              const active = activeTab === tab.key;
               return (
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
-                  className={`flex h-11 items-center justify-center gap-2 border px-3 text-[11px] font-bold uppercase tracking-widest transition ${
-                    selected
-                      ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-200"
-                      : "border-white/10 bg-white/[0.03] text-gray-400 hover:bg-white/[0.06] hover:text-white"
+                  className={`flex h-10 items-center justify-center gap-2 rounded-full px-5 text-xs font-bold uppercase tracking-wider transition cursor-pointer ${
+                    active
+                      ? "bg-[var(--accent-primary)] text-[#070707] shadow-md"
+                      : "border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                   }`}
                 >
                   <Icon size={12} />
-                  {tab.label}
+                  <span>{tab.label}</span>
                 </button>
               );
             })}
@@ -321,9 +330,9 @@ const FinanceAdmin = () => {
         ) : (
           <>
             {activeTab === "campaigns" && (
-              <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
-                <form onSubmit={createCampaign} className="grid gap-4 border border-white/10 bg-white/[0.02] p-5">
-                  <h2 className="text-lg font-bold text-white">Create Campaign</h2>
+              <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+                <form onSubmit={createCampaign} className="ka-card p-6 flex flex-col gap-4">
+                  <h2 className="text-base font-bold text-[var(--text-primary)]">Create Campaign</h2>
                   <Field label="Title">
                     <input className={inputClass} value={campaignForm.title} onChange={(event) => setCampaignForm((current) => ({ ...current, title: event.target.value }))} required />
                   </Field>
@@ -350,9 +359,17 @@ const FinanceAdmin = () => {
                       <input type="date" className={inputClass} value={campaignForm.endDate} onChange={(event) => setCampaignForm((current) => ({ ...current, endDate: event.target.value }))} />
                     </Field>
                   </div>
-                  <Field label="Cover Image URL">
-                    <input className={inputClass} value={campaignForm.coverImageUrl} onChange={(event) => setCampaignForm((current) => ({ ...current, coverImageUrl: event.target.value }))} />
-                  </Field>
+                  <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-3.5">
+                    <FileUploadWithPreview
+                      label="Campaign Cover Image"
+                      required={false}
+                      accept="image/jpeg,image/jpg,image/png,image/webp"
+                      maxSizeMB={10}
+                      helperText="Banner photo for the donation drive"
+                      file={campaignCoverFile}
+                      onFileSelect={(file) => setCampaignCoverFile(file)}
+                    />
+                  </div>
                   <Button icon={FaPaperPlane} tone="success" disabled={busyId === "campaign"}>Save Campaign</Button>
                 </form>
 
@@ -362,18 +379,18 @@ const FinanceAdmin = () => {
                       ? Math.min(100, Math.round((Number(campaign.raisedAmount || 0) / Number(campaign.goalAmount)) * 100))
                       : 0;
                     return (
-                      <article key={campaign._id} className="border border-white/10 bg-white/[0.02] p-4">
+                      <article key={campaign._id} className="ka-card p-5">
                         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                           <div>
-                            <h3 className="font-bold text-white">{campaign.title}</h3>
-                            <p className="mt-1 line-clamp-2 text-sm text-gray-500">{campaign.description}</p>
-                            <p className="mt-2 text-xs text-gray-600">{money(campaign.raisedAmount)} raised of {money(campaign.goalAmount)}</p>
+                            <h3 className="font-bold text-[var(--text-primary)]">{campaign.title}</h3>
+                            <p className="mt-1 line-clamp-2 text-xs sm:text-sm text-[var(--text-secondary)]">{campaign.description}</p>
+                            <p className="mt-2 text-xs font-semibold text-[var(--accent-primary)]">{money(campaign.raisedAmount)} raised of {money(campaign.goalAmount)}</p>
                           </div>
                           <Status value={campaign.status} />
                         </div>
                         {campaign.goalAmount ? (
-                          <div className="mt-4 h-2 bg-white/10">
-                            <div className="h-full bg-emerald-400" style={{ width: `${progress}%` }} />
+                          <div className="mt-4 h-2 rounded-full overflow-hidden bg-[var(--surface-elevated)] border border-[var(--border-subtle)]">
+                            <div className="h-full bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] rounded-full transition-all" style={{ width: `${progress}%` }} />
                           </div>
                         ) : null}
                         <Button icon={FaArchive} tone="danger" className="mt-4 w-full sm:w-auto" onClick={() => archiveCampaign(campaign._id)} disabled={busyId === campaign._id || campaign.status === "ARCHIVED"}>
@@ -389,7 +406,7 @@ const FinanceAdmin = () => {
 
             {activeTab === "donations" && (
               <section className="grid gap-4">
-                <div className="grid gap-3 border border-white/10 bg-white/[0.02] p-4 md:grid-cols-[220px_1fr_auto]">
+                <div className="ka-card p-4 grid gap-3 md:grid-cols-[220px_1fr_auto]">
                   <select className={inputClass} value={donationFilters.status} onChange={(event) => setDonationFilters((current) => ({ ...current, status: event.target.value }))}>
                     <option value="">All statuses</option>
                     <option value="PENDING">Pending</option>
@@ -406,12 +423,12 @@ const FinanceAdmin = () => {
 
                 <div className="grid gap-3">
                   {donations.map((donation) => (
-                    <article key={donation._id} className="border border-white/10 bg-white/[0.02] p-4">
+                    <article key={donation._id} className="ka-card p-5">
                       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                         <div>
-                          <h3 className="font-bold text-white">{money(donation.amount)} {donation.anonymous ? "Anonymous donation" : "Donation"}</h3>
-                          <p className="mt-1 text-sm text-gray-500">{donation.campaign?.title || "General donation"} - {donation.receiptNumber || donation.razorpayOrderId}</p>
-                          <p className="mt-2 text-xs text-gray-600">{donation.donor?.firstName || donation.donorName || "Donor"} - {formatDate(donation.createdAt)}</p>
+                          <h3 className="font-bold text-[var(--text-primary)]">{money(donation.amount)} {donation.anonymous ? "Anonymous donation" : "Donation"}</h3>
+                          <p className="mt-1 text-xs sm:text-sm text-[var(--text-secondary)]">{donation.campaign?.title || "General donation"} - {donation.receiptNumber || donation.razorpayOrderId}</p>
+                          <p className="mt-2 text-xs text-[var(--text-muted)]">{donation.donor?.firstName || donation.donorName || "Donor"} - {formatDate(donation.createdAt)}</p>
                         </div>
                         <Status value={donation.status} />
                       </div>
@@ -425,10 +442,10 @@ const FinanceAdmin = () => {
             {activeTab === "contributions" && (
               <div className="grid gap-5">
                 <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
-                  <form onSubmit={generateContributions} className="grid gap-4 border border-white/10 bg-white/[0.02] p-5">
+                  <form onSubmit={generateContributions} className="ka-card p-6 flex flex-col gap-4">
                     <div className="flex items-center gap-2">
-                      <FaHandHoldingUsd className="text-emerald-300" size={14} />
-                      <h2 className="text-lg font-bold text-white">Generate Monthly Contributions</h2>
+                      <FaHandHoldingUsd className="text-[var(--accent-primary)]" size={16} />
+                      <h2 className="text-base font-bold text-[var(--text-primary)]">Generate Monthly Contributions</h2>
                     </div>
                     <div className="grid gap-4 md:grid-cols-2">
                       <Field label="Month">
@@ -449,10 +466,10 @@ const FinanceAdmin = () => {
                     <Button icon={FaPaperPlane} tone="success" disabled={busyId === "generate"}>Generate</Button>
                   </form>
 
-                  <div className="grid gap-4 border border-white/10 bg-white/[0.02] p-5">
+                  <div className="ka-card p-6 flex flex-col gap-4">
                     <div className="flex items-center gap-2">
-                      <FaMoneyBillWave className="text-emerald-300" size={14} />
-                      <h2 className="text-lg font-bold text-white">Contribution Filters</h2>
+                      <FaMoneyBillWave className="text-[var(--accent-primary)]" size={16} />
+                      <h2 className="text-base font-bold text-[var(--text-primary)]">Contribution Filters</h2>
                     </div>
                     <div className="grid gap-4 md:grid-cols-3">
                       <Field label="Status">
@@ -472,7 +489,7 @@ const FinanceAdmin = () => {
                         <input type="number" className={inputClass} value={contributionFilters.year} onChange={(event) => setContributionFilters((current) => ({ ...current, year: event.target.value }))} />
                       </Field>
                     </div>
-                    <div className="grid gap-2 md:grid-cols-2">
+                    <div className="grid gap-2 md:grid-cols-2 mt-2">
                       <Button icon={FaSyncAlt} onClick={loadContributions}>Apply Filters</Button>
                       <Button tone="warning" onClick={markOverdue} disabled={busyId === "overdue"}>Mark Overdue</Button>
                     </div>
@@ -484,20 +501,20 @@ const FinanceAdmin = () => {
                     const remaining = Number(contribution.expectedAmount || 0) - Number(contribution.paidAmount || 0);
                     const draft = paymentDrafts[contribution._id] || {};
                     return (
-                      <article key={contribution._id} className="border border-white/10 bg-white/[0.02] p-4">
+                      <article key={contribution._id} className="ka-card p-5">
                         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                           <div>
-                            <h3 className="font-bold text-white">
+                            <h3 className="font-bold text-[var(--text-primary)]">
                               {contribution.member?.firstName} {contribution.member?.lastName} - {contribution.month}/{contribution.year}
                             </h3>
-                            <p className="mt-1 text-sm text-gray-500">
-                              Paid {money(contribution.paidAmount)} of {money(contribution.expectedAmount)} - due {formatDate(contribution.dueDate)}
+                            <p className="mt-1 text-xs sm:text-sm text-[var(--text-secondary)]">
+                              Paid <span className="text-[var(--accent-primary)] font-semibold">{money(contribution.paidAmount)}</span> of {money(contribution.expectedAmount)} - due {formatDate(contribution.dueDate)}
                             </p>
-                            <p className="mt-2 text-xs text-gray-600">{contribution.family?.familyName || "No family linked"}</p>
+                            <p className="mt-2 text-xs text-[var(--text-muted)]">{contribution.family?.familyName || "No family linked"}</p>
                           </div>
                           <Status value={contribution.status} />
                         </div>
-                        <div className="mt-4 grid gap-3 border-t border-white/10 pt-4 lg:grid-cols-[150px_170px_1fr_auto_auto]">
+                        <div className="mt-4 grid gap-3 border-t border-[var(--border-subtle)] pt-4 lg:grid-cols-[150px_170px_1fr_auto_auto]">
                           <input
                             type="number"
                             min="1"

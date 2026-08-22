@@ -273,32 +273,32 @@ const PublicResourcePage = ({ type }) => {
   };
 
   return (
-    <main className="min-h-screen bg-[#071412] px-4 pb-16 pt-28 text-white sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-[var(--bg)] px-4 pb-16 pt-28 text-[var(--text-primary)] sm:px-6 lg:px-8 transition-colors duration-300">
       <section className="mx-auto w-full max-w-7xl">
-        <div className="mb-8 border-b border-white/10 pb-8">
-          <div className={`mb-5 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] ${config.accent}`}>
-            <Icon size={15} />
-            {config.label}
+        <div className="mb-8 border-b border-[var(--border-subtle)] pb-8">
+          <div className="eyebrow-badge mb-5">
+            <Icon size={14} />
+            <span>{config.label}</span>
           </div>
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-end">
             <div>
-              <h1 className="text-4xl font-black leading-tight tracking-normal text-white sm:text-5xl">
+              <h1 className="heading-hero text-[var(--text-primary)] mb-2">
                 {config.title}
               </h1>
-              <p className="mt-4 max-w-3xl text-base leading-7 text-white/65">
+              <p className="mt-3 max-w-3xl text-base leading-7 text-[var(--text-secondary)] font-normal">
                 {config.description}
               </p>
             </div>
 
-            <form onSubmit={handleSearch} className="flex min-w-0 items-center gap-2 rounded-xl border border-white/10 bg-white/5 p-2">
-              <FiSearch className="ml-2 shrink-0 text-white/45" size={18} />
+            <form onSubmit={handleSearch} className="flex min-w-0 items-center gap-2 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] p-2">
+              <FiSearch className="ml-2 shrink-0 text-[var(--text-muted)]" size={18} />
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Search"
-                className="min-w-0 flex-1 bg-transparent px-2 py-2 text-sm text-white outline-none placeholder:text-white/35"
+                className="min-w-0 flex-1 bg-transparent px-2 py-2 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] border-none shadow-none focus:ring-0"
               />
-              <button type="submit" className="rounded-lg bg-white px-4 py-2 text-xs font-black uppercase tracking-wider text-black transition hover:bg-emerald-300">
+              <button type="submit" className="btn-primary !py-2 !px-4 !text-xs uppercase tracking-wider font-bold">
                 Search
               </button>
             </form>
@@ -306,7 +306,7 @@ const PublicResourcePage = ({ type }) => {
         </div>
 
         {error && (
-          <div className="mb-6 rounded-lg border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+          <div className="mb-6 rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
             {error}
           </div>
         )}
@@ -314,76 +314,80 @@ const PublicResourcePage = ({ type }) => {
         {loading ? (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {Array.from({ length: 6 }).map((_, index) => (
-              <div key={index} className="h-56 animate-pulse rounded-lg border border-white/10 bg-white/5" />
+              <div key={index} className="h-56 animate-pulse rounded-3xl border border-[var(--border-subtle)] bg-[var(--surface)]" />
             ))}
           </div>
         ) : items.length === 0 ? (
-          <div className="rounded-lg border border-white/10 bg-white/5 px-6 py-12 text-center text-white/60">
+          <div className="ka-card p-12 text-center text-[var(--text-muted)]">
             {config.empty}
           </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             {items.map((item) => (
-              <article key={item._id} className="overflow-hidden rounded-lg border border-white/10 bg-white/[0.04]">
+              <article key={item._id} className="ka-card flex flex-col justify-between p-0 overflow-hidden group">
                 {["gallery", "publications", "achievements", "condolence"].includes(type) ? (
-                  <div className="aspect-[16/9] bg-white/5">
+                  <div className="aspect-[16/9] bg-[var(--surface-elevated)] overflow-hidden">
                     {getCoverImage(type, item) ? (
-                      <img src={getCoverImage(type, item)} alt={getTitle(type, item)} className="h-full w-full object-cover" />
+                      <img src={getCoverImage(type, item)} alt={getTitle(type, item)} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
                     ) : (
-                      <div className="flex h-full items-center justify-center text-white/30">
+                      <div className="flex h-full items-center justify-center text-[var(--text-muted)]">
                         <Icon size={36} />
                       </div>
                     )}
                   </div>
                 ) : null}
 
-                <div className="p-5">
-                  <div className="mb-4 flex items-center justify-between gap-3 text-xs text-white/45">
-                    <span>{formatDate(getItemDate(type, item))}</span>
-                    <span className="rounded-full border border-white/10 px-3 py-1">{getSummary(type, item)}</span>
+                <div className="p-6 flex flex-col flex-1 justify-between">
+                  <div>
+                    <div className="mb-4 flex items-center justify-between gap-3 text-xs text-[var(--text-muted)]">
+                      <span>{formatDate(getItemDate(type, item))}</span>
+                      <span className="rounded-full bg-[var(--surface-elevated)] border border-[var(--border-subtle)] px-3 py-1 text-[11px] font-semibold text-[var(--accent-primary)]">{getSummary(type, item)}</span>
+                    </div>
+
+                    <h2 className="line-clamp-2 text-xl font-bold leading-snug tracking-tight text-[var(--text-primary)] group-hover:text-[var(--accent-primary)] transition-colors">
+                      {getTitle(type, item)}
+                    </h2>
+                    <p className="mt-2 line-clamp-3 text-xs sm:text-sm leading-relaxed text-[var(--text-secondary)]">
+                      {getDescription(item)}
+                    </p>
+
+                    {item.skills?.length ? (
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {item.skills.slice(0, 4).map((skill) => (
+                          <span key={skill} className="rounded-full bg-[var(--surface-elevated)] px-3 py-1 text-xs text-[var(--text-secondary)] border border-[var(--border-subtle)]">
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
 
-                  <h2 className="line-clamp-2 text-xl font-bold leading-snug tracking-normal text-white">
-                    {getTitle(type, item)}
-                  </h2>
-                  <p className="mt-3 line-clamp-3 text-sm leading-6 text-white/60">
-                    {getDescription(item)}
-                  </p>
-
-                  {item.skills?.length ? (
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {item.skills.slice(0, 4).map((skill) => (
-                        <span key={skill} className="rounded-full bg-white/5 px-3 py-1 text-xs text-white/60">
-                          {skill}
-                        </span>
-                      ))}
-                    </div>
-                  ) : null}
-
-                  {type === "publications" && item.file?.url ? (
-                    <button
-                      type="button"
-                      onClick={() => handlePublicationDownload(item)}
-                      className="mt-5 inline-flex items-center gap-2 rounded-lg bg-emerald-400 px-4 py-2 text-sm font-bold text-black transition hover:bg-emerald-300"
-                    >
-                      <FiDownload size={16} />
-                      Download
-                    </button>
-                  ) : type === "jobs" || type === "scholarships" ? (
-                    <button
-                      type="button"
-                      onClick={() => openApplication(item)}
-                      className="mt-5 inline-flex items-center gap-2 rounded-lg bg-emerald-400 px-4 py-2 text-sm font-bold text-black transition hover:bg-emerald-300"
-                    >
-                      <FiSend size={16} />
-                      Apply now
-                    </button>
-                  ) : (
-                    <div className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-emerald-300">
-                      View details
-                      <FiArrowRight size={16} />
-                    </div>
-                  )}
+                  <div className="pt-4 mt-4 border-t border-[var(--border-subtle)]">
+                    {type === "publications" && item.file?.url ? (
+                      <button
+                        type="button"
+                        onClick={() => handlePublicationDownload(item)}
+                        className="btn-primary !py-2.5 !px-5 !text-xs w-full"
+                      >
+                        <FiDownload size={15} />
+                        <span>Download Edition</span>
+                      </button>
+                    ) : type === "jobs" || type === "scholarships" ? (
+                      <button
+                        type="button"
+                        onClick={() => openApplication(item)}
+                        className="btn-primary !py-2.5 !px-5 !text-xs w-full"
+                      >
+                        <FiSend size={15} />
+                        <span>Apply Now</span>
+                      </button>
+                    ) : (
+                      <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[var(--accent-primary)]">
+                        <span>View details</span>
+                        <FiArrowRight size={14} />
+                      </div>
+                    )}
+                  </div>
                 </div>
               </article>
             ))}
@@ -391,34 +395,34 @@ const PublicResourcePage = ({ type }) => {
         )}
 
         {meta?.total !== undefined && !loading ? (
-          <p className="mt-6 text-sm text-white/45">
+          <p className="mt-8 text-xs font-medium text-[var(--text-muted)]">
             Showing {items.length} of {meta.total} records
           </p>
         ) : null}
       </section>
 
       {applicationTarget ? (
-        <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/75 px-4 py-6 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/75 px-4 py-6 backdrop-blur-md">
           <form
             onSubmit={submitApplication}
-            className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-lg border border-white/10 bg-[#0b1412] p-5 shadow-2xl"
+            className="max-h-[92vh] w-full max-w-2xl overflow-y-auto ka-card p-6 sm:p-8 shadow-2xl border border-[var(--border-strong)]"
           >
-            <div className="mb-5 flex items-start justify-between gap-4 border-b border-white/10 pb-4">
+            <div className="mb-5 flex items-start justify-between gap-4 border-b border-[var(--border-subtle)] pb-4">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-300">
+                <p className="eyebrow-badge mb-2">
                   {type === "scholarships" ? "Scholarship Application" : "Job Application"}
                 </p>
-                <h2 className="mt-2 text-2xl font-bold leading-snug text-white">
+                <h2 className="mt-1 text-2xl font-bold leading-snug text-[var(--text-primary)]">
                   {applicationTarget.title}
                 </h2>
-                <p className="mt-1 text-sm text-white/50">
+                <p className="mt-1 text-xs text-[var(--text-muted)]">
                   {getSummary(type, applicationTarget)}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={closeApplication}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/70 hover:bg-white/10"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer"
               >
                 <FiX size={18} />
               </button>
@@ -426,54 +430,54 @@ const PublicResourcePage = ({ type }) => {
 
             {type === "scholarships" ? (
               <div className="grid gap-4">
-                <label className="grid gap-2">
-                  <span className="text-sm font-semibold text-white/75">Applicant name</span>
+                <label className="grid gap-1">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Applicant name</span>
                   <input
                     value={applicationForm.applicantName}
                     onChange={(event) => handleApplicationChange("applicantName", event.target.value)}
-                    className="rounded-lg border border-white/10 bg-black/25 px-4 py-3 text-white outline-none focus:border-emerald-400"
+                    className="ka-input"
                     placeholder="Full name"
                   />
                 </label>
-                <label className="grid gap-2">
-                  <span className="text-sm font-semibold text-white/75">Education details</span>
+                <label className="grid gap-1">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Education details</span>
                   <textarea
                     value={applicationForm.educationDetails}
                     onChange={(event) => handleApplicationChange("educationDetails", event.target.value)}
                     rows={3}
-                    className="resize-none rounded-lg border border-white/10 bg-black/25 px-4 py-3 text-white outline-none focus:border-emerald-400"
+                    className="ka-input resize-none"
                     placeholder="Class, course, college, marks, or other relevant education details"
                   />
                 </label>
-                <label className="grid gap-2">
-                  <span className="text-sm font-semibold text-white/75">Income details</span>
+                <label className="grid gap-1">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Income details</span>
                   <textarea
                     value={applicationForm.incomeDetails}
                     onChange={(event) => handleApplicationChange("incomeDetails", event.target.value)}
                     rows={3}
-                    className="resize-none rounded-lg border border-white/10 bg-black/25 px-4 py-3 text-white outline-none focus:border-emerald-400"
+                    className="ka-input resize-none"
                     placeholder="Family income or financial background"
                   />
                 </label>
-                <label className="grid gap-2">
-                  <span className="text-sm font-semibold text-white/75">Statement</span>
+                <label className="grid gap-1">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Statement</span>
                   <textarea
                     value={applicationForm.statement}
                     onChange={(event) => handleApplicationChange("statement", event.target.value)}
                     rows={4}
-                    className="resize-none rounded-lg border border-white/10 bg-black/25 px-4 py-3 text-white outline-none focus:border-emerald-400"
+                    className="ka-input resize-none"
                     placeholder="Why are you applying?"
                   />
                 </label>
               </div>
             ) : (
-              <label className="grid gap-2">
-                <span className="text-sm font-semibold text-white/75">Cover letter</span>
+              <label className="grid gap-1">
+                <span className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Cover letter</span>
                 <textarea
                   value={applicationForm.coverLetter}
                   onChange={(event) => handleApplicationChange("coverLetter", event.target.value)}
                   rows={7}
-                  className="resize-none rounded-lg border border-white/10 bg-black/25 px-4 py-3 text-white outline-none focus:border-emerald-400"
+                  className="ka-input resize-none"
                   placeholder="Introduce yourself and explain why you are a good fit."
                 />
               </label>
@@ -482,10 +486,10 @@ const PublicResourcePage = ({ type }) => {
             <button
               type="submit"
               disabled={applying}
-              className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-400 px-5 py-3 text-sm font-black uppercase tracking-wider text-black transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-60"
+              className="btn-primary mt-6 w-full"
             >
               <FiSend size={16} />
-              {applying ? "Submitting" : "Submit Application"}
+              <span>{applying ? "Submitting" : "Submit Application"}</span>
             </button>
           </form>
         </div>

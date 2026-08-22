@@ -1,9 +1,9 @@
 export const ACCOUNT_TYPE = {
-    STUDENT: "Student",
-    INSTRUCTOR: "Instructor",
-    ADMIN: "Admin",
-    MEMBER: "Member",
-  }
+  ADMIN: "Admin",
+  MEMBER: "Member",
+  STUDENT: "Student", // legacy fallback
+  INSTRUCTOR: "Instructor", // legacy fallback
+};
 
 export const SAMAJ_ROLES = {
   SUPER_ADMIN: "SUPER_ADMIN",
@@ -15,23 +15,20 @@ export const SAMAJ_ROLES = {
   JOB_ADMIN: "JOB_ADMIN",
   DHARAMSHALA_ADMIN: "DHARAMSHALA_ADMIN",
   CONTENT_ADMIN: "CONTENT_ADMIN",
-}
-  
+};
 
-export const COURSE_STATUS = {
-    DRAFT: "Draft",
-    PUBLISHED: "Published",
-  }
+export const ACCOUNT_STATUS = {
+  PENDING: "PENDING",
+  ACTIVE: "ACTIVE",
+  SUSPENDED: "SUSPENDED",
+  REJECTED: "REJECTED",
+  CORRECTION_REQUESTED: "CORRECTION_REQUESTED",
+  DEACTIVATED: "DEACTIVATED",
+  BANNED: "BANNED",
+};
 
- export const TabData = [
-            {
-              id:1,
-              tabName: "Student",
-              type: ACCOUNT_TYPE.STUDENT,
-            },
-            {
-              id:2,
-              tabName: "Instructor",
-              type: ACCOUNT_TYPE.INSTRUCTOR,
-            }
-          ]
+export const PRIVACY_LEVELS = {
+  PUBLIC: "PUBLIC",
+  MEMBERS_ONLY: "MEMBERS_ONLY",
+  PRIVATE: "PRIVATE",
+};

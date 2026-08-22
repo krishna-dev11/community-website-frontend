@@ -24,80 +24,117 @@ const LoginForm = () => {
     dispatch(setLogin(formData.email, formData.password, navigate));
   };
 
-  const inputClass = "w-full rounded-lg border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-emerald-400";
-  const labelClass = "mb-2 block text-xs font-bold uppercase tracking-[0.16em] text-white/50";
+  const inputClass = "ka-input";
+  const labelClass = "mb-1.5 block text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--text-muted)]";
 
   return (
-    <main className="min-h-screen bg-[#071412] px-4 pb-14 pt-28 text-white sm:px-6 lg:px-8">
-      <section className="mx-auto grid w-full max-w-6xl overflow-hidden rounded-lg border border-white/10 bg-white/[0.035] lg:grid-cols-[420px_minmax(0,1fr)]">
-        <aside className="border-b border-white/10 bg-black/20 p-7 lg:border-b-0 lg:border-r">
-          <div className="mb-7 flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-400 text-black">
-              <FiShield size={24} />
+    <main className="min-h-screen bg-[var(--bg)] px-4 pb-14 pt-28 text-[var(--text-primary)] sm:px-6 lg:px-8 transition-colors duration-300">
+      <section className="mx-auto grid w-full max-w-5xl overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--surface)] shadow-2xl lg:grid-cols-[380px_minmax(0,1fr)]">
+        {/* Left Info Panel */}
+        <aside className="flex flex-col justify-between border-b border-[var(--border)] bg-[var(--surface-raised)] p-8 lg:border-b-0 lg:border-r">
+          <div>
+            <div className="mb-8 flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--accent-primary)]/10 border border-[var(--accent-primary)]/20 text-[var(--accent-primary)]">
+                <FiShield size={22} />
+              </div>
+              <div>
+                <p className="eyebrow-badge mb-1">Samaj Portal</p>
+                <h1 className="text-2xl font-black tracking-tight text-[var(--text-primary)]">Secure Login</h1>
+              </div>
             </div>
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.22em] text-emerald-300">Samaj Portal</p>
-              <h1 className="text-2xl font-black tracking-normal text-white">Secure Login</h1>
+
+            <p className="text-sm leading-7 text-[var(--text-secondary)] font-normal">
+              Only approved and active accounts can enter the dashboard. Pending applications remain blocked until reviewed by the committee.
+            </p>
+
+            <div className="mt-8 grid gap-3">
+              <div className="ka-card p-5">
+                <p className="text-sm font-bold text-[var(--text-primary)]">Members</p>
+                <p className="mt-1 text-xs text-[var(--text-secondary)]">Login after committee approval.</p>
+              </div>
+              <div className="ka-card p-5">
+                <p className="text-sm font-bold text-[var(--text-primary)]">Admins</p>
+                <p className="mt-1 text-xs text-[var(--text-secondary)]">Use the invited account assigned by Super Admin.</p>
+              </div>
             </div>
           </div>
 
-          <p className="text-sm leading-6 text-white/62">
-            Only approved and active accounts can enter the dashboard. Pending, rejected, or correction-requested applications remain blocked until reviewed.
-          </p>
-
-          <div className="mt-8 grid gap-4 text-sm text-white/68">
-            <div className="rounded-lg border border-white/10 bg-white/[0.04] p-4">
-              <p className="font-bold text-white">Members</p>
-              <p className="mt-1 text-white/55">Login after committee approval.</p>
-            </div>
-            <div className="rounded-lg border border-white/10 bg-white/[0.04] p-4">
-              <p className="font-bold text-white">Admins</p>
-              <p className="mt-1 text-white/55">Use the invited account assigned by Super Admin.</p>
-            </div>
+          <div className="mt-8 pt-8 border-t border-[var(--border-subtle)]">
+            <p className="text-xs text-[var(--text-muted)]">© Samaj Community Portal. All rights reserved.</p>
           </div>
         </aside>
 
-        <form onSubmit={submitHandler} className="p-6 sm:p-8 lg:p-10">
+        {/* Right Form Panel */}
+        <form onSubmit={submitHandler} className="p-7 sm:p-10">
           <div className="mb-8">
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-300">Welcome back</p>
-            <h2 className="mt-2 text-3xl font-black tracking-normal text-white">Access your account</h2>
-            <p className="mt-3 text-sm text-white/55">Enter your email and password to continue.</p>
+            <div className="eyebrow-badge mb-4">Welcome back</div>
+            <h2 className="text-3xl font-black tracking-tight text-[var(--text-primary)] leading-tight">Access your <span className="text-gradient">account</span></h2>
+            <p className="mt-3 text-sm text-[var(--text-secondary)] font-normal">Enter your registered email and password to continue.</p>
           </div>
 
           <div className="grid gap-5">
             <label>
-              <span className={labelClass}>Email</span>
-              <div className="relative">
-                <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-white/35" />
-                <input required type="email" name="email" value={formData.email} onChange={changeHandler} className={`${inputClass} pl-10`} placeholder="you@example.com" />
+              <span className={labelClass}>Email Address</span>
+              <div className="relative mt-1">
+                <FiMail className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" size={16} />
+                <input
+                  required
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={changeHandler}
+                  className={`${inputClass} pl-11`}
+                  placeholder="you@example.com"
+                />
               </div>
             </label>
 
             <label>
               <span className={labelClass}>Password</span>
-              <div className="relative">
-                <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-white/35" />
-                <input required type={showPassword ? "text" : "password"} name="password" value={formData.password} onChange={changeHandler} className={`${inputClass} px-10`} placeholder="Your password" />
-                <button type="button" onClick={() => setShowPassword((current) => !current)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white">
-                  {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+              <div className="relative mt-1">
+                <FiLock className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" size={16} />
+                <input
+                  required
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  value={formData.password}
+                  onChange={changeHandler}
+                  className={`${inputClass} pl-11 pr-11`}
+                  placeholder="Your password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((current) => !current)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+                >
+                  {showPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
                 </button>
               </div>
             </label>
           </div>
 
           <div className="mt-4 flex justify-end">
-            <Link to="/forgotPassword" className="text-xs font-bold uppercase tracking-wider text-emerald-300 hover:text-emerald-200">
+            <Link
+              to="/forgotPassword"
+              className="text-xs font-bold uppercase tracking-wider text-[var(--accent-primary)] hover:opacity-80 transition-opacity"
+            >
               Forgot password?
             </Link>
           </div>
 
-          <button type="submit" className="mt-7 flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-400 px-5 py-4 text-sm font-black uppercase tracking-wider text-black transition hover:bg-emerald-300">
-            Login
-            <FiArrowRight size={17} />
+          <button
+            type="submit"
+            className="btn-primary mt-8 w-full text-sm"
+          >
+            <span>Login to Portal</span>
+            <FiArrowRight size={16} />
           </button>
 
-          <p className="mt-6 text-center text-sm text-white/45">
-            New member? <Link to="/signup" className="font-bold text-emerald-300 hover:text-emerald-200">Submit registration</Link>
+          <p className="mt-6 text-center text-xs text-[var(--text-muted)]">
+            New member?{" "}
+            <Link to="/signup" className="font-bold text-[var(--accent-primary)] hover:opacity-80 transition-opacity">
+              Submit registration
+            </Link>
           </p>
         </form>
       </section>

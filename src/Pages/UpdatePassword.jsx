@@ -1,11 +1,7 @@
-import React from "react";
-import { FaArrowLeftLong } from "react-icons/fa6";
+import React, { useState } from "react";
 import { useDispatch } from "react-redux";
-import { useLocation, useNavigate } from "react-router-dom";
-import { Link } from "react-router-dom";
-import { FaEye } from "react-icons/fa";
-import { FaEyeSlash } from "react-icons/fa";
-import { useState } from "react";
+import { useLocation, useNavigate, Link } from "react-router-dom";
+import { FiEye, FiEyeOff, FiArrowLeft, FiLock } from "react-icons/fi";
 import toast from "react-hot-toast";
 import { forgotPassword } from "../services/Operations/authAPI";
 
@@ -15,7 +11,6 @@ const UpdatePassword = () => {
     ConfirmNewPassword: "",
   });
   const navigate = useNavigate();
-
   const dispatch = useDispatch();
 
   const [showCreatepassword, setshowCreatepassword] = useState(false);
@@ -26,19 +21,18 @@ const UpdatePassword = () => {
 
   const changeHandler = (event) => {
     const { type, name, value, checked } = event.target;
-    setFormData((prev) => {
-      return {
-        ...prev,
-        [name]: type === "checkbox" ? checked : value,
-      };
-    });
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
   };
 
   const SubmitHandler = (event) => {
     event.preventDefault();
 
     if (formData.ConfirmNewPassword !== formData.CreateNewPassword) {
-      toast.error("Both Password Can't Match");
+      toast.error("Passwords do not match");
+      return;
     }
 
     dispatch(
@@ -52,87 +46,77 @@ const UpdatePassword = () => {
   };
 
   return (
-    <div className=" flex  flex-col gap-y-5 h-screen w-full justify-center items-center bg-richblack-900">
-      <div className="  w-[30%] flex flex-col border-richblack-400 border p-10 rounded-md gap-y-5">
-        <p className=" text-2xl text-white font-semibold">Choose  new password</p>
+    <div className="flex flex-col gap-y-5 min-h-screen w-full justify-center items-center bg-[var(--bg)] text-[var(--text-primary)] px-4 py-16 transition-colors duration-300">
+      <div className="w-full max-w-md flex flex-col ka-card p-8 sm:p-10 shadow-2xl gap-y-6">
+        <div>
+          <div className="eyebrow-badge mb-2">Security</div>
+          <h2 className="text-2xl font-black tracking-tight text-[var(--text-primary)]">Choose new password</h2>
+          <p className="text-[var(--text-secondary)] text-sm font-normal mt-1">
+            Almost done. Enter your new password and you're all set.
+          </p>
+        </div>
 
-        <p className=" text-richblack-300 font-inter text-[.8rem] ">
-          Almost done. Enter your new password and youre all set.
-        </p>
-
-        <form onSubmit={SubmitHandler}>
-          <div className="flex gap-x-3 flex-col gap-y-5">
-            <label className="relative">
-              <p className="mb-1 text-[0.875rem] leading-[1.375rem] text-richblack-5">
-                New Password<sup className="text-pink-200">*</sup>
-              </p>
+        <form onSubmit={SubmitHandler} className="flex flex-col gap-y-5">
+          <label className="relative block">
+            <span className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--text-muted)] block">
+              New Password *
+            </span>
+            <div className="relative">
+              <FiLock className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" size={16} />
               <input
                 required
-                className="w-full rounded-[0.5rem] bg-richblack-800  p-[10px] placeholder-gray-500 text-richblack-5"
+                className="ka-input pl-11 pr-11"
                 type={showCreatepassword ? "text" : "password"}
                 placeholder="Enter New Password"
                 name="CreateNewPassword"
                 onChange={changeHandler}
                 value={formData.CreateNewPassword}
-                style={{
-                  boxShadow: "inset 0px -1px 0px rgba(255, 255, 255, 0.18)",
-                }}
               />
-              <span
-                onClick={() => {
-                  setshowCreatepassword(!showCreatepassword);
-                }}
-                className="top-10 right-5 absolute"
+              <button
+                type="button"
+                onClick={() => setshowCreatepassword(!showCreatepassword)}
+                className="top-1/2 -translate-y-1/2 right-4 absolute text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
               >
-                {showCreatepassword ? (
-                  <FaEyeSlash fill="white" />
-                ) : (
-                  <FaEye fill="white" />
-                )}
-              </span>
-            </label>
-            <label className=" relative">
-              <p className="mb-1 text-[0.875rem] leading-[1.375rem] text-richblack-5">
-                Confirm New Password<sup className="text-pink-200">*</sup>
-              </p>
+                {showCreatepassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+              </button>
+            </div>
+          </label>
+
+          <label className="relative block">
+            <span className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--text-muted)] block">
+              Confirm New Password *
+            </span>
+            <div className="relative">
+              <FiLock className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" size={16} />
               <input
                 required
-                className="w-full rounded-[0.5rem] bg-richblack-800  p-[10px] placeholder-gray-500 text-richblack-5"
+                className="ka-input pl-11 pr-11"
                 type={showConfirmPassword ? "text" : "password"}
-                placeholder="Confirn New Password"
+                placeholder="Confirm New Password"
                 name="ConfirmNewPassword"
                 onChange={changeHandler}
                 value={formData.ConfirmNewPassword}
-                style={{
-                  boxShadow: "inset 0px -1px 0px rgba(255, 255, 255, 0.18)",
-                }}
               />
-              <span
-                onClick={() => {
-                  setshowConfirmPassword(!showConfirmPassword);
-                }}
-                className="top-10 right-5 absolute"
+              <button
+                type="button"
+                onClick={() => setshowConfirmPassword(!showConfirmPassword)}
+                className="top-1/2 -translate-y-1/2 right-4 absolute text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
               >
-                {showConfirmPassword ? (
-                  <FaEyeSlash fill="white" />
-                ) : (
-                  <FaEye fill="white" />
-                )}
-              </span>
-            </label>
-          </div>
+                {showConfirmPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+              </button>
+            </div>
+          </label>
 
           <button
             type="submit"
-            className="mt-6 w-full rounded-[8px] bg-yellow-50 py-[8px] px-[12px] font-medium text-richblack-900"
+            className="btn-primary mt-2 w-full text-sm"
           >
-            Reset Password
+            <span>Reset Password</span>
           </button>
         </form>
 
-        <Link to={"/"} className="flex gap-x-3 items-baseline">
-          <FaArrowLeftLong fill="white" />
-          <p className="text-white -translate-y-1" >Back to login</p>
+        <Link to="/login" className="flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
+          <FiArrowLeft size={14} /> Back to login
         </Link>
       </div>
     </div>
@@ -140,3 +124,4 @@ const UpdatePassword = () => {
 };
 
 export default UpdatePassword;
+

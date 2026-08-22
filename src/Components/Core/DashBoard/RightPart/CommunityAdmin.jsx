@@ -29,45 +29,43 @@ const tabs = [
   { key: "shradhanjali", label: "Tribute", icon: FaHeart },
 ];
 
-const inputClass =
-  "h-11 border border-white/10 bg-white/[0.03] px-3 text-sm text-white outline-none placeholder:text-gray-600 focus:border-emerald-400/40";
-const textareaClass =
-  "min-h-24 resize-none border border-white/10 bg-white/[0.03] px-3 py-3 text-sm text-white outline-none placeholder:text-gray-600 focus:border-emerald-400/40";
+const inputClass = "ka-input";
+const textareaClass = "ka-input !min-h-24 resize-none !py-3";
 
 const Button = ({ children, icon: Icon, tone = "neutral", className = "", ...props }) => {
-  const tones = {
-    neutral: "border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]",
-    success: "border-emerald-400/30 bg-emerald-400/10 text-emerald-200 hover:bg-emerald-400/20",
-    warning: "border-amber-400/30 bg-amber-400/10 text-amber-200 hover:bg-amber-400/20",
-    danger: "border-red-400/30 bg-red-400/10 text-red-200 hover:bg-red-400/20",
+  const toneClasses = {
+    neutral: "btn-secondary !py-2 !px-4 !text-xs",
+    success: "btn-primary !py-2 !px-5 !text-xs",
+    warning: "inline-flex items-center justify-center gap-2 rounded-full border border-amber-400/30 bg-amber-400/10 text-amber-300 font-bold text-xs uppercase tracking-wider px-4 py-2 transition-all hover:bg-amber-400/20 disabled:opacity-50 cursor-pointer",
+    danger: "inline-flex items-center justify-center gap-2 rounded-full border border-red-400/30 bg-red-400/10 text-red-300 font-bold text-xs uppercase tracking-wider px-4 py-2 transition-all hover:bg-red-400/20 disabled:opacity-50 cursor-pointer",
   };
 
   return (
     <button
       {...props}
-      className={`inline-flex h-11 items-center justify-center gap-2 border px-4 text-[11px] font-bold uppercase tracking-widest transition disabled:cursor-not-allowed disabled:opacity-50 ${tones[tone]} ${className}`}
+      className={`${toneClasses[tone] || toneClasses.neutral} ${className} cursor-pointer disabled:cursor-not-allowed disabled:opacity-50`}
     >
       {Icon && <Icon size={12} />}
-      {children}
+      <span>{children}</span>
     </button>
   );
 };
 
 const Field = ({ label, children }) => (
   <label className="flex min-w-0 flex-col gap-1.5">
-    <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">{label}</span>
+    <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--text-muted)]">{label}</span>
     {children}
   </label>
 );
 
 const Status = ({ value }) => (
-  <span className="inline-flex w-fit border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-gray-300">
+  <span className="inline-flex w-fit rounded-full border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">
     {value || "UNKNOWN"}
   </span>
 );
 
 const Empty = ({ text }) => (
-  <div className="border border-dashed border-white/10 bg-white/[0.02] px-5 py-8 text-sm text-gray-500">{text}</div>
+  <div className="ka-card border-dashed px-5 py-8 text-sm text-[var(--text-muted)] text-center">{text}</div>
 );
 
 const formatDate = (value) => {
@@ -367,14 +365,17 @@ const CommunityAdmin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black px-3 py-8 text-white md:px-8">
+    <div className="min-h-screen bg-[var(--bg)] px-3 py-6 text-[var(--text-primary)] md:px-6 transition-colors duration-300">
       <div className="mx-auto flex max-w-6xl flex-col gap-6">
-        <div className="flex flex-col gap-4 border-b border-white/10 pb-5">
+        <div className="flex flex-col gap-4 border-b border-[var(--border-subtle)] pb-6">
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-emerald-300">Operations</p>
-              <h1 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">Community Admin</h1>
-              <p className="mt-2 max-w-2xl text-sm text-gray-400">
+              <div className="eyebrow-badge mb-2">
+                <FaClipboardList size={12} />
+                <span>Operations</span>
+              </div>
+              <h1 className="heading-hero text-[var(--text-primary)]">Community <span className="text-gradient">Admin</span></h1>
+              <p className="mt-2 max-w-2xl text-xs sm:text-sm text-[var(--text-secondary)] font-normal">
                 Review member requests, resolve issues, manage dharamshala bookings, run polls, and handle reports.
               </p>
             </div>
@@ -383,22 +384,22 @@ const CommunityAdmin = () => {
             </Button>
           </div>
 
-          <div className="grid gap-2 sm:grid-cols-3 xl:grid-cols-7">
+          <div className="flex flex-wrap gap-2">
             {visibleTabs.map((tab) => {
               const Icon = tab.icon;
-              const selected = activeTab === tab.key;
+              const active = activeTab === tab.key;
               return (
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
-                  className={`flex h-11 items-center justify-center gap-2 border px-3 text-[11px] font-bold uppercase tracking-widest transition ${
-                    selected
-                      ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-200"
-                      : "border-white/10 bg-white/[0.03] text-gray-400 hover:bg-white/[0.06] hover:text-white"
+                  className={`flex h-10 items-center justify-center gap-2 rounded-full px-4 text-xs font-bold uppercase tracking-wider transition cursor-pointer ${
+                    active
+                      ? "bg-[var(--accent-primary)] text-[#070707] shadow-md"
+                      : "border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                   }`}
                 >
                   <Icon size={12} />
-                  {tab.label}
+                  <span>{tab.label}</span>
                 </button>
               );
             })}
@@ -409,7 +410,7 @@ const CommunityAdmin = () => {
           <Empty text="No community admin permissions are assigned to this account." />
         ) : loading ? (
           <div className="flex h-56 items-center justify-center">
-            <div className="h-10 w-10 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent" />
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-[var(--accent-primary)] border-t-transparent" />
           </div>
         ) : (
           <>

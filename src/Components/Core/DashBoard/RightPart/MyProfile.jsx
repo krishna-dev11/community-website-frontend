@@ -1,17 +1,21 @@
-import React from "react";
+import React, { useState } from "react";
 import { useSelector } from "react-redux";
-import { FiEdit3 } from "react-icons/fi"; // Cleaner modern icon
+import { FiEdit3, FiCreditCard } from "react-icons/fi";
+import { FaRupeeSign } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import MembershipCardModal from "../../../Common/MembershipCardModal";
+import MyContributionsModal from "../../../Common/MyContributionsModal";
 
 const ProfileCard = ({ title, children, onEdit }) => (
-  <div className="relative group bg-white/[0.02] backdrop-blur-2xl border border-white/10 p-8 md:p-10 rounded-[2.5rem] shadow-2xl transition-all hover:bg-white/[0.04]">
-    <div className="flex justify-between items-center mb-8">
-      <h3 className="text-xl font-bold text-white tracking-tight">{title}</h3>
+  <div className="ka-card p-6 md:p-8">
+    <div className="flex justify-between items-center mb-6 border-b border-[var(--border-subtle)] pb-4">
+      <h3 className="text-lg md:text-xl font-bold text-[var(--text-primary)] tracking-tight">{title}</h3>
       <button 
         onClick={onEdit}
-        className="flex items-center gap-2 px-5 py-2 bg-white text-black rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-gray-200 transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] active:scale-95"
+        className="btn-secondary !py-1.5 !px-4 !text-xs"
       >
-        <FiEdit3 size={14} /> Edit
+        <FiEdit3 size={13} />
+        <span>Edit</span>
       </button>
     </div>
     {children}
@@ -19,10 +23,10 @@ const ProfileCard = ({ title, children, onEdit }) => (
 );
 
 const DetailItem = ({ label, value }) => (
-  <div className="flex flex-col gap-1.5">
-    <p className="text-gray-500 text-[10px] font-bold uppercase tracking-[0.2em] ml-0.5">{label}</p>
-    <p className="text-white text-sm md:text-base font-medium truncate">
-      {value || <span className="text-gray-700 italic">Not Provided</span>}
+  <div className="flex flex-col gap-1">
+    <p className="text-[var(--text-muted)] text-[10px] font-bold uppercase tracking-[0.18em]">{label}</p>
+    <p className="text-[var(--text-primary)] text-sm md:text-base font-semibold truncate">
+      {value || <span className="text-[var(--text-muted)] italic font-normal">Not Provided</span>}
     </p>
   </div>
 );
@@ -30,69 +34,86 @@ const DetailItem = ({ label, value }) => (
 const MyProfile = () => {
   const { user } = useSelector((state) => state.profile);
   const navigate = useNavigate();
+  const [isCardModalOpen, setIsCardModalOpen] = useState(false);
+  const [isContribModalOpen, setIsContribModalOpen] = useState(false);
 
   const handleEdit = () => navigate("/dashboard/setting");
 
   return (
-    <div className="relative min-h-screen w-full bg-black text-white overflow-hidden p-6 md:p-12 font-sans">
+    <div className="relative min-h-screen w-full bg-[var(--bg)] text-[var(--text-primary)] overflow-hidden p-2 md:p-6 transition-colors duration-300">
       
-      
-      <div className="absolute top-0 right-0   bg-emerald-500/10 blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[var(--accent-primary)]/10 blur-[140px] rounded-full pointer-events-none" />
       <div className="absolute top-[20%] left-[-10%] select-none pointer-events-none opacity-[0.02]">
-        <h1 className="text-[15rem] font-bold uppercase tracking-widest">Profile</h1>
+        <h1 className="text-[15rem] font-bold uppercase tracking-widest text-[var(--text-primary)]">Profile</h1>
       </div>
 
-      <div className="relative z-10 translate-y-6 max-w-4xl mx-auto flex flex-col gap-10">
-        
+      <div className="relative z-10 max-w-4xl mx-auto flex flex-col gap-8">
         
         <div className="flex flex-col gap-2">
-          <nav className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-500">
+          <nav className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
             <span>Home</span>
-            <span className="text-emerald-500">/</span>
+            <span className="text-[var(--accent-primary)]">/</span>
             <span>Dashboard</span>
-            <span className="text-emerald-500">/</span>
-            <span className="text-white">My Profile</span>
+            <span className="text-[var(--accent-primary)]">/</span>
+            <span className="text-[var(--text-primary)]">My Profile</span>
           </nav>
-          <h2 className="text-4xl md:text-5xl font-bold tracking-tight">Personal Hub</h2>
+          <h2 className="heading-hero text-[var(--text-primary)]">Personal <span className="text-gradient">Hub</span></h2>
         </div>
 
-        
-        <div className="bg-white/[0.02] backdrop-blur-2xl border border-white/10 p-8 md:p-10 rounded-[2.5rem] flex flex-col md:flex-row justify-between items-center gap-8">
+        {/* User Hero Card */}
+        <div className="ka-card p-6 md:p-8 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex flex-col md:flex-row items-center gap-6">
             <div className="relative group">
-              <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-blue-500 rounded-full blur opacity-30"></div>
               <img 
-                src={user?.imageUrl} 
-                className="relative h-24 w-24 md:h-28 md:w-28 rounded-full border-2 border-white/10 object-cover" 
+                src={user?.imageUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${user?.firstName || "Member"}`} 
+                className="h-24 w-24 md:h-28 md:w-28 rounded-3xl border-2 border-[var(--accent-primary)]/30 object-cover shadow-lg" 
                 alt="User Profile"
               />
             </div>
             <div className="text-center md:text-left">
-              <p className="text-2xl md:text-3xl font-bold text-white capitalize">{user?.firstName} {user?.lastName}</p>
-              <p className="text-gray-400 text-sm">{user?.email}</p>
-              <div className="mt-3 inline-block px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-bold text-emerald-400 uppercase tracking-widest">
-                {user?.accountType} Account
+              <p className="text-2xl md:text-3xl font-black text-[var(--text-primary)] capitalize">{user?.firstName} {user?.lastName}</p>
+              <p className="text-[var(--text-secondary)] text-xs md:text-sm mt-0.5">{user?.email}</p>
+              <div className="mt-3 flex flex-wrap items-center justify-center md:justify-start gap-2">
+                <span className="inline-block px-3 py-1 rounded-full bg-[var(--accent-primary)]/10 border border-[var(--accent-primary)]/20 text-[10px] font-bold text-[var(--accent-primary)] uppercase tracking-wider">
+                  {user?.accountStatus || "ACTIVE"} Status
+                </span>
+                {user?.roles?.map((role, idx) => (
+                  <span key={idx} className="inline-block px-2.5 py-0.5 rounded-full bg-[var(--surface-elevated)] border border-[var(--border-subtle)] text-[9px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">
+                    {role}
+                  </span>
+                ))}
               </div>
             </div>
           </div>
-          <button 
-            onClick={handleEdit}
-            className="px-8 py-3 bg-white text-black rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-gray-200 transition-all shadow-[0_0_30px_rgba(255,255,255,0.1)] active:scale-95"
-          >
-            Edit Profile
-          </button>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <button 
+              onClick={() => setIsCardModalOpen(true)}
+              className="btn-primary !py-2.5 !px-5 !text-xs"
+            >
+              <FiCreditCard size={14} />
+              <span>Digital ID</span>
+            </button>
+            <button 
+              onClick={() => setIsContribModalOpen(true)}
+              className="btn-secondary !py-2.5 !px-4 !text-xs"
+            >
+              <FaRupeeSign size={12} />
+              <span>My Dues</span>
+            </button>
+          </div>
         </div>
 
-        
+        <MembershipCardModal isOpen={isCardModalOpen} onClose={() => setIsCardModalOpen(false)} />
+        <MyContributionsModal isOpen={isContribModalOpen} onClose={() => setIsContribModalOpen(false)} />
+
         <ProfileCard title="Bio & About" onEdit={handleEdit}>
-          <p className="text-gray-400 leading-relaxed text-sm md:text-base italic">
+          <p className="text-[var(--text-secondary)] leading-relaxed text-sm md:text-base italic font-normal">
             {user?.additionalDetails?.about || "Speak about yourself to let the world know who you are..."}
           </p>
         </ProfileCard>
 
-        
         <ProfileCard title="Detailed Information" onEdit={handleEdit}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
             <DetailItem label="First Name" value={user?.firstName} />
             <DetailItem label="Last Name" value={user?.lastName} />
             <DetailItem label="Email Address" value={user?.email} />
@@ -107,4 +128,4 @@ const MyProfile = () => {
   );
 };
 
-export default MyProfile;
+export default MyProfile;

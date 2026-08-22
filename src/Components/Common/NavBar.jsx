@@ -1,316 +1,37 @@
-// import React, { useState } from "react";
-// import { NavbarLinks } from "../../data/navbar-links";
-// import { Link, matchPath, useNavigate, useLocation } from "react-router-dom";
-// import { useDispatch, useSelector } from "react-redux";
-// import { MdOutlineShoppingCart } from "react-icons/md";
-// import { setLogOut } from "../../services/Operations/authAPI";
-// import { RiDashboard2Line } from "react-icons/ri";
-// import { IoLogOutOutline } from "react-icons/io5";
-// import { CiLogin } from "react-icons/ci";
-// import { FiMenu, FiX } from "react-icons/fi"; // Mobile Icons
-
-// const NavBar = () => {
-//   const { token } = useSelector((state) => state.auth);
-//   const { user } = useSelector((state) => state.profile);
-//   const location = useLocation();
-//   const dispatch = useDispatch();
-//   const navigate = useNavigate();
-
-//   const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-//   const conditionFormNavBarWholeStyle =
-//     location.pathname.split("/").includes("EnrolledCourses") ||
-//     location.pathname.split("/").includes("course");
-
-//   function mathroute(route) {
-//     if (!route) return false;
-//     return matchPath({ path: route }, location.pathname);
-//   }
-
-//   return (
-//     <div
-//       className={`w-full h-[72px] fixed z-[1000] transition-all duration-300 ${
-//         conditionFormNavBarWholeStyle ? "" : " "
-//       }`}
-//     >
-//       <div className="flex justify-between items-center w-11/12 mx-auto h-full px-4 md:px-10">
-        
-        
-//         <Link onClick={() => setIsMenuOpen(false)} to={"/"}>
-//           <div className="flex items-center -translate-x-6 gap-3">
-//             <div className="w-10 h-10 rounded-xl bg-[#6A0DAD]/20 flex items-center justify-center border border-[#6A0DAD]/30 shadow-lg shrink-0">
-//               <span className="text-[#ffffff] font-black text-lg">V</span>
-//             </div>
-//             <div className="flex flex-col leading-tight">
-//               <span className="text-[11px] font-bold uppercase tracking-[0.3em] text-[#ffffff]">
-//                 BOLD VOICE
-//               </span>
-//               <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-[#10b981]/80">
-//                 Spoken English
-//               </span>
-//             </div>
-//           </div>
-//         </Link>
-
-        
-//         <ul className="hidden lg:flex gap-x-8 border border-[#ffffff]/10 bg-[#ffffff]/5 backdrop-blur-xl px-12 py-2.5 rounded-2xl">
-//           {NavbarLinks.filter(
-//             (link) => link?.title !== "Catalog" && link?.title !== "Category"
-//           ).map((link, index) => (
-//             <li key={index} className="relative group">
-//               <Link
-//                 to={link?.path}
-//                 className={`text-sm font-medium transition-all ${
-//                   mathroute(link?.path)
-//                     ? "text-[#10b981]"
-//                     : "text-[#ffffff] hover:text-[#10b981]"
-//                 }`}
-//               >
-//                 {link.title}
-//               </Link>
-//             </li>
-//           ))}
-//         </ul>
-
-        
-//         <div className="flex items-center gap-x-4 md:gap-x-6">
-          
-          
-//           {token && user?.accountType !== "Instructor" && (
-//             <Link to={"/dashboard/wishlist"} className="relative">
-//               <MdOutlineShoppingCart
-//                 className={
-//                   conditionFormNavBarWholeStyle
-//                     ? "text-white"
-//                     : "text-[#ffffff]"
-//                 }
-//                 size={24}
-//               />
-//               {user.cart?.length > 0 && (
-//                 <span className="absolute -top-2 -right-2 h-4 w-4 bg-[#10b981] text-black text-[10px] font-bold rounded-full flex items-center justify-center animate-bounce">
-//                   {user.cart.length}
-//                 </span>
-//               )}
-//             </Link>
-//           )}
-
-          
-//           <div className="hidden md:flex items-center gap-x-4">
-//             {token === null ? (
-//               <>
-//                 <Link
-//                   to="/login"
-//                   className="bg-[#ffffff]/5 border border-[#ffffff]/10 text-[#ffffff] px-5 py-2 rounded-xl text-sm font-bold uppercase tracking-widest hover:bg-[#ffffff]/10 transition-all flex items-center gap-2"
-//                 >
-//                   <CiLogin size={18} /> Login
-//                 </Link>
-//                 <Link
-//                   to="/signup"
-//                   className="bg-[#ffffff] text-[#000000] px-5 py-2 rounded-xl text-sm font-bold uppercase tracking-widest hover:bg-[#10b981] transition-all"
-//                 >
-//                   Sign Up
-//                 </Link>
-//               </>
-//             ) : (
-//               <div className="relative group">
-//                 <img
-//                   src={user?.imageUrl}
-//                   className="h-9 w-9 rounded-full border border-[#10b981] cursor-pointer"
-//                   alt="Profile"
-//                 />
-                
-//                 <div className="absolute right-0 top-12 w-48 bg-[#0a0a0a] border border-[#ffffff]/10 rounded-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 p-2 shadow-2xl z-50">
-//                   <button
-//                     onClick={() => navigate("/dashboard/my-profile")}
-//                     className="w-full flex items-center gap-3 p-3 text-xs font-bold uppercase text-[#9ca3af] hover:text-[#ffffff] hover:bg-[#ffffff]/5 rounded-xl transition-all"
-//                   >
-//                     <RiDashboard2Line size={18} /> Dashboard
-//                   </button>
-//                   <button
-//                     onClick={() => dispatch(setLogOut(navigate))}
-//                     className="w-full flex items-center gap-3 p-3 text-xs font-bold uppercase text-[#ef4444] hover:bg-[#ef4444]/10 rounded-xl transition-all"
-//                   >
-//                     <IoLogOutOutline size={18} /> Logout
-//                   </button>
-//                 </div>
-//               </div>
-//             )}
-//           </div>
-
-          
-//           <button
-//             onClick={() => setIsMenuOpen(!isMenuOpen)}
-//             className="lg:hidden text-[#ffffff] p-2 hover:bg-[#ffffff]/10 rounded-lg transition-all"
-//           >
-//             {isMenuOpen ? <FiX size={28} /> : <FiMenu size={28} />}
-//           </button>
-//         </div>
-//       </div>
-
-      
-//       <div
-//         className={`fixed inset-0 bg-black/80 backdrop-blur-md z-[999] lg:hidden transition-all duration-500 ${
-//           isMenuOpen ? "opacity-100 visible" : "opacity-0 invisible"
-//         }`}
-//         onClick={() => setIsMenuOpen(false)}
-//       >
-//         <div
-//           className={`absolute right-0 top-0 h-full w-[300px] bg-[#050505] border-l border-white/10 p-8 flex flex-col shadow-[-20px_0_50px_rgba(0,0,0,0.8)] transition-transform duration-500 ${
-//             isMenuOpen ? "translate-x-0" : "translate-x-full"
-//           }`}
-//           onClick={(e) => e.stopPropagation()}
-//         >
-          
-//           {token && (
-//             <div className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/5 mb-6">
-//               <img
-//                 src={user?.imageUrl}
-//                 className="h-10 w-10 rounded-full border border-[#10b981] object-cover"
-//                 alt="User"
-//               />
-//               <div className="flex flex-col">
-//                 <p className="text-sm font-bold text-white truncate w-32">
-//                   {user?.firstName} {user?.lastName}
-//                 </p>
-//                 <Link
-//                   to="/dashboard/my-profile"
-//                   onClick={() => setIsMenuOpen(false)}
-//                   className="text-[10px] text-[#10b981] font-bold uppercase tracking-widest flex items-center gap-1 hover:underline"
-//                 >
-//                   <RiDashboard2Line size={12} /> Dashboard Entry
-//                 </Link>
-//               </div>
-//             </div>
-//           )}
-
-          
-//           <div className="flex flex-col gap-y-2 flex-1 overflow-y-auto custom-scrollbar">
-//             <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-[#4b5563] mb-4">
-//               Navigation Node
-//             </p>
-
-//             {NavbarLinks.filter(
-//               (link) => link?.title !== "Catalog" && link?.title !== "Category"
-//             ).map((link, i) => (
-//               <div key={i} className="flex flex-col border-b border-white/5 pb-2">
-//                 <Link
-//                   to={link.path}
-//                   onClick={() => setIsMenuOpen(false)}
-//                   className={`text-xl font-bold tracking-tighter py-3 transition-colors ${
-//                     mathroute(link.path)
-//                       ? "text-[#10b981]"
-//                       : "text-white hover:text-[#10b981]"
-//                   }`}
-//                 >
-//                   {link.title}
-//                 </Link>
-//               </div>
-//             ))}
-//             {token && (
-//               <Link
-//                 to="/dashboard/my-profile"
-//                 onClick={() => setIsMenuOpen(false)}
-//                 className={`text-xl font-bold tracking-tighter flex items-center gap-3 ${
-//                   mathroute("/dashboard/my-profile")
-//                     ? "text-[#10b981]"
-//                     : "text-white"
-//                 }`}
-//               >
-//                 <RiDashboard2Line className="text-[#10b981]" size={22} />{" "}
-//                 Dashboard
-//               </Link>
-//             )}
-//           </div>
-
-          
-//           <div className="mt-auto flex flex-col gap-4 pt-8 border-t border-white/10">
-//             {token === null ? (
-//               <>
-//                 <Link
-//                   to="/login"
-//                   onClick={() => setIsMenuOpen(false)}
-//                   className="w-full py-4 text-center bg-white/5 rounded-2xl text-white font-bold uppercase tracking-widest text-xs border border-white/10"
-//                 >
-//                   Login Node
-//                 </Link>
-//                 <Link
-//                   to="/signup"
-//                   onClick={() => setIsMenuOpen(false)}
-//                   className="w-full py-4 text-center bg-white rounded-2xl text-black font-bold uppercase tracking-widest text-xs hover:bg-[#10b981] transition-all"
-//                 >
-//                   Initialize Access
-//                 </Link>
-//               </>
-//             ) : (
-//               <button
-//                 onClick={() => {
-//                   dispatch(setLogOut(navigate));
-//                   setIsMenuOpen(false);
-//                 }}
-//                 className="w-full py-4 bg-[#ef4444]/10 text-[#ef4444] rounded-2xl font-bold uppercase tracking-widest text-xs border border-red-500/20 flex items-center justify-center gap-2"
-//               >
-//                 <IoLogOutOutline /> Logout Terminal
-//               </button>
-//             )}
-//           </div>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default NavBar;
-
-
-
-
-
-
-
-
-
-
-import React, { useState } from "react";
-import {
-  Link,
-  matchPath,
-  useNavigate,
-  useLocation,
-} from "react-router-dom";
+import React, { useState, useRef, useEffect } from "react";
+import { Link, matchPath, useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-
 import { setLogOut } from "../../services/Operations/authAPI";
+import { useTheme } from "../../Utilities/useTheme";
 
-// ============================================================
-// ICONS
-// ============================================================
-
+// Icons
 import {
   FiMenu,
   FiX,
   FiChevronDown,
   FiChevronRight,
-  FiSearch,
   FiHeart,
   FiBell,
   FiUser,
   FiHome,
   FiInfo,
   FiUsers,
-  FiCalendar,
   FiBriefcase,
   FiBookOpen,
-  FiLifeBuoy, // Community/Help ke liye valid icon
-  FiCreditCard,
+  FiPhone,
   FiLogOut,
   FiSettings,
-  FiMoreHorizontal,
+  FiShield,
+  FiGrid,
+  FiMessageSquare,
+  FiImage,
+  FiLayers,
+  FiSun,
+  FiMoon,
 } from "react-icons/fi";
+import { FaGraduationCap, FaHeart as FaHeartSolid, FaRupeeSign } from "react-icons/fa";
 
-// ============================================================
-// MAIN NAVIGATION DATA
-// ============================================================
-
+// Navigation menu structure aligned with platform routes
 const navigationItems = [
   {
     title: "Home",
@@ -320,52 +41,19 @@ const navigationItems = [
   },
   {
     title: "About",
-    type: "dropdown",
+    path: "/about",
+    type: "link",
     icon: FiInfo,
-    items: [
-      { title: "About Samaj", path: "/about" },
-      { title: "Samaj History", path: "/about/history" },
-      { title: "Leadership", path: "/committee" },
-      { title: "Committee", path: "/committee" },
-      { title: "Digital Archive", path: "/archive" },
-      { title: "Contact Us", path: "/contact" },
-    ],
   },
   {
-    title: "Members",
+    title: "Community",
     type: "dropdown",
     icon: FiUsers,
     items: [
-      { title: "Member Directory", path: "/members" },
-      { title: "Family Directory", path: "/families" },
-      { title: "Family Tree", path: "/family-tree" },
-      { title: "Community Groups", path: "/groups" },
-      { title: "Digital ID Card", path: "/member-id" },
-      { title: "Blood Donor Directory", path: "/blood-donors" },
-    ],
-  },
-{
-    title: "Community",
-    type: "dropdown",
-    icon: FiLifeBuoy, // FiHeartHandshake ki jagah FiLifeBuoy
-    items: [
-      { title: "Community Help", path: "/community-help" },
-      { title: "Medical Help", path: "/medical" },
-      { title: "Senior Citizen Support", path: "/senior-citizen" },
-      { title: "Problem / Grievance", path: "/grievances" },
-      { title: "Community Discussion", path: "/discussion" },
-      { title: "Condolence / श्रद्धांजलि", path: "/condolence" },
-      { title: "Notifications", path: "/notifications" },
-    ],
-  },
-  {
-    title: "Events",
-    type: "dropdown",
-    icon: FiCalendar,
-    items: [
-      { title: "Upcoming Events", path: "/events" },
-      { title: "Past Events", path: "/events/past" },
-      { title: "My Registrations", path: "/my-registrations" },
+      { title: "Member Directory", path: "/dashboard/directory", desc: "Connect with verified Samaj members" },
+      { title: "Family Hub", path: "/dashboard/family", desc: "Household profiles & SSSM ID tree" },
+      { title: "Community Hub & Issues", path: "/dashboard/community", desc: "Raise issues & track solutions" },
+      { title: "Discussion Forum", path: "/discussion", desc: "Open talks, youth & senior forums" },
     ],
   },
   {
@@ -373,51 +61,65 @@ const navigationItems = [
     type: "dropdown",
     icon: FiBriefcase,
     items: [
-      { title: "Jobs & Careers", path: "/jobs" },
-      { title: "Scholarships", path: "/scholarships" },
-      { title: "Business Directory", path: "/businesses" },
-      { title: "Matrimonial", path: "/matrimonial" },
-      { title: "Achievements", path: "/achievements" },
+      { title: "Jobs & Careers", path: "/jobs", desc: "Employment & hiring in the community" },
+      { title: "Scholarships", path: "/scholarships", desc: "Financial aid for student education" },
+      { title: "Matrimonial Portal", path: "/matrimonial", desc: "Verified matchmaking & alliances" },
+      { title: "Achievements", path: "/achievements", desc: "Celebrating member milestones" },
     ],
   },
   {
-    title: "Resources",
+    title: "Media & Resources",
     type: "dropdown",
     icon: FiBookOpen,
     items: [
-      { title: "Notices & Announcements", path: "/notices" },
-      { title: "Samaj News", path: "/news" },
-      { title: "Photo & Video Gallery", path: "/gallery" },
-      { title: "Samaj Magazine", path: "/publications" },
-      { title: "Community Facilities", path: "/facilities" },
+      { title: "Notices & Announcements", path: "/notices", desc: "Official circulars & updates" },
+      { title: "Samaj Patrika / Magazine", path: "/publications", desc: "Download monthly editions" },
+      { title: "Photo & Video Gallery", path: "/gallery", desc: "Event albums & community memories" },
+      { title: "Shradhanjali / Condolence", path: "/condolence", desc: "In loving memory & tributes" },
     ],
   },
   {
-    title: "More",
-    type: "dropdown",
-    icon: FiMoreHorizontal,
-    items: [
-      { title: "Financial Transparency", path: "/transparency" },
-      { title: "Samaj Archive", path: "/archive" },
-      { title: "Important Contacts", path: "/contacts" },
-      { title: "Samaj Groups", path: "/groups" },
-      { title: "Ask Samaj AI", path: "/ai-assistant" },
-    ],
+    title: "Contact",
+    path: "/contact",
+    type: "link",
+    icon: FiPhone,
   },
 ];
 
-// ============================================================
-// DESKTOP DROPDOWN COMPONENT
-// ============================================================
+/* ======================================================
+   Theme Toggle Button
+   ====================================================== */
+const ThemeToggle = ({ isDark, toggleTheme, compact = false }) => (
+  <button
+    type="button"
+    onClick={toggleTheme}
+    title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+    aria-label="Toggle theme"
+    style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      width: compact ? 36 : 38,
+      height: compact ? 36 : 38,
+      borderRadius: 10,
+      border: "1px solid var(--line-strong)",
+      background: "var(--surface-raised)",
+      color: "var(--text-soft)",
+      transition: "all 200ms ease",
+      cursor: "pointer",
+      flexShrink: 0,
+    }}
+  >
+    {isDark ? <FiSun size={compact ? 15 : 16} /> : <FiMoon size={compact ? 15 : 16} />}
+  </button>
+);
 
-const DesktopDropdown = ({
-  item,
-  isOpen,
-  setOpenDropdown,
-  closeMenus,
-  isDropdownActive,
-}) => {
+/* ======================================================
+   Desktop Dropdown
+   ====================================================== */
+const DesktopDropdown = ({ item, isOpen, setOpenDropdown, closeMenus, isDropdownActive }) => {
   const active = isDropdownActive(item);
+  const Icon = item.icon;
 
   return (
     <div
@@ -427,51 +129,99 @@ const DesktopDropdown = ({
     >
       <button
         type="button"
-        className={`flex items-center gap-1.5 py-3 text-sm font-medium transition-all duration-200 ${
-          isOpen || active
-            ? "text-emerald-400"
-            : "text-white/90 hover:text-emerald-400"
-        }`}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 4,
+          padding: "6px 10px",
+          fontSize: 12.5,
+          fontWeight: 500,
+          borderRadius: 10,
+          border: "none",
+          background: isOpen || active ? "var(--brand-glow)" : "transparent",
+          color: isOpen || active ? "var(--brand)" : "var(--text-soft)",
+          transition: "all 200ms ease",
+          cursor: "pointer",
+          whiteSpace: "nowrap",
+        }}
       >
-        {item.title}
+        <Icon size={14} />
+        <span>{item.title}</span>
         <FiChevronDown
-          size={14}
-          className={`transition-transform duration-200 ${
-            isOpen ? "rotate-180" : ""
-          }`}
+          size={12}
+          style={{
+            transition: "transform 200ms ease",
+            transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+            opacity: 0.6,
+          }}
         />
       </button>
 
+      {/* Dropdown Menu */}
       <div
-        className={`absolute left-1/2 top-full z-[1100] mt-1 min-w-[245px] -translate-x-1/2 rounded-2xl border border-white/10 bg-[#080808]/95 p-2 shadow-[0_25px_70px_rgba(0,0,0,0.55)] backdrop-blur-2xl transition-all duration-200 ${
-          isOpen
-            ? "visible translate-y-0 opacity-100"
-            : "invisible pointer-events-none -translate-y-2 opacity-0"
-        }`}
+        style={{
+          position: "absolute",
+          left: "50%",
+          top: "calc(100% + 8px)",
+          zIndex: 1100,
+          width: 280,
+          transform: `translateX(-50%) translateY(${isOpen ? 0 : -8}px)`,
+          borderRadius: 18,
+          border: "1px solid var(--glass-border)",
+          background: "var(--glass-bg)",
+          backdropFilter: "var(--glass-backdrop)",
+          WebkitBackdropFilter: "var(--glass-backdrop)",
+          padding: 8,
+          boxShadow: "var(--shadow-modal)",
+          opacity: isOpen ? 1 : 0,
+          visibility: isOpen ? "visible" : "hidden",
+          pointerEvents: isOpen ? "auto" : "none",
+          transition: "all 200ms ease",
+        }}
       >
-        {item.items.map((subItem) => (
-          <Link
-            key={subItem.path}
-            to={subItem.path}
-            onClick={closeMenus}
-            className="flex items-center justify-between rounded-xl px-4 py-3 text-sm text-white/70 transition-all hover:bg-white/5 hover:text-white"
-          >
-            <span>{subItem.title}</span>
-            <FiChevronRight size={14} className="text-white/30" />
-          </Link>
-        ))}
+        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          {item.items.map((subItem) => (
+            <Link
+              key={subItem.path}
+              to={subItem.path}
+              onClick={closeMenus}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                padding: "10px 14px",
+                borderRadius: 12,
+                transition: "all 180ms ease",
+                textDecoration: "none",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span
+                  style={{ fontSize: 13, fontWeight: 600, color: "var(--text)" }}
+                >
+                  {subItem.title}
+                </span>
+                <FiChevronRight size={12} style={{ color: "var(--text-faint)" }} />
+              </div>
+              {subItem.desc && (
+                <span style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
+                  {subItem.desc}
+                </span>
+              )}
+            </Link>
+          ))}
+        </div>
       </div>
     </div>
   );
 };
 
-// ============================================================
-// NAVBAR COMPONENT
-// ============================================================
-
+/* ======================================================
+   NavBar Component
+   ====================================================== */
 const NavBar = () => {
   const { token } = useSelector((state) => state.auth);
   const { user } = useSelector((state) => state.profile);
+  const { isDark, toggleTheme } = useTheme();
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -480,36 +230,53 @@ const NavBar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null);
   const [openMobileSection, setOpenMobileSection] = useState(null);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const profileDropdownRef = useRef(null);
+
+  const userRoles = Array.isArray(user?.roles) ? user.roles : [];
+  const isAdmin = userRoles.some((r) =>
+    ["SUPER_ADMIN", "Admin", "MODERATOR", "TREASURER", "CONTENT_ADMIN", "MATRIMONIAL_ADMIN", "SCHOLARSHIP_ADMIN", "JOB_ADMIN", "DHARAMSHALA_ADMIN"].includes(r)
+  );
+
+  // Detect scroll for enhanced navbar style
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 12);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Close profile dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target)) {
+        setIsProfileOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const isRouteActive = (route) => {
     if (!route) return false;
-    return (
-      matchPath(
-        {
-          path: route,
-          end: route === "/",
-        },
-        location.pathname
-      ) !== null
-    );
+    return matchPath({ path: route, end: route === "/" }, location.pathname) !== null;
   };
 
   const isDropdownActive = (item) => {
     if (!item.items) return false;
-    return item.items.some((subItem) =>
-      location.pathname.startsWith(subItem.path)
-    );
+    return item.items.some((subItem) => location.pathname === subItem.path || location.pathname.startsWith(subItem.path));
   };
 
   const closeMenus = () => {
     setIsMenuOpen(false);
     setOpenDropdown(null);
     setOpenMobileSection(null);
+    setIsProfileOpen(false);
   };
 
   const handleLogout = () => {
-    dispatch(setLogOut(navigate));
     closeMenus();
+    dispatch(setLogOut(navigate));
   };
 
   const toggleMobileSection = (title) => {
@@ -518,43 +285,134 @@ const NavBar = () => {
 
   return (
     <>
-      <nav className="fixed left-0 right-0 top-0 z-[1000] h-[76px] w-full border-b border-white/10 bg-[#050505]/85 backdrop-blur-2xl">
-        <div className="mx-auto flex h-full w-[94%] max-w-[1600px] items-center justify-between gap-5 xl:w-[90%]">
-          {/* LOGO */}
-          <Link to="/" onClick={closeMenus} className="shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-emerald-500/30 bg-emerald-500/10 shadow-lg">
-                <span className="text-xl font-black text-emerald-400">
-                  S
-                </span>
-              </div>
-              <div className="hidden flex-col leading-tight sm:flex">
-                <span className="text-[12px] font-bold uppercase tracking-[0.25em] text-white">
-                  SAMAJ
-                </span>
-                <span className="text-[8px] font-semibold uppercase tracking-[0.2em] text-emerald-400">
-                  Community Portal
-                </span>
-              </div>
+      <nav
+        id="main-navbar"
+        style={{
+          position: "fixed",
+          left: 0,
+          right: 0,
+          top: 0,
+          zIndex: 1000,
+          height: 64,
+          width: "100%",
+          borderBottom: `1px solid var(--nav-border)`,
+          background: "var(--nav-bg)",
+          backdropFilter: "blur(24px)",
+          WebkitBackdropFilter: "blur(24px)",
+          boxShadow: scrolled ? "var(--shadow-card)" : "none",
+          transition: "box-shadow 260ms ease, background 220ms ease",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 8,
+            height: "100%",
+            width: "100%",
+            maxWidth: 1600,
+            margin: "0 auto",
+            padding: "0 12px",
+            boxSizing: "border-box",
+          }}
+        >
+          {/* BRAND LOGO */}
+          <Link
+            to="/"
+            onClick={closeMenus}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              textDecoration: "none",
+              flexShrink: 0,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                height: 36,
+                width: 36,
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: 10,
+                border: "1px solid rgba(16,185,129,0.4)",
+                background: "var(--brand-glow)",
+                boxShadow: "0 0 16px var(--brand-glow)",
+                flexShrink: 0,
+              }}
+            >
+              <span
+                style={{
+                  fontSize: 18,
+                  fontWeight: 900,
+                  color: "var(--brand)",
+                  fontFamily: "var(--font-display)",
+                }}
+              >
+                S
+              </span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.1 }}>
+              <span
+                style={{
+                  fontSize: 13,
+                  fontWeight: 900,
+                  letterSpacing: "0.18em",
+                  textTransform: "uppercase",
+                  color: "var(--text)",
+                  fontFamily: "var(--font-display)",
+                }}
+              >
+                SAMAJ
+              </span>
+              <span
+                className="logo-subtitle"
+                style={{
+                  fontSize: 8.5,
+                  fontWeight: 700,
+                  letterSpacing: "0.14em",
+                  textTransform: "uppercase",
+                  color: "var(--brand)",
+                }}
+              >
+                Community Portal
+              </span>
             </div>
           </Link>
 
-          {/* DESKTOP NAVIGATION */}
-          <div className="hidden flex-1 items-center justify-center lg:flex">
-            <div className="flex items-center gap-x-5 xl:gap-x-7">
+          {/* DESKTOP NAVIGATION MENU (VISIBLE ONLY ON DESKTOP 960px+) */}
+          <div
+            style={{ display: "none", flex: 1, alignItems: "center", justifyContent: "center" }}
+            className="desktop-nav"
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
               {navigationItems.map((item) => {
                 if (item.type === "link") {
+                  const active = isRouteActive(item.path);
+                  const Icon = item.icon;
                   return (
                     <Link
                       key={item.title}
                       to={item.path}
-                      className={`text-sm font-medium transition-all duration-200 ${
-                        isRouteActive(item.path)
-                          ? "text-emerald-400"
-                          : "text-white/90 hover:text-emerald-400"
-                      }`}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
+                        padding: "6px 10px",
+                        fontSize: 12.5,
+                        fontWeight: active ? 600 : 500,
+                        borderRadius: 10,
+                        background: active ? "var(--brand-glow)" : "transparent",
+                        color: active ? "var(--brand)" : "var(--text-soft)",
+                        textDecoration: "none",
+                        transition: "all 200ms ease",
+                        whiteSpace: "nowrap",
+                      }}
                     >
-                      {item.title}
+                      <Icon size={14} />
+                      <span>{item.title}</span>
                     </Link>
                   );
                 }
@@ -574,207 +432,346 @@ const NavBar = () => {
           </div>
 
           {/* RIGHT SIDE ACTIONS */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            {/* Search */}
-            <Link
-              to="/search"
-              className="hidden h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white/70 transition-all hover:bg-white/10 hover:text-emerald-400 md:flex"
-              title="Search"
-            >
-              <FiSearch size={18} />
-            </Link>
-
-            {/* Notification */}
-            {token && (
-              <Link
-                to="/notifications"
-                className="relative hidden h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white/70 transition-all hover:bg-white/10 hover:text-emerald-400 md:flex"
-                title="Notifications"
-              >
-                <FiBell size={18} />
-              </Link>
-            )}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+            {/* Theme Toggle - always visible & compact */}
+            <ThemeToggle isDark={isDark} toggleTheme={toggleTheme} compact={true} />
 
             {/* Donate Button */}
             <Link
               to="/donate"
-              className="hidden items-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-xs font-black uppercase tracking-wider text-black transition-all hover:bg-emerald-400 xl:flex"
+              className="navbar-donate-btn"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 5,
+                borderRadius: 10,
+                background: "linear-gradient(135deg, var(--brand), var(--brand-deep))",
+                padding: "6px 10px",
+                fontSize: 10.5,
+                fontWeight: 800,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                color: "#fff",
+                textDecoration: "none",
+                boxShadow: "0 0 16px var(--brand-shadow)",
+                transition: "all 220ms ease",
+                whiteSpace: "nowrap",
+                flexShrink: 0,
+              }}
             >
-              <FiHeart size={15} />
-              Support Samaj
+              <FiHeart size={12} />
+              <span>Donate</span>
             </Link>
 
-            {/* LOGGED IN / LOGGED OUT */}
+            {/* Desktop Only: Logged-in Avatar & Notifications */}
             {token ? (
-              <div className="group relative hidden md:block">
-                <button
-                  type="button"
-                  className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 p-1.5 transition-all hover:bg-white/10"
+              <div
+                style={{ display: "none", alignItems: "center", gap: 6 }}
+                className="desktop-auth-actions"
+              >
+                {/* Notifications Bell */}
+                <Link
+                  to="/notifications"
+                  title="Notifications"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    border: "1px solid var(--line-strong)",
+                    background: "var(--surface-raised)",
+                    color: "var(--text-soft)",
+                    textDecoration: "none",
+                    transition: "all 200ms ease",
+                    flexShrink: 0,
+                  }}
                 >
-                  <img
-                    src={user?.imageUrl || "https://api.dicebear.com/7.x/initials/svg?seed=User"}
-                    alt="Profile"
-                    className="h-9 w-9 rounded-lg border border-emerald-400/50 object-cover"
-                  />
-                  <div className="hidden max-w-[110px] flex-col items-start xl:flex">
-                    <span className="w-full truncate text-xs font-bold text-white">
-                      {user?.firstName} {user?.lastName}
-                    </span>
-                    <span className="text-[9px] uppercase tracking-wider text-emerald-400">
-                      Member
-                    </span>
-                  </div>
-                  <FiChevronDown size={14} className="mr-1 text-white/50" />
-                </button>
+                  <FiBell size={15} />
+                </Link>
 
-                {/* Profile Dropdown */}
-                <div className="invisible absolute right-0 top-[calc(100%+10px)] w-60 translate-y-2 rounded-2xl border border-white/10 bg-[#080808]/95 p-2 opacity-0 shadow-2xl backdrop-blur-2xl transition-all duration-200 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
-                  <div className="mb-1 border-b border-white/10 px-4 py-3">
-                    <p className="text-sm font-bold text-white">
-                      {user?.firstName} {user?.lastName}
-                    </p>
-                    <p className="mt-1 truncate text-[10px] text-white/40">
-                      {user?.email}
-                    </p>
-                  </div>
-
-                  <Link
-                    to="/dashboard/my-profile"
-                    className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-white/70 transition-all hover:bg-white/5 hover:text-white"
+                {/* Profile Avatar & Dropdown */}
+                <div style={{ position: "relative" }} ref={profileDropdownRef}>
+                  <button
+                    type="button"
+                    onClick={() => setIsProfileOpen((prev) => !prev)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      borderRadius: 10,
+                      border: "1px solid var(--line-strong)",
+                      background: "var(--surface-raised)",
+                      padding: "3px 6px 3px 3px",
+                      cursor: "pointer",
+                      transition: "all 200ms ease",
+                    }}
                   >
-                    <FiUser size={16} /> My Profile
-                  </Link>
+                    <img
+                      src={user?.imageUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${user?.firstName || "Member"}`}
+                      alt="Profile"
+                      style={{ height: 28, width: 28, borderRadius: 8, border: "1px solid rgba(16,185,129,0.3)", objectFit: "cover" }}
+                    />
+                    <FiChevronDown
+                      size={11}
+                      style={{
+                        color: "var(--text-muted)",
+                        transition: "transform 200ms ease",
+                        transform: isProfileOpen ? "rotate(180deg)" : "rotate(0deg)",
+                      }}
+                    />
+                  </button>
 
-                  <Link
-                    to="/dashboard/my-family"
-                    className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-white/70 transition-all hover:bg-white/5 hover:text-white"
-                  >
-                    <FiUsers size={16} /> My Family
-                  </Link>
-
-                  <Link
-                    to="/dashboard/my-id"
-                    className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-white/70 transition-all hover:bg-white/5 hover:text-white"
-                  >
-                    <FiCreditCard size={16} /> Digital ID
-                  </Link>
-
-                  <Link
-                    to="/dashboard/my-events"
-                    className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-white/70 transition-all hover:bg-white/5 hover:text-white"
-                  >
-                    <FiCalendar size={16} /> My Events
-                  </Link>
-
-                  <Link
-                    to="/dashboard/my-donations"
-                    className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-white/70 transition-all hover:bg-white/5 hover:text-white"
-                  >
-                    <FiHeart size={16} /> My Donations
-                  </Link>
-
-                  <Link
-                    to="/dashboard/settings"
-                    className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-white/70 transition-all hover:bg-white/5 hover:text-white"
-                  >
-                    <FiSettings size={16} /> Settings
-                  </Link>
-
-                  <div className="mt-1 border-t border-white/10 pt-1">
-                    <button
-                      type="button"
-                      onClick={handleLogout}
-                      className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm text-red-400 transition-all hover:bg-red-500/10"
+                  {/* Profile Dropdown */}
+                  {isProfileOpen && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        right: 0,
+                        top: "calc(100% + 8px)",
+                        zIndex: 1200,
+                        width: 260,
+                        borderRadius: 16,
+                        border: "1px solid var(--glass-border)",
+                        background: "var(--glass-bg)",
+                        backdropFilter: "var(--glass-backdrop)",
+                        WebkitBackdropFilter: "var(--glass-backdrop)",
+                        padding: 8,
+                        boxShadow: "var(--shadow-modal)",
+                      }}
                     >
-                      <FiLogOut size={16} /> Logout
-                    </button>
-                  </div>
+                      <div style={{ borderBottom: "1px solid var(--line)", padding: "8px 10px 10px", marginBottom: 6 }}>
+                        <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {user?.firstName} {user?.lastName}
+                        </p>
+                        <p style={{ margin: "2px 0 0", fontSize: 10.5, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {user?.email}
+                        </p>
+                      </div>
+
+                      {[
+                        { to: "/dashboard/my-profile", icon: <FiUser size={13} style={{ color: "var(--brand)" }} />, label: "My Profile" },
+                        { to: "/dashboard/directory", icon: <FiUsers size={13} style={{ color: "var(--info)" }} />, label: "Member Directory" },
+                        { to: "/dashboard/family", icon: <FiLayers size={13} style={{ color: "#22d3ee" }} />, label: "Family Hub" },
+                        { to: "/dashboard/community", icon: <FiMessageSquare size={13} style={{ color: "#7dd3fc" }} />, label: "Community Hub" },
+                        { to: "/matrimonial", icon: <FaHeartSolid size={12} style={{ color: "#f472b6" }} />, label: "Matrimonial Portal" },
+                      ].map(({ to, icon, label }) => (
+                        <Link
+                          key={to}
+                          to={to}
+                          onClick={closeMenus}
+                          style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", borderRadius: 8, fontSize: 11.5, fontWeight: 500, color: "var(--text)", textDecoration: "none" }}
+                        >
+                          {icon}
+                          <span>{label}</span>
+                        </Link>
+                      ))}
+
+                      {isAdmin && (
+                        <div style={{ marginTop: 6, borderTop: "1px solid var(--line)", paddingTop: 6 }}>
+                          <p style={{ margin: "0 0 4px", padding: "0 10px", fontSize: 8.5, fontWeight: 900, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--brand)" }}>
+                            Admin Center
+                          </p>
+                          {[
+                            { to: "/dashboard/admin/registrations", icon: <FiShield size={12} style={{ color: "var(--brand)" }} />, label: "Registration Queue" },
+                            { to: "/dashboard/admin/content", icon: <FiImage size={12} style={{ color: "var(--info)" }} />, label: "Content & Notices" },
+                            { to: "/dashboard/admin/community", icon: <FiMessageSquare size={12} style={{ color: "#c084fc" }} />, label: "Community Admin" },
+                            { to: "/dashboard/admin/matrimonial", icon: <FaHeartSolid size={11} style={{ color: "#fb7185" }} />, label: "Matrimonial Admin" },
+                            { to: "/dashboard/admin/opportunities", icon: <FaGraduationCap size={12} style={{ color: "#fbbf24" }} />, label: "Opportunities Admin" },
+                            { to: "/dashboard/admin/finance", icon: <FaRupeeSign size={12} style={{ color: "var(--brand)" }} />, label: "Finance Admin" },
+                          ].map(({ to, icon, label }) => (
+                            <Link
+                              key={to}
+                              to={to}
+                              onClick={closeMenus}
+                              style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 8, fontSize: 11.5, fontWeight: 500, color: "var(--text-soft)", textDecoration: "none" }}
+                            >
+                              {icon}
+                              <span>{label}</span>
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+
+                      <div style={{ marginTop: 6, borderTop: "1px solid var(--line)", paddingTop: 6, display: "flex", flexDirection: "column", gap: 2 }}>
+                        <Link
+                          to="/dashboard/setting"
+                          onClick={closeMenus}
+                          style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", borderRadius: 8, fontSize: 11.5, fontWeight: 500, color: "var(--text-soft)", textDecoration: "none" }}
+                        >
+                          <FiSettings size={13} style={{ color: "var(--text-muted)" }} />
+                          <span>Account Settings</span>
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={handleLogout}
+                          style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", borderRadius: 8, fontSize: 11.5, fontWeight: 600, color: "var(--danger)", background: "transparent", border: "none", cursor: "pointer", textAlign: "left", width: "100%" }}
+                        >
+                          <FiLogOut size={13} />
+                          <span>Logout</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
-              <div className="hidden items-center gap-2 md:flex">
+              /* Desktop Logged-out Auth buttons */
+              <div
+                style={{ display: "none", alignItems: "center", gap: 6 }}
+                className="desktop-auth-actions"
+              >
                 <Link
                   to="/login"
-                  className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white transition-all hover:bg-white/10"
+                  style={{
+                    borderRadius: 10,
+                    border: "1px solid var(--line-strong)",
+                    background: "var(--surface-raised)",
+                    padding: "6px 12px",
+                    fontSize: 10.5,
+                    fontWeight: 700,
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    color: "var(--text)",
+                    textDecoration: "none",
+                    whiteSpace: "nowrap",
+                  }}
                 >
                   Login
                 </Link>
                 <Link
                   to="/signup"
-                  className="rounded-xl bg-white px-4 py-2.5 text-xs font-black uppercase tracking-wider text-black transition-all hover:bg-emerald-400"
+                  style={{
+                    borderRadius: 10,
+                    background: "var(--brand)",
+                    padding: "6px 12px",
+                    fontSize: 10.5,
+                    fontWeight: 800,
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    color: "#fff",
+                    textDecoration: "none",
+                    whiteSpace: "nowrap",
+                  }}
                 >
                   Join Samaj
                 </Link>
               </div>
             )}
 
-            {/* MOBILE MENU TOGGLE BUTTON */}
+            {/* Mobile Hamburger Button */}
             <button
               type="button"
               onClick={() => setIsMenuOpen((prev) => !prev)}
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white/80 transition-all hover:bg-white/10 lg:hidden"
+              style={{
+                display: "none",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 38,
+                height: 38,
+                borderRadius: 10,
+                border: "1px solid var(--line-strong)",
+                background: "var(--surface-raised)",
+                color: "var(--text-soft)",
+                cursor: "pointer",
+                transition: "all 200ms ease",
+                flexShrink: 0,
+              }}
+              className="mobile-hamburger"
+              aria-label="Toggle navigation menu"
             >
-              {isMenuOpen ? <FiX size={20} /> : <FiMenu size={20} />}
+              {isMenuOpen ? <FiX size={18} /> : <FiMenu size={18} />}
             </button>
           </div>
         </div>
       </nav>
 
-      {/* ======================================================
-          MOBILE MENU DRAWER
-      ====================================================== */}
+      {/* ================= MOBILE NAVIGATION DRAWER ================= */}
+      {/* Overlay */}
       <div
-        className={`fixed inset-0 z-[999] bg-black/80 backdrop-blur-md transition-opacity duration-300 lg:hidden ${
-          isMenuOpen
-            ? "pointer-events-auto opacity-100"
-            : "pointer-events-none opacity-0"
-        }`}
         onClick={closeMenus}
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 998,
+          background: "rgba(0,0,0,0.7)",
+          backdropFilter: "blur(6px)",
+          opacity: isMenuOpen ? 1 : 0,
+          pointerEvents: isMenuOpen ? "auto" : "none",
+          transition: "opacity 280ms ease",
+        }}
       />
 
+      {/* Drawer */}
       <div
-        className={`fixed bottom-0 right-0 top-[76px] z-[999] w-[85%] max-w-[360px] overflow-y-auto border-l border-white/10 bg-[#080808] p-5 shadow-2xl transition-transform duration-300 ease-in-out lg:hidden ${
-          isMenuOpen ? "translate-x-0" : "translate-x-full"
-        }`}
+        style={{
+          position: "fixed",
+          bottom: 0,
+          right: 0,
+          top: 64,
+          zIndex: 999,
+          width: "88%",
+          maxWidth: 320,
+          overflowY: "auto",
+          borderLeft: "1px solid var(--line)",
+          background: "var(--surface)",
+          padding: 16,
+          boxShadow: "var(--shadow-modal)",
+          transform: isMenuOpen ? "translateX(0)" : "translateX(100%)",
+          transition: "transform 300ms cubic-bezier(0.4, 0, 0.2, 1)",
+          boxSizing: "border-box",
+        }}
       >
-        {/* User Card (If logged in) */}
-        {token && user && (
-          <div className="mb-6 rounded-2xl border border-white/10 bg-white/5 p-4">
-            <div className="flex items-center gap-3">
+        {/* User Card in Mobile Drawer */}
+        {token && user ? (
+          <div style={{ marginBottom: 16, borderRadius: 14, border: "1px solid var(--line)", background: "var(--surface-raised)", padding: "10px 12px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <img
-                src={user?.imageUrl || "https://api.dicebear.com/7.x/initials/svg?seed=User"}
+                src={user?.imageUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${user?.firstName || "Member"}`}
                 alt="Profile"
-                className="h-11 w-11 rounded-xl border border-emerald-400/50 object-cover"
+                style={{ height: 40, width: 40, borderRadius: 10, border: "1px solid rgba(16,185,129,0.3)", objectFit: "cover", flexShrink: 0 }}
               />
-              <div className="flex flex-col">
-                <span className="text-sm font-bold text-white">
+              <div style={{ overflow: "hidden" }}>
+                <span style={{ display: "block", fontSize: 13, fontWeight: 700, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {user?.firstName} {user?.lastName}
                 </span>
-                <span className="text-xs text-white/50">{user?.email}</span>
+                <span style={{ display: "block", fontSize: 10.5, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {user?.email}
+                </span>
               </div>
             </div>
           </div>
-        )}
+        ) : null}
 
-        {/* Navigation Items */}
-        <div className="flex flex-col gap-2">
+        {/* Nav Items */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
           {navigationItems.map((item) => {
             const Icon = item.icon;
 
             if (item.type === "link") {
+              const active = isRouteActive(item.path);
               return (
                 <Link
                   key={item.title}
                   to={item.path}
                   onClick={closeMenus}
-                  className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all ${
-                    isRouteActive(item.path)
-                      ? "bg-emerald-500/10 text-emerald-400"
-                      : "text-white/80 hover:bg-white/5 hover:text-white"
-                  }`}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    borderRadius: 10,
+                    padding: "10px 12px",
+                    fontSize: 12.5,
+                    fontWeight: active ? 700 : 500,
+                    background: active ? "var(--brand-glow)" : "transparent",
+                    color: active ? "var(--brand)" : "var(--text-soft)",
+                    textDecoration: "none",
+                    transition: "all 160ms ease",
+                  }}
                 >
-                  <Icon size={18} />
-                  {item.title}
+                  <Icon size={16} />
+                  <span>{item.title}</span>
                 </Link>
               );
             }
@@ -782,33 +779,49 @@ const NavBar = () => {
             const isExpanded = openMobileSection === item.title;
 
             return (
-              <div key={item.title} className="flex flex-col">
+              <div key={item.title}>
                 <button
                   type="button"
                   onClick={() => toggleMobileSection(item.title)}
-                  className="flex items-center justify-between rounded-xl px-4 py-3 text-sm font-medium text-white/80 transition-all hover:bg-white/5 hover:text-white"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    width: "100%",
+                    borderRadius: 10,
+                    padding: "10px 12px",
+                    fontSize: 12.5,
+                    fontWeight: 500,
+                    background: "transparent",
+                    color: "var(--text-soft)",
+                    border: "none",
+                    cursor: "pointer",
+                    transition: "all 160ms ease",
+                    textAlign: "left",
+                  }}
                 >
-                  <div className="flex items-center gap-3">
-                    <Icon size={18} />
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <Icon size={16} />
                     <span>{item.title}</span>
                   </div>
                   <FiChevronDown
-                    size={16}
-                    className={`transition-transform duration-200 ${
-                      isExpanded ? "rotate-180" : ""
-                    }`}
+                    size={14}
+                    style={{
+                      transition: "transform 200ms ease",
+                      transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)",
+                      color: "var(--text-faint)",
+                    }}
                   />
                 </button>
 
-                {/* Sub items Accordion */}
                 {isExpanded && (
-                  <div className="ml-6 mt-1 flex flex-col border-l border-white/10 pl-3">
+                  <div style={{ marginLeft: 16, paddingLeft: 12, borderLeft: "1px solid var(--line)", display: "flex", flexDirection: "column", gap: 2, marginBottom: 4 }}>
                     {item.items.map((subItem) => (
                       <Link
                         key={subItem.path}
                         to={subItem.path}
                         onClick={closeMenus}
-                        className="rounded-lg px-3 py-2 text-xs font-medium text-white/60 transition-all hover:text-emerald-400"
+                        style={{ display: "block", borderRadius: 8, padding: "7px 10px", fontSize: 11.5, fontWeight: 500, color: "var(--text-muted)", textDecoration: "none" }}
                       >
                         {subItem.title}
                       </Link>
@@ -820,29 +833,49 @@ const NavBar = () => {
           })}
         </div>
 
-        {/* Mobile Auth / Logout Actions */}
-        <div className="mt-8 border-t border-white/10 pt-5">
+        {/* Mobile Bottom Actions */}
+        <div style={{ marginTop: 20, borderTop: "1px solid var(--line)", paddingTop: 16, display: "flex", flexDirection: "column", gap: 8 }}>
+          <Link
+            to="/donate"
+            onClick={closeMenus}
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, borderRadius: 12, background: "linear-gradient(135deg, var(--brand), var(--brand-deep))", padding: "10px 0", fontSize: 11, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: "#fff", textDecoration: "none", boxShadow: "0 4px 16px var(--brand-shadow)" }}
+          >
+            <FiHeart size={13} />
+            <span>Donate & Support</span>
+          </Link>
+
           {token ? (
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-500/10 py-3 text-sm font-bold text-red-400 transition-all hover:bg-red-500/20"
-            >
-              <FiLogOut size={16} /> Logout
-            </button>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <Link
+                to="/dashboard/my-profile"
+                onClick={closeMenus}
+                style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, borderRadius: 10, border: "1px solid var(--line-strong)", background: "var(--surface-raised)", padding: "9px 0", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text)", textDecoration: "none" }}
+              >
+                <FiGrid size={13} />
+                Dashboard
+              </Link>
+              <button
+                type="button"
+                onClick={handleLogout}
+                style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, borderRadius: 10, background: "var(--danger-soft)", padding: "9px 0", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--danger)", border: "none", cursor: "pointer" }}
+              >
+                <FiLogOut size={13} />
+                Logout
+              </button>
+            </div>
           ) : (
-            <div className="flex flex-col gap-3">
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <Link
                 to="/login"
                 onClick={closeMenus}
-                className="flex w-full items-center justify-center rounded-xl border border-white/10 bg-white/5 py-3 text-xs font-bold uppercase tracking-wider text-white"
+                style={{ display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 10, border: "1px solid var(--line-strong)", background: "var(--surface-raised)", padding: "9px 0", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text)", textDecoration: "none" }}
               >
                 Login
               </Link>
               <Link
                 to="/signup"
                 onClick={closeMenus}
-                className="flex w-full items-center justify-center rounded-xl bg-emerald-500 py-3 text-xs font-black uppercase tracking-wider text-black"
+                style={{ display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 10, background: "var(--brand)", padding: "9px 0", fontSize: 11, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "#fff", textDecoration: "none" }}
               >
                 Join Samaj
               </Link>
@@ -850,6 +883,25 @@ const NavBar = () => {
           )}
         </div>
       </div>
+
+      {/* Responsive Styles */}
+      <style>{`
+        @media (min-width: 960px) {
+          .desktop-nav { display: flex !important; }
+          .desktop-auth-actions { display: flex !important; }
+          .mobile-hamburger { display: none !important; }
+        }
+        @media (max-width: 959px) {
+          .desktop-nav { display: none !important; }
+          .desktop-auth-actions { display: none !important; }
+          .mobile-hamburger { display: flex !important; }
+        }
+        @media (max-width: 360px) {
+          .logo-subtitle { display: none !important; }
+          .navbar-donate-btn span { display: none !important; }
+          .navbar-donate-btn { padding: 6px !important; }
+        }
+      `}</style>
     </>
   );
 };

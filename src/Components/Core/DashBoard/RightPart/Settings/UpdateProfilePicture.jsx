@@ -1,8 +1,6 @@
-
-
 import React, { useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { FiUpload } from "react-icons/fi";
+import { FiUpload, FiImage } from "react-icons/fi";
 import { updateDisplayPicture } from "../../../../../services/Operations/DashBoard";
 
 const UpdateProfilePicture = () => {
@@ -34,36 +32,44 @@ const UpdateProfilePicture = () => {
   };
 
   return (
-    <div className="bg-white/[0.02] border border-white/10 p-6 md:p-8 rounded-[1.5rem] md:rounded-[2.5rem] backdrop-blur-xl flex flex-col md:flex-row items-center gap-6 md:gap-8 shadow-2xl transition-all hover:bg-white/[0.04]">
+    <div className="ka-card p-6 md:p-8 flex flex-col md:flex-row items-center gap-6 md:gap-8">
       <div className="relative">
         {loading && (
-          <div className="absolute -inset-1 rounded-full bg-gradient-to-tr from-emerald-500 to-blue-500 animate-spin blur-[2px]"></div>
+          <div className="absolute -inset-1 rounded-3xl bg-[var(--accent-primary)]/40 animate-pulse blur-[2px]"></div>
         )}
         <img
-          src={previewSource || user?.imageUrl}
-          className="relative w-24 h-24 rounded-full object-cover border-2 border-white/10 shadow-lg"
+          src={previewSource || user?.imageUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${user?.firstName || "Member"}`}
+          className="relative w-24 h-24 rounded-3xl object-cover border-2 border-[var(--accent-primary)]/30 shadow-md"
           alt="Profile"
         />
       </div>
 
       <div className="flex flex-col items-center md:items-start gap-4 w-full">
-        <p className="text-xs md:text-sm font-bold uppercase tracking-[0.2em] text-gray-400">Profile Media Node</p>
+        <div>
+          <div className="eyebrow-badge mb-1">
+            <FiImage size={12} />
+            <span>Profile Media</span>
+          </div>
+          <p className="text-xs text-[var(--text-secondary)] font-normal">Upload a clear photo to represent your profile across the portal</p>
+        </div>
         
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:flex gap-3 md:gap-4 w-full md:w-auto">
-          <input type="file" ref={fileInputRef} onChange={changeHandler} className="hidden" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:flex gap-3 w-full md:w-auto">
+          <input type="file" ref={fileInputRef} onChange={changeHandler} className="hidden" accept="image/*" />
           <button 
+            type="button"
             onClick={() => fileInputRef.current.click()}
-            className="px-4 md:px-6 py-3 md:py-2.5 bg-white/5 border border-white/10 rounded-xl text-[10px] md:text-xs font-bold uppercase tracking-widest hover:bg-white/10 transition-all text-white"
+            className="btn-secondary !py-2.5 !px-5 !text-xs cursor-pointer"
           >
             Select Image
           </button>
           <button 
+            type="button"
             onClick={handleFileUpload}
-            disabled={!imageFile}
-            className="flex items-center justify-center gap-2 px-4 md:px-6 py-3 md:py-2.5 bg-white text-black rounded-xl text-[10px] md:text-xs font-bold uppercase tracking-widest hover:bg-gray-200 disabled:opacity-30 transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)]"
+            disabled={!imageFile || loading}
+            className="btn-primary !py-2.5 !px-5 !text-xs cursor-pointer disabled:opacity-40"
           >
-            <FiUpload /> {loading ? "Uploading..." : "Sync Changes"}
+            <FiUpload size={14} />
+            <span>{loading ? "Uploading..." : "Save Image"}</span>
           </button>
         </div>
       </div>
@@ -71,4 +77,4 @@ const UpdateProfilePicture = () => {
   );
 };
 
-export default UpdateProfilePicture;
+export default UpdateProfilePicture;

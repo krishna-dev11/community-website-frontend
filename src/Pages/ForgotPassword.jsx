@@ -15,48 +15,51 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="relative min-h-screen w-full bg-[#000] flex justify-center items-center font-sans overflow-hidden">
+    <div className="relative min-h-screen w-full bg-[var(--bg)] text-[var(--text-primary)] flex justify-center items-center px-4 py-16 transition-colors duration-300 overflow-hidden">
       <div className="absolute top-[10%] left-[-5%] select-none pointer-events-none opacity-[0.02] z-0">
-        <h1 className="text-[18rem] font-bold uppercase tracking-widest">Restore</h1>
+        <h1 className="text-[18rem] font-bold uppercase tracking-widest text-[var(--text-primary)]">Restore</h1>
       </div>
 
-      <div className="relative z-10 w-full max-w-lg bg-white/[0.02] border border-white/10 p-12 rounded-[3rem] backdrop-blur-3xl shadow-3xl flex flex-col gap-10">
+      <div className="relative z-10 w-full max-w-lg ka-card p-8 sm:p-12 shadow-2xl flex flex-col gap-8">
         <div className="flex flex-col gap-3">
-          <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 text-emerald-400 mb-2">
-            <FiZap />
+          <div className="w-12 h-12 rounded-2xl bg-[var(--accent-primary)]/10 flex items-center justify-center border border-[var(--accent-primary)]/20 text-[var(--accent-primary)] mb-1">
+            <FiZap size={22} />
           </div>
-          <h2 className="text-4xl font-bold tracking-tighter text-white">Access Recovery</h2>
-          <p className="text-gray-500 text-sm leading-relaxed font-light">
-            Initialize the security handshake. We will transmit a restoration link to your registered communication node.
+          <div className="eyebrow-badge mb-1">Access Recovery</div>
+          <h2 className="text-3xl font-black tracking-tight text-[var(--text-primary)]">Password Recovery</h2>
+          <p className="text-[var(--text-secondary)] text-sm leading-relaxed font-normal">
+            Enter your registered email address and we will transmit a password reset link to your account.
           </p>
         </div>
 
-        <form onSubmit={SubmitHandler} className="flex flex-col gap-8">
+        <form onSubmit={SubmitHandler} className="flex flex-col gap-6">
           <label>
-            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-600 mb-2 block ml-1">Email Node Address</span>
-            <div className="relative group">
-              <FiMail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-700 group-focus-within:text-emerald-400 transition-colors" />
+            <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--text-muted)] mb-2 block">Registered Email</span>
+            <div className="relative">
+              <FiMail className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" size={16} />
               <input
-                required type="email" name="Email"
-                placeholder="node@academy.com"
+                required
+                type="email"
+                name="Email"
+                placeholder="you@example.com"
                 value={formData.Email}
-                onChange={(e) => setFormData({Email: e.target.value})}
-                className="w-full bg-white/[0.03] border border-white/5 rounded-2xl pl-12 pr-5 py-4 text-white text-sm focus:border-emerald-500/30 outline-none transition-all placeholder-gray-800 shadow-inner"
+                onChange={(e) => setFormData({ Email: e.target.value })}
+                className="ka-input pl-11"
               />
             </div>
           </label>
 
-          <button type="submit" className="w-full py-5 bg-white text-black font-bold rounded-2xl uppercase tracking-widest text-[10px] shadow-[0_0_40px_rgba(255,255,255,0.1)] hover:bg-gray-200 transition-all active:scale-95">
-            Transmit Restoration Link
+          <button type="submit" className="btn-primary w-full text-sm">
+            <span>Send Reset Link</span>
           </button>
         </form>
 
-        <Link to="/" className="flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-500 hover:text-white transition-all">
-          <FiArrowLeft /> Back to Login Terminal
+        <Link to="/login" className="flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
+          <FiArrowLeft size={14} /> Back to Login
         </Link>
       </div>
     </div>
   );
 };
 
-export default ForgotPassword;
+export default ForgotPassword;

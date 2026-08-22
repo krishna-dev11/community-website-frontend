@@ -14,34 +14,35 @@ const DeleteAccount = () => {
 
   return (
     <>
-      <div className="bg-red-500/[0.03] border border-red-500/10 p-10 rounded-[2.5rem] flex items-start gap-8 transition-all hover:bg-red-500/[0.05]">
-        <div className="w-14 h-14 rounded-2xl bg-red-500/10 flex items-center justify-center border border-red-500/20 text-red-500 shadow-[0_0_30px_rgba(239,68,68,0.1)]">
-          <RiDeleteBin7Line size={24} />
+      <div className="ka-card p-6 md:p-8 border-red-500/20 bg-red-500/[0.02] flex flex-col sm:flex-row items-start gap-6">
+        <div className="w-12 h-12 rounded-2xl bg-red-500/10 flex items-center justify-center border border-red-500/20 text-red-500 shrink-0 shadow-sm">
+          <RiDeleteBin7Line size={22} />
         </div>
         
-        <div className="flex flex-col gap-4">
-          <h3 className="text-xl font-bold text-red-500 tracking-tight">Danger Zone: Termination</h3>
-          <p className="text-gray-400 text-sm leading-relaxed max-w-2xl">
-            Terminating your account is irreversible. All enrolled English Academy batches, career progress, and certifications will be permanently erased.
+        <div className="flex flex-col gap-3">
+          <h3 className="text-lg font-bold text-red-500 tracking-tight">Danger Zone: Account Deletion</h3>
+          <p className="text-[var(--text-secondary)] text-xs sm:text-sm leading-relaxed max-w-2xl font-normal">
+            Terminating your account is irreversible. All linked profiles, community history, and applications will be permanently erased.
           </p>
           <button 
+            type="button"
             onClick={() => setModal({
               heading: "Initiate Termination?",
-              text1: "You are about to permanently delete your academy profile.",
-              button1Text: "Delete",
+              text1: "You are about to permanently delete your account profile.",
+              button1Text: "Delete Account",
               button2Text: "Cancel",
-              btn1Onclick: () => dispatch(DeleteAccountPermanentaly(token, user.id, navigate)),
-              btn2Onclick: () => setModal(null)
+              button1Handler: () => dispatch(DeleteAccountPermanentaly(token, user?._id || user?.id, navigate)),
+              button2Handler: () => setModal(null)
             })}
-            className="text-red-400 text-[10px] font-bold uppercase tracking-[0.3em] hover:text-red-500 transition-all w-fit mt-2 border-b border-red-400/20 pb-1"
+            className="text-red-400 hover:text-red-300 text-xs font-bold uppercase tracking-wider transition-colors w-fit mt-1 underline cursor-pointer"
           >
             I understand, delete my account
           </button>
         </div>
       </div>
-      {modal && <ConfirmationModal data={modal} />}
+      {modal && <ConfirmationModal modalData={modal} />}
     </>
   );
 };
 
-export default DeleteAccount;
+export default DeleteAccount;

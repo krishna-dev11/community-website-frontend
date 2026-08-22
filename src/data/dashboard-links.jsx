@@ -36,16 +36,39 @@ export const sidebarLinks = [
         path: "/dashboard/admin/registrations",
         icon: "FaUserCheck",
       },
+      {
+        name: "Audit Logs",
+        path: "/dashboard/admin/audit-logs",
+        icon: "FaShieldAlt",
+      },
     ],
   },
   {
     section: "OPERATIONS",
-    roles: [SAMAJ_ROLES.SUPER_ADMIN, "Admin", SAMAJ_ROLES.MODERATOR, SAMAJ_ROLES.DHARAMSHALA_ADMIN],
+    roles: [
+      SAMAJ_ROLES.SUPER_ADMIN,
+      "Admin",
+      SAMAJ_ROLES.MODERATOR,
+      SAMAJ_ROLES.DHARAMSHALA_ADMIN,
+      SAMAJ_ROLES.MATRIMONIAL_ADMIN,
+      SAMAJ_ROLES.SCHOLARSHIP_ADMIN,
+      SAMAJ_ROLES.JOB_ADMIN,
+    ],
     links: [
       {
         name: "Community Admin",
         path: "/dashboard/admin/community",
         icon: "FaShieldAlt",
+      },
+      {
+        name: "Matrimonial Admin",
+        path: "/dashboard/admin/matrimonial",
+        icon: "FaHeart",
+      },
+      {
+        name: "Opportunity Admin",
+        path: "/dashboard/admin/opportunities",
+        icon: "FaGraduationCap",
       },
     ],
   },

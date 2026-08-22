@@ -36,27 +36,29 @@ const Grey_whiteBox = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {academyFeatures.map((item) => (
           item.id === 1 ? (
-            <div className="lg:col-span-2 flex flex-col justify-center p-8" key={item.id}>
-              <h3 className="text-white text-4xl md:text-5xl font-bold mb-6 tracking-tight">
+            <div className="lg:col-span-2 flex flex-col justify-center p-6 md:p-8" key={item.id}>
+              <h3 className="text-[var(--text-primary)] text-3xl sm:text-4xl md:text-5xl font-extrabold mb-6 tracking-tight">
                 {item.heading1} <br/>
-                <Hieghlightedtext data={item.heading2} color="bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent" />
+                <Hieghlightedtext data={item.heading2} color="text-gradient" />
               </h3>
-              <p className="text-gray-400 text-base leading-relaxed mb-10 max-w-md">{item.description}</p>
+              <p className="text-[var(--text-secondary)] text-base leading-relaxed mb-8 max-w-md font-normal">{item.description}</p>
               <Link to={item.link}>
-                <button className="bg-white text-black font-bold py-4 px-10 rounded-2xl hover:bg-gray-200 transition-all w-fit text-xs uppercase tracking-[0.2em] shadow-[0_0_40px_rgba(255,255,255,0.1)]">
+                <button className="btn-primary">
                   {item.btnText}
                 </button>
               </Link>
             </div>
           ) : (
-            <div key={item.id} className="p-10 rounded-[2.5rem] border border-white/5 bg-white/[0.02] backdrop-blur-xl hover:bg-white/[0.06] transition-all group">
-              <div className="mb-8">
-                <p className="text-white text-xl font-bold tracking-tight">{item.heading1}</p>
-                <p className="text-emerald-400 text-xl font-bold tracking-tight">{item.heading2}</p>
+            <div key={item.id} className="ka-card p-8 rounded-[2.2rem] flex flex-col justify-between group">
+              <div>
+                <div className="mb-6">
+                  <p className="text-[var(--text-primary)] text-lg sm:text-xl font-bold tracking-tight">{item.heading1}</p>
+                  <p className="text-[var(--accent-primary)] text-lg sm:text-xl font-bold tracking-tight">{item.heading2}</p>
+                </div>
+                <p className="text-[var(--text-secondary)] text-sm leading-relaxed group-hover:text-[var(--text-primary)] transition-colors">
+                  {item.description}
+                </p>
               </div>
-              <p className="text-gray-500 text-sm leading-relaxed group-hover:text-gray-300 transition-colors">
-                {item.description}
-              </p>
             </div>
           )
         ))}
@@ -65,4 +67,4 @@ const Grey_whiteBox = () => {
   )
 }
 
-export default Grey_whiteBox
+export default Grey_whiteBox

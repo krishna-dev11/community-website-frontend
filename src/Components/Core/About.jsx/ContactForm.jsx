@@ -33,26 +33,24 @@ const ContactForm = ({heading , description }) => {
     } , [reset , isSubmitSuccessful])
 
     const ActionTaken = ()=>{
-
         toast.success("We Are Connected to You ")
-
     }
 
   return (
-    <form onSubmit={handleSubmit(ActionTaken)} className=' w-full max-w-[600px] bg-white/[0.02] backdrop-blur-2xl border border-white/10 p-8 md:p-12 rounded-[2rem] shadow-2xl relative overflow-hidden'>
+    <form onSubmit={handleSubmit(ActionTaken)} className='w-full max-w-[600px] ka-card p-8 md:p-12 shadow-2xl relative overflow-hidden'>
 
-         <div className=' flex flex-col '>
+         <div className='flex flex-col gap-4'>
 
-           <div className=' flex flex-col text-center'>
-           <p className="text-richblack-5 text-[1.5rem] md:text-[1.7rem] font-semibold font-inter leading-[2.5rem] md:leading-[2.75rem]">{heading}</p>
-           <p className=" text-richblack-300 font-inter text-[.8rem] ">{description}</p>
+           <div className='flex flex-col text-center mb-4'>
+             <h3 className="text-2xl sm:text-3xl font-extrabold text-[var(--text-primary)] mb-2">{heading}</h3>
+             <p className="text-xs sm:text-sm text-[var(--text-secondary)]">{description}</p>
            </div>
 
-         <div className=' flex gap-x-3  justify-between mt-8'>
+         <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
 
-<label>
-<p className="mb-1 text-[0.875rem] leading-[1.375rem] text-richblack-5">First Name<sup className="text-pink-200">*</sup></p>
-<input
+<label className="flex flex-col">
+  <span className="mb-1 text-xs font-semibold text-[var(--text-primary)]">First Name <span className="text-[var(--accent-primary)]">*</span></span>
+  <input
        type='text'
        placeholder='Enter First Name'
        name='FirstName'
@@ -62,16 +60,12 @@ const ContactForm = ({heading , description }) => {
                 message:"Please Enter Your First Name"
             }
        })}
-        className='w-full rounded-[0.5rem] bg-white/[0.02] backdrop-blur-2xl border border-white/10  p-[10px] placeholder-gray-500 text-richblack-5'
-        style={{
-           boxShadow: "inset 0px -1px 0px rgba(255, 255, 255, 0.18)",
-              }}
+       className='ka-input'
     />
-    
 </label>
 
-<label>
-    <p className="mb-1 text-[0.875rem] leading-[1.375rem] text-richblack-5">Last Name<sup className="text-pink-200">*</sup></p>
+<label className="flex flex-col">
+    <span className="mb-1 text-xs font-semibold text-[var(--text-primary)]">Last Name <span className="text-[var(--accent-primary)]">*</span></span>
     <input
        type='text'
        placeholder='Enter Last Name'
@@ -82,18 +76,14 @@ const ContactForm = ({heading , description }) => {
                 message:"Please Enter Your Last Name "
             }
        })}
-       className='w-full rounded-[0.5rem] bg-white/[0.02] backdrop-blur-2xl border border-white/10  p-[10px] placeholder-gray-500 text-richblack-5'
-        style={{
-           boxShadow: "inset 0px -1px 0px rgba(255, 255, 255, 0.18)",
-              }}
+       className='ka-input'
     />
-    
 </label>
 
 </div>
 
-<label>
-       <p className="mb-1 text-[0.875rem] leading-[1.375rem] text-richblack-5">Email Address<sup className="text-pink-200">*</sup></p>            
+<label className="flex flex-col">
+       <span className="mb-1 text-xs font-semibold text-[var(--text-primary)]">Email Address <span className="text-[var(--accent-primary)]">*</span></span>            
        <input
        type='email'
        placeholder='Enter Email Address'
@@ -101,20 +91,16 @@ const ContactForm = ({heading , description }) => {
        {...register('EmaiAddress' , {
             required:{
                 value:true,
-                message:"Please Enter Your LEmail Address "
+                message:"Please Enter Your Email Address "
             }
        })}
-       className='w-full rounded-[0.5rem] bg-white/[0.02] backdrop-blur-2xl border border-white/10  p-[10px] placeholder-gray-500 text-richblack-5'
-        style={{
-           boxShadow: "inset 0px -1px 0px rgba(255, 255, 255, 0.18)",
-              }}
+       className='ka-input'
     />
-    
 </label>
 
-<label>
-     <p className="mb-1 text-[0.875rem] leading-[1.375rem] text-richblack-5">Phone Number<sup className="text-pink-200">*</sup></p>
-     <div className=' flex gap-x-3'>
+<label className="flex flex-col">
+     <span className="mb-1 text-xs font-semibold text-[var(--text-primary)]">Phone Number <span className="text-[var(--accent-primary)]">*</span></span>
+     <div className='flex gap-3'>
       <select 
            name='CountryCode'
            {...register('CountryCode' , {
@@ -123,20 +109,18 @@ const ContactForm = ({heading , description }) => {
                 message:"Please Provide a country Code"
                }
            })}
-           className=' w-[19%] rounded-[0.5rem] bg-white/[0.02] backdrop-blur-2xl border border-white/10  p-[10px] placeholder-gray-500 text-richblack-5'
-        style={{
-           boxShadow: "inset 0px -1px 0px rgba(255, 255, 255, 0.18)",
-              }}>
+           className='w-[35%] sm:w-[28%] ka-input'
+      >
         {
            countryCodes.map((Country , index)=>(
-            <option key={index} className='text-black '>{Country.code} - {Country.country} </option>
+            <option key={index} value={Country.code} className='bg-[var(--surface)] text-[var(--text-primary)]'>{Country.code} ({Country.country})</option>
            ))
         }
       </select>
       <input 
         type='tel'
         name='ContactNumber'
-        placeholder='Please Enter Your Contact Number'
+        placeholder='Contact Number'
         {...register('ContactNumber' , {
             required:{
                 value:true,
@@ -144,50 +128,40 @@ const ContactForm = ({heading , description }) => {
             },
             maxLength:{
                 value:10,
-                message:"Contact Numbe of 10 Digits"
+                message:"Contact Number of 10 Digits"
             },
             minLength:{
                 value:10,
-                message:"Contact Numbe of 10 Digits"
+                message:"Contact Number of 10 Digits"
             }
         })}
-        className=' w-[80%] rounded-[0.5rem] bg-white/[0.02] backdrop-blur-2xl border border-white/10  p-[10px] placeholder-gray-500 text-richblack-5'
-        style={{
-           boxShadow: "inset 0px -1px 0px rgba(255, 255, 255, 0.18)",
-              }}
+        className='flex-1 ka-input'
       />
      </div>
-    
 </label>
 
-<label>
-    <p className="mb-1 text-[0.875rem] leading-[1.375rem] text-richblack-5">Message<sup className="text-pink-200">*</sup></p>
+<label className="flex flex-col">
+    <span className="mb-1 text-xs font-semibold text-[var(--text-primary)]">Message <span className="text-[var(--accent-primary)]">*</span></span>
     <textarea
         name='message'
         cols={20}
-        rows={7}
-        placeholder='All Educators are Wonderful'
+        rows={4}
+        placeholder='How can we help you?'
         {...register('message'  , {
             required : {
                 value: true,
-                message : "Please Provide message to Our"
+                message : "Please Provide message"
             }
         })}
-        className=' w-full rounded-[0.5rem] bg-white/[0.02] backdrop-blur-2xl border border-white/10 p-[10px] placeholder-gray-500 text-richblack-5'
-        style={{
-           boxShadow: "inset 0px -1px 0px rgba(255, 255, 255, 0.18)",
-              }}
+        className='ka-input resize-none'
     />
-    {
-        
-    }
 </label>
 
 <button
-type="submit"
-className="mt-6 w-full rounded-[8px] bg-yellow-50 py-[8px] px-[12px] font-medium text-richblack-900"
- >
-   Create Account
+  type="submit"
+  className="btn-primary mt-4 w-full"
+>
+   Submit Message
 </button>
 
          </div>

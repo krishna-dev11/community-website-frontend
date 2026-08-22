@@ -173,34 +173,34 @@ const DonatePage = () => {
     : 0;
 
   return (
-    <main className="min-h-screen bg-[#071412] px-4 pb-16 pt-28 text-white sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-[var(--bg)] px-4 pb-16 pt-28 text-[var(--text-primary)] sm:px-6 lg:px-8 transition-colors duration-300">
       <section className="mx-auto grid w-full max-w-7xl gap-8 lg:grid-cols-[minmax(0,1fr)_420px]">
         <div>
-          <div className="mb-8 border-b border-white/10 pb-8">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-emerald-200">
-              <FiHeart size={15} />
-              Support Samaj
+          <div className="mb-8 border-b border-[var(--border-subtle)] pb-8">
+            <div className="eyebrow-badge mb-5">
+              <FiHeart size={14} />
+              <span>Support Samaj</span>
             </div>
-            <h1 className="text-4xl font-black leading-tight tracking-normal text-white sm:text-5xl">
-              Donate to Community Campaigns
+            <h1 className="heading-hero text-[var(--text-primary)] mb-3">
+              Donate to <span className="text-gradient">Community Campaigns</span>
             </h1>
-            <p className="mt-4 max-w-3xl text-base leading-7 text-white/65">
+            <p className="mt-4 max-w-3xl text-base leading-7 text-[var(--text-secondary)] font-normal">
               Choose an active campaign, enter an amount, and complete payment through Razorpay. Final success is confirmed only after the secure payment webhook.
             </p>
           </div>
 
-          <div className="mb-5 flex min-w-0 items-center gap-2 rounded-xl border border-white/10 bg-white/5 p-2">
-            <FiSearch className="ml-2 shrink-0 text-white/45" size={18} />
+          <div className="mb-6 flex min-w-0 items-center gap-2 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] p-2">
+            <FiSearch className="ml-2 shrink-0 text-[var(--text-muted)]" size={18} />
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search campaigns"
-              className="min-w-0 flex-1 bg-transparent px-2 py-2 text-sm text-white outline-none placeholder:text-white/35"
+              className="min-w-0 flex-1 bg-transparent px-2 py-2 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] border-none shadow-none focus:ring-0"
             />
           </div>
 
           {error ? (
-            <div className="mb-6 rounded-lg border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+            <div className="mb-6 rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
               {error}
             </div>
           ) : null}
@@ -208,11 +208,11 @@ const DonatePage = () => {
           {loading ? (
             <div className="grid gap-4 md:grid-cols-2">
               {Array.from({ length: 4 }).map((_, index) => (
-                <div key={index} className="h-64 animate-pulse rounded-lg border border-white/10 bg-white/5" />
+                <div key={index} className="h-64 animate-pulse rounded-3xl border border-[var(--border-subtle)] bg-[var(--surface)]" />
               ))}
             </div>
           ) : campaigns.length === 0 ? (
-            <div className="rounded-lg border border-white/10 bg-white/5 px-6 py-12 text-center text-white/60">
+            <div className="ka-card p-12 text-center text-[var(--text-muted)]">
               No active donation campaigns are available right now.
             </div>
           ) : (
@@ -228,32 +228,32 @@ const DonatePage = () => {
                     key={campaign._id}
                     type="button"
                     onClick={() => setSelectedCampaign(campaign._id)}
-                    className={`overflow-hidden rounded-lg border p-0 text-left transition ${
+                    className={`ka-card p-0 text-left transition cursor-pointer ${
                       isSelected
-                        ? "border-emerald-400/70 bg-emerald-500/10"
-                        : "border-white/10 bg-white/[0.04] hover:border-white/25"
+                        ? "!border-[var(--accent-primary)] shadow-lg"
+                        : "hover:border-[var(--accent-primary)]/40"
                     }`}
                   >
                     {campaign.coverImage?.url ? (
-                      <div className="aspect-[16/8] bg-white/5">
-                        <img src={campaign.coverImage.url} alt={campaign.title} className="h-full w-full object-cover" />
+                      <div className="aspect-[16/8] bg-[var(--surface-elevated)] overflow-hidden">
+                        <img src={campaign.coverImage.url} alt={campaign.title} className="h-full w-full object-cover transition-transform duration-500 hover:scale-105" />
                       </div>
                     ) : null}
-                    <div className="p-5">
-                      <div className="mb-3 flex items-center justify-between gap-3 text-xs text-white/45">
+                    <div className="p-6">
+                      <div className="mb-3 flex items-center justify-between gap-3 text-xs text-[var(--text-muted)]">
                         <span>{formatDate(campaign.endDate)}</span>
-                        {isSelected ? <FiCheckCircle className="text-emerald-300" size={18} /> : null}
+                        {isSelected ? <FiCheckCircle className="text-[var(--accent-primary)]" size={18} /> : null}
                       </div>
-                      <h2 className="text-xl font-bold leading-snug tracking-normal text-white">{campaign.title}</h2>
-                      <p className="mt-3 line-clamp-3 text-sm leading-6 text-white/60">{campaign.description}</p>
+                      <h2 className="text-xl font-bold leading-snug tracking-tight text-[var(--text-primary)]">{campaign.title}</h2>
+                      <p className="mt-2 line-clamp-3 text-xs sm:text-sm leading-relaxed text-[var(--text-secondary)]">{campaign.description}</p>
                       {campaign.goalAmount ? (
                         <div className="mt-5">
-                          <div className="mb-2 flex justify-between text-xs text-white/55">
+                          <div className="mb-2 flex justify-between text-xs text-[var(--text-muted)]">
                             <span>{formatCurrency(campaign.raisedAmount)} raised</span>
                             <span>{formatCurrency(campaign.goalAmount)} goal</span>
                           </div>
-                          <div className="h-2 overflow-hidden rounded-full bg-white/10">
-                            <div className="h-full rounded-full bg-emerald-400" style={{ width: `${campaignProgress}%` }} />
+                          <div className="h-2 overflow-hidden rounded-full bg-[var(--surface-elevated)]">
+                            <div className="h-full rounded-full bg-[var(--accent-primary)]" style={{ width: `${campaignProgress}%` }} />
                           </div>
                         </div>
                       ) : null}
@@ -266,46 +266,46 @@ const DonatePage = () => {
         </div>
 
         <aside className="lg:sticky lg:top-28 lg:self-start">
-          <form onSubmit={handleDonate} className="rounded-lg border border-white/10 bg-white/[0.05] p-5 shadow-2xl">
-            <div className="mb-5 flex items-start gap-3 border-b border-white/10 pb-5">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-emerald-400 text-black">
-                <FiCreditCard size={22} />
+          <form onSubmit={handleDonate} className="ka-card p-6 sm:p-7 shadow-2xl">
+            <div className="mb-5 flex items-start gap-3 border-b border-[var(--border-subtle)] pb-5">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] border border-[var(--accent-primary)]/20">
+                <FiCreditCard size={20} />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-white">Donation Details</h2>
-                <p className="mt-1 text-sm text-white/55">Secure payment through Razorpay.</p>
+                <h2 className="text-xl font-bold text-[var(--text-primary)]">Donation Details</h2>
+                <p className="mt-1 text-xs text-[var(--text-muted)]">Secure payment through Razorpay.</p>
               </div>
             </div>
 
             {selectedCampaignData ? (
-              <div className="mb-5 rounded-lg border border-white/10 bg-black/20 p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-white/35">Selected campaign</p>
-                <p className="mt-2 font-bold text-white">{selectedCampaignData.title}</p>
+              <div className="mb-5 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-4">
+                <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--accent-primary)] font-bold">Selected campaign</p>
+                <p className="mt-1 font-bold text-[var(--text-primary)] text-sm">{selectedCampaignData.title}</p>
                 {selectedCampaignData.goalAmount ? (
-                  <div className="mt-4">
-                    <div className="mb-2 flex justify-between text-xs text-white/55">
+                  <div className="mt-3">
+                    <div className="mb-2 flex justify-between text-xs text-[var(--text-muted)]">
                       <span>{progressPercent}% funded</span>
                       <span>{formatCurrency(selectedCampaignData.raisedAmount)}</span>
                     </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-white/10">
-                      <div className="h-full rounded-full bg-emerald-400" style={{ width: `${progressPercent}%` }} />
+                    <div className="h-2 overflow-hidden rounded-full bg-[var(--surface)]">
+                      <div className="h-full rounded-full bg-[var(--accent-primary)]" style={{ width: `${progressPercent}%` }} />
                     </div>
                   </div>
                 ) : null}
               </div>
             ) : null}
 
-            <label className="mb-2 block text-sm font-semibold text-white/75">Amount</label>
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Amount (INR)</label>
             <div className="mb-4 grid grid-cols-2 gap-2">
               {amountOptions.map((option) => (
                 <button
                   key={option}
                   type="button"
                   onClick={() => setAmount(option)}
-                  className={`rounded-lg border px-4 py-3 text-sm font-bold transition ${
+                  className={`rounded-2xl border py-3 text-xs font-bold transition cursor-pointer ${
                     Number(amount) === option
-                      ? "border-emerald-400 bg-emerald-400 text-black"
-                      : "border-white/10 bg-white/5 text-white hover:bg-white/10"
+                      ? "border-[var(--accent-primary)] bg-[var(--accent-primary)] text-[#070707] shadow-md"
+                      : "border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-primary)] hover:border-[var(--accent-primary)]/40"
                   }`}
                 >
                   {formatCurrency(option)}
@@ -317,25 +317,25 @@ const DonatePage = () => {
               min="1"
               value={amount}
               onChange={(event) => setAmount(event.target.value)}
-              className="mb-5 w-full rounded-lg border border-white/10 bg-black/25 px-4 py-3 text-white outline-none transition focus:border-emerald-400"
+              className="ka-input mb-4"
               placeholder="Custom amount"
             />
 
-            <label className="mb-2 block text-sm font-semibold text-white/75">Note</label>
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Note / Message</label>
             <textarea
               value={note}
               onChange={(event) => setNote(event.target.value)}
               rows={3}
-              className="mb-5 w-full resize-none rounded-lg border border-white/10 bg-black/25 px-4 py-3 text-white outline-none transition placeholder:text-white/30 focus:border-emerald-400"
+              className="ka-input mb-4 resize-none"
               placeholder="Optional message"
             />
 
-            <label className="mb-5 flex items-center gap-3 rounded-lg border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/70">
+            <label className="mb-5 flex items-center gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-4 py-3 text-xs font-medium text-[var(--text-secondary)] cursor-pointer">
               <input
                 type="checkbox"
                 checked={anonymous}
                 onChange={(event) => setAnonymous(event.target.checked)}
-                className="h-4 w-4 accent-emerald-400"
+                className="h-4 w-4 accent-[var(--accent-primary)] rounded"
               />
               Donate anonymously
             </label>
@@ -343,14 +343,14 @@ const DonatePage = () => {
             <button
               type="submit"
               disabled={paying}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-400 px-5 py-3 text-sm font-black uppercase tracking-wider text-black transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-60"
+              className="btn-primary w-full"
             >
               <FiLock size={16} />
-              {paying ? "Starting Payment" : `Donate ${formatCurrency(amount)}`}
+              <span>{paying ? "Starting Payment" : `Donate ${formatCurrency(amount)}`}</span>
             </button>
 
             {!token ? (
-              <p className="mt-4 text-center text-xs text-amber-100/80">
+              <p className="mt-4 text-center text-xs text-amber-500 font-medium">
                 Login is required before creating a secure donation order.
               </p>
             ) : null}

@@ -23,6 +23,15 @@ export const profileEndpoints = {
 export const adminEndpoints = {
   PENDING_REGISTRATIONS_API: BASE_URL + "/auth/registrations/pending",
   REVIEW_REGISTRATION_API: (userId) => BASE_URL + `/auth/registrations/${userId}/review`,
+  REGISTRATION_DOCUMENT_API: (userId) => BASE_URL + `/auth/registrations/${userId}/document`,
+  ADMIN_INVITES_API: BASE_URL + "/admin/invites",
+  REVOKE_ADMIN_INVITE_API: (inviteId) => BASE_URL + `/admin/invites/${inviteId}/revoke`,
+  ACCEPT_ADMIN_INVITE_API: BASE_URL + "/admin/invites/accept",
+  AUDIT_LOGS_API: BASE_URL + "/admin/audit-logs",
+  USERS_API: BASE_URL + "/admin/users",
+  UPDATE_USER_STATUS_API: (userId) => BASE_URL + `/admin/users/${userId}/status`,
+  UPDATE_USER_ROLES_API: (userId) => BASE_URL + `/admin/users/${userId}/roles`,
+  ANONYMIZE_USER_API: (userId) => BASE_URL + `/admin/users/${userId}/anonymize`,
 }
 
 export const familyEndpoints = {
@@ -63,9 +72,20 @@ export const contentEndpoints = {
 
 export const opportunityEndpoints = {
   JOBS_API: BASE_URL + "/opportunities/jobs",
+  ADMIN_JOBS_API: BASE_URL + "/opportunities/admin/jobs",
+  UPDATE_JOB_API: (jobId) => BASE_URL + `/opportunities/jobs/${jobId}`,
+  MODERATE_JOB_API: (jobId) => BASE_URL + `/opportunities/admin/jobs/${jobId}/moderate`,
   APPLY_JOB_API: (jobId) => BASE_URL + `/opportunities/jobs/${jobId}/applications`,
+  JOB_APPLICATIONS_API: (jobId) => BASE_URL + `/opportunities/jobs/${jobId}/applications`,
+  UPDATE_JOB_APPLICATION_STATUS_API: (applicationId) => BASE_URL + `/opportunities/job-applications/${applicationId}/status`,
   SCHOLARSHIPS_API: BASE_URL + "/opportunities/scholarships",
+  ADMIN_SCHOLARSHIPS_API: BASE_URL + "/opportunities/admin/scholarships",
+  SCHOLARSHIP_API: (scholarshipId) => BASE_URL + `/opportunities/scholarships/${scholarshipId}`,
+  ARCHIVE_SCHOLARSHIP_API: (scholarshipId) => BASE_URL + `/opportunities/scholarships/${scholarshipId}/archive`,
   APPLY_SCHOLARSHIP_API: (scholarshipId) => BASE_URL + `/opportunities/scholarships/${scholarshipId}/applications`,
+  SCHOLARSHIP_APPLICATIONS_API: (scholarshipId) => BASE_URL + `/opportunities/scholarships/${scholarshipId}/applications`,
+  ADMIN_SCHOLARSHIP_APPLICATIONS_API: BASE_URL + "/opportunities/admin/scholarship-applications",
+  REVIEW_SCHOLARSHIP_APPLICATION_API: (applicationId) => BASE_URL + `/opportunities/scholarship-applications/${applicationId}/review`,
 }
 
 export const paymentEndpoints = {
@@ -77,6 +97,8 @@ export const paymentEndpoints = {
   DONATIONS_API: BASE_URL + "/payments/donations",
   MY_DONATIONS_API: BASE_URL + "/payments/me/donations",
   CONTRIBUTIONS_API: BASE_URL + "/payments/contributions",
+  MY_CONTRIBUTIONS_API: BASE_URL + "/payments/me/contributions",
+  CREATE_CONTRIBUTION_ORDER_API: (contributionId) => BASE_URL + `/payments/contributions/${contributionId}/orders`,
   GENERATE_CONTRIBUTIONS_API: BASE_URL + "/payments/contributions/generate",
   MARK_OVERDUE_CONTRIBUTIONS_API: BASE_URL + "/payments/contributions/mark-overdue",
   OFFLINE_CONTRIBUTION_PAYMENT_API: (contributionId) => BASE_URL + `/payments/contributions/${contributionId}/payments/offline`,
@@ -111,6 +133,7 @@ export const communityEndpoints = {
   ADMIN_SHRADHANJALIS_API: BASE_URL + "/community/admin/shradhanjalis",
   REVIEW_SHRADHANJALI_API: (shradhanjaliId) => BASE_URL + `/community/shradhanjalis/${shradhanjaliId}/review`,
   MEMBERSHIP_CARD_API: BASE_URL + "/community/membership-cards/me",
+  VERIFY_MEMBERSHIP_CARD_API: (memberId) => BASE_URL + `/community/membership-cards/${memberId}/verify`,
 }
 
 export const notificationEndpoints = {

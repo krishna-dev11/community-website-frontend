@@ -1,26 +1,30 @@
-const ConfirmationModal = ({ data }) => {
-  if (!data) return null;
+const ConfirmationModal = ({ data, modalData }) => {
+  const config = modalData || data;
+  if (!config) return null;
+
+  const handle1 = config.button1Handler || config.btn1Onclick;
+  const handle2 = config.button2Handler || config.btn2Onclick;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 px-4">
-      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0b0b0b] p-6 shadow-2xl">
-        <h2 className="text-xl font-bold text-white">{data.heading}</h2>
-        <p className="mt-3 text-sm text-gray-400">{data.text1}</p>
+    <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/75 px-4 backdrop-blur-md">
+      <div className="w-full max-w-md ka-card p-6 sm:p-8 shadow-2xl border border-[var(--border-strong)]">
+        <h2 className="text-xl font-bold text-[var(--text-primary)] tracking-tight">{config.heading}</h2>
+        <p className="mt-3 text-sm text-[var(--text-secondary)] leading-relaxed font-normal">{config.text1 || config.text2}</p>
 
-        <div className="mt-6 flex gap-3 justify-end">
+        <div className="mt-6 flex gap-3 justify-end items-center">
           <button
             type="button"
-            onClick={data.btn2Onclick}
-            className="rounded-xl border border-white/10 px-5 py-2 text-sm font-semibold text-white hover:bg-white/10"
+            onClick={handle2}
+            className="btn-secondary !py-2 !px-5 !text-xs"
           >
-            {data.button2Text}
+            {config.button2Text || "Cancel"}
           </button>
           <button
             type="button"
-            onClick={data.btn1Onclick}
-            className="rounded-xl bg-red-500 px-5 py-2 text-sm font-semibold text-white hover:bg-red-400"
+            onClick={handle1}
+            className="inline-flex items-center justify-center rounded-full bg-red-500 hover:bg-red-600 text-white font-bold text-xs uppercase tracking-wider px-5 py-2.5 transition-all shadow-md cursor-pointer"
           >
-            {data.button1Text}
+            {config.button1Text || "Confirm"}
           </button>
         </div>
       </div>
@@ -29,3 +33,4 @@ const ConfirmationModal = ({ data }) => {
 };
 
 export default ConfirmationModal;
+

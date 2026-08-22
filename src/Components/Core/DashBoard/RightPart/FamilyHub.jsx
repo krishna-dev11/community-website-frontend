@@ -1,43 +1,44 @@
 import React, { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { FaCheck, FaCopy, FaCrown, FaSearch, FaTimes, FaUserPlus } from "react-icons/fa";
+import { FiUsers } from "react-icons/fi";
 import { useSelector } from "react-redux";
 import { apiConnector } from "../../../../services/apiConnector";
 import { familyEndpoints } from "../../../../services/apis";
 
 const Input = ({ label, ...props }) => (
   <label className="flex flex-col gap-1.5">
-    <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">{label}</span>
+    <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--text-muted)]">{label}</span>
     <input
       {...props}
-      className="h-11 border border-white/10 bg-white/[0.03] px-3 text-sm text-white outline-none placeholder:text-gray-600 focus:border-emerald-400/40"
+      className="ka-input !h-11 !py-0"
     />
   </label>
 );
 
 const Button = ({ children, tone = "neutral", icon: Icon, ...props }) => {
-  const tones = {
-    neutral: "border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]",
-    success: "border-emerald-400/30 bg-emerald-400/10 text-emerald-200 hover:bg-emerald-400/20",
-    warning: "border-amber-400/30 bg-amber-400/10 text-amber-200 hover:bg-amber-400/20",
-    danger: "border-red-400/30 bg-red-400/10 text-red-200 hover:bg-red-400/20",
+  const toneClasses = {
+    neutral: "btn-secondary !py-2.5 !px-4 !text-xs",
+    success: "btn-primary !py-2.5 !px-5 !text-xs",
+    warning: "inline-flex items-center justify-center gap-2 rounded-full border border-amber-400/30 bg-amber-400/10 text-amber-300 font-bold text-xs uppercase tracking-wider px-4 py-2.5 transition-all hover:bg-amber-400/20 disabled:opacity-50 cursor-pointer",
+    danger: "inline-flex items-center justify-center gap-2 rounded-full border border-red-400/30 bg-red-400/10 text-red-300 font-bold text-xs uppercase tracking-wider px-4 py-2.5 transition-all hover:bg-red-400/20 disabled:opacity-50 cursor-pointer",
   };
 
   return (
     <button
       {...props}
-      className={`inline-flex h-11 items-center justify-center gap-2 border px-4 text-[11px] font-bold uppercase tracking-widest transition disabled:cursor-not-allowed disabled:opacity-50 ${tones[tone]}`}
+      className={`${toneClasses[tone]} cursor-pointer`}
     >
       {Icon && <Icon size={12} />}
-      {children}
+      <span>{children}</span>
     </button>
   );
 };
 
 const Stat = ({ label, value }) => (
-  <div className="border border-white/10 bg-white/[0.025] p-4">
-    <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500">{label}</p>
-    <p className="mt-1 text-lg font-bold text-white">{value || "Not set"}</p>
+  <div className="ka-card p-4">
+    <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">{label}</p>
+    <p className="mt-1 text-base font-bold text-[var(--text-primary)] truncate">{value || <span className="text-[var(--text-muted)] italic font-normal">Not set</span>}</p>
   </div>
 );
 
@@ -202,31 +203,34 @@ const FamilyHub = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black px-3 py-8 text-white md:px-8">
+    <div className="min-h-screen bg-[var(--bg)] px-3 py-6 text-[var(--text-primary)] md:px-6 transition-colors duration-300">
       <div className="mx-auto flex max-w-6xl flex-col gap-6">
-        <div className="border-b border-white/10 pb-5">
-          <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-emerald-300">Family</p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">Family Hub</h1>
-          <p className="mt-2 max-w-2xl text-sm text-gray-400">
+        <div className="border-b border-[var(--border-subtle)] pb-6">
+          <div className="eyebrow-badge mb-2">
+            <FiUsers size={13} />
+            <span>Household Registry</span>
+          </div>
+          <h1 className="heading-hero text-[var(--text-primary)]">Family <span className="text-gradient">Hub</span></h1>
+          <p className="mt-2 max-w-2xl text-xs sm:text-sm text-[var(--text-secondary)] font-normal">
             Create a household, join an existing family, and manage requests as the family admin.
           </p>
         </div>
 
         {loading ? (
           <div className="flex h-56 items-center justify-center">
-            <div className="h-10 w-10 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent" />
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-[var(--accent-primary)] border-t-transparent" />
           </div>
         ) : familyState.family ? (
           <>
-            <section className="border border-white/10 bg-white/[0.02] p-5">
+            <section className="ka-card p-6">
               <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold text-white">{familyState.family.familyName}</h2>
+                  <h2 className="text-2xl font-bold text-[var(--text-primary)]">{familyState.family.familyName}</h2>
                   <div className="mt-3 flex flex-wrap items-center gap-2">
-                    <span className="border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-emerald-200">
+                    <span className="rounded-full border border-[var(--accent-primary)]/30 bg-[var(--accent-primary)]/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-[var(--accent-primary)]">
                       {familyState.membership?.role}
                     </span>
-                    <span className="border border-white/10 bg-white/[0.03] px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-gray-300">
+                    <span className="rounded-full border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">
                       {familyState.family.status}
                     </span>
                   </div>
@@ -234,7 +238,7 @@ const FamilyHub = () => {
                 <Button icon={FaCopy} onClick={copyCode}>Copy Code</Button>
               </div>
 
-              <div className="mt-5 grid gap-3 md:grid-cols-4">
+              <div className="mt-6 grid gap-3 sm:grid-cols-2 md:grid-cols-4">
                 <Stat label="Family Code" value={familyState.family.familyCode} />
                 <Stat label="SSSM ID" value={familyState.family.sssmId} />
                 <Stat label="City" value={familyState.family.currentCity} />
@@ -243,27 +247,27 @@ const FamilyHub = () => {
             </section>
 
             {isFamilyAdmin && (
-              <section className="border border-white/10 bg-white/[0.02] p-5">
-                <div className="flex flex-col gap-1 border-b border-white/10 pb-4">
-                  <h2 className="text-lg font-bold text-white">Join Requests</h2>
-                  <p className="text-xs text-gray-500">Approve verified members before they enter your household record.</p>
+              <section className="ka-card p-6">
+                <div className="flex flex-col gap-1 border-b border-[var(--border-subtle)] pb-4">
+                  <h2 className="text-lg font-bold text-[var(--text-primary)]">Join Requests</h2>
+                  <p className="text-xs text-[var(--text-muted)]">Approve verified members before they enter your household record.</p>
                 </div>
 
                 {joinRequests.length === 0 ? (
-                  <p className="py-6 text-sm text-gray-500">No pending join requests.</p>
+                  <p className="py-6 text-sm text-[var(--text-muted)]">No pending join requests.</p>
                 ) : (
-                  <div className="divide-y divide-white/10">
+                  <div className="divide-y divide-[var(--border-subtle)]">
                     {joinRequests.map((request) => (
                       <div key={request._id} className="flex flex-col gap-4 py-4 md:flex-row md:items-center md:justify-between">
                         <div className="flex min-w-0 items-center gap-3">
                           <img
-                            src={request.requestedBy?.imageUrl}
+                            src={request.requestedBy?.imageUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${request.requestedBy?.firstName || "Member"}`}
                             alt={`${request.requestedBy?.firstName || "Member"} profile`}
-                            className="h-11 w-11 rounded-full border border-white/10 object-cover"
+                            className="h-11 w-11 rounded-2xl border border-[var(--border-subtle)] object-cover shadow-sm"
                           />
                           <div className="min-w-0">
-                            <p className="truncate text-sm font-bold text-white">{request.requestedBy?.firstName} {request.requestedBy?.lastName}</p>
-                            <p className="truncate text-xs text-gray-500">{request.message || request.requestedBy?.email}</p>
+                            <p className="truncate text-sm font-bold text-[var(--text-primary)]">{request.requestedBy?.firstName} {request.requestedBy?.lastName}</p>
+                            <p className="truncate text-xs text-[var(--text-muted)]">{request.message || request.requestedBy?.email}</p>
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-2 md:w-64">
@@ -277,32 +281,32 @@ const FamilyHub = () => {
               </section>
             )}
 
-            <section className="border border-white/10 bg-white/[0.02] p-5">
-              <div className="flex flex-col gap-1 border-b border-white/10 pb-4">
-                <h2 className="text-lg font-bold text-white">Members</h2>
-                <p className="text-xs text-gray-500">{familyState.members.length} active family members</p>
+            <section className="ka-card p-6">
+              <div className="flex flex-col gap-1 border-b border-[var(--border-subtle)] pb-4">
+                <h2 className="text-lg font-bold text-[var(--text-primary)]">Household Members</h2>
+                <p className="text-xs text-[var(--text-muted)]">{familyState.members.length} active family members</p>
               </div>
               <div className="mt-4 grid gap-3 md:grid-cols-2">
                 {familyState.members.map((membership) => (
-                  <article key={membership._id} className="flex items-center justify-between gap-3 border border-white/10 bg-black p-3">
+                  <article key={membership._id} className="flex items-center justify-between gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-3.5">
                     <div className="flex min-w-0 items-center gap-3">
                       <img
-                        src={membership.member?.imageUrl}
+                        src={membership.member?.imageUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${membership.member?.firstName || "Member"}`}
                         alt={`${membership.member?.firstName || "Member"} profile`}
-                        className="h-11 w-11 rounded-full border border-white/10 object-cover"
+                        className="h-11 w-11 rounded-2xl border border-[var(--border-subtle)] object-cover shadow-sm"
                       />
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-bold text-white">{membership.member?.firstName} {membership.member?.lastName}</p>
-                        <p className="truncate text-xs text-gray-500">{membership.member?.additionalDetails?.profession || membership.member?.email}</p>
+                        <p className="truncate text-sm font-bold text-[var(--text-primary)]">{membership.member?.firstName} {membership.member?.lastName}</p>
+                        <p className="truncate text-xs text-[var(--text-muted)]">{membership.member?.additionalDetails?.profession || membership.member?.email}</p>
                       </div>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
-                      {membership.role === "FAMILY_ADMIN" && <FaCrown className="text-amber-300" size={14} />}
+                      {membership.role === "FAMILY_ADMIN" && <FaCrown className="text-amber-400" size={15} />}
                       {isFamilyAdmin && membership.role !== "FAMILY_ADMIN" && (
                         <button
                           onClick={() => transferAdmin(membership.member?._id)}
                           disabled={busyId === membership.member?._id}
-                          className="border border-white/10 bg-white/[0.03] px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-gray-300 transition hover:bg-white/[0.08] disabled:opacity-50"
+                          className="rounded-full border border-[var(--border-subtle)] bg-[var(--surface)] px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)] transition hover:text-[var(--text-primary)] disabled:opacity-50 cursor-pointer"
                         >
                           Make Admin
                         </button>
@@ -314,13 +318,13 @@ const FamilyHub = () => {
             </section>
           </>
         ) : (
-          <div className="grid gap-5 lg:grid-cols-2">
-            <section className="border border-white/10 bg-white/[0.02] p-5">
-              <div className="border-b border-white/10 pb-4">
-                <h2 className="text-lg font-bold text-white">Create Family</h2>
-                <p className="text-xs text-gray-500">Start a new household record and become its family admin.</p>
+          <div className="grid gap-6 lg:grid-cols-2">
+            <section className="ka-card p-6">
+              <div className="border-b border-[var(--border-subtle)] pb-4">
+                <h2 className="text-lg font-bold text-[var(--text-primary)]">Create Family</h2>
+                <p className="text-xs text-[var(--text-muted)]">Start a new household record and become its family admin.</p>
               </div>
-              <form onSubmit={createFamily} className="mt-4 grid gap-4">
+              <form onSubmit={createFamily} className="mt-5 grid gap-4">
                 <Input label="Family Name" value={createForm.familyName} onChange={(event) => updateCreateForm("familyName", event.target.value)} placeholder="Sharma Family" required />
                 <div className="grid gap-4 md:grid-cols-2">
                   <Input label="SSSM ID" value={createForm.sssmId} onChange={(event) => updateCreateForm("sssmId", event.target.value)} placeholder="SSSM / family id" required />
@@ -334,12 +338,12 @@ const FamilyHub = () => {
               </form>
             </section>
 
-            <section className="border border-white/10 bg-white/[0.02] p-5">
-              <div className="border-b border-white/10 pb-4">
-                <h2 className="text-lg font-bold text-white">Find Family</h2>
-                <p className="text-xs text-gray-500">Search by family code, SSSM ID, or family name and request access.</p>
+            <section className="ka-card p-6">
+              <div className="border-b border-[var(--border-subtle)] pb-4">
+                <h2 className="text-lg font-bold text-[var(--text-primary)]">Find Family</h2>
+                <p className="text-xs text-[var(--text-muted)]">Search by family code, SSSM ID, or family name and request access.</p>
               </div>
-              <form onSubmit={searchFamilies} className="mt-4 grid gap-4">
+              <form onSubmit={searchFamilies} className="mt-5 grid gap-4">
                 <Input label="Family Code" value={search.familyCode} onChange={(event) => updateSearch("familyCode", event.target.value)} placeholder="FAM-123ABC" />
                 <div className="grid gap-4 md:grid-cols-2">
                   <Input label="SSSM ID" value={search.sssmId} onChange={(event) => updateSearch("sssmId", event.target.value)} placeholder="SSSM / family id" />
@@ -349,13 +353,13 @@ const FamilyHub = () => {
                 <Button icon={FaSearch} disabled={busyId === "search"}>Search</Button>
               </form>
 
-              <div className="mt-5 divide-y divide-white/10">
+              <div className="mt-5 divide-y divide-[var(--border-subtle)]">
                 {families.map((family) => (
                   <article key={family._id} className="py-4">
                     <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                       <div>
-                        <p className="text-sm font-bold text-white">{family.familyName}</p>
-                        <p className="mt-1 text-xs text-gray-500">{family.familyCode} - {family.currentCity || "City not set"}</p>
+                        <p className="text-sm font-bold text-[var(--text-primary)]">{family.familyName}</p>
+                        <p className="mt-1 text-xs text-[var(--text-muted)]">{family.familyCode} - {family.currentCity || "City not set"}</p>
                       </div>
                       <Button icon={FaUserPlus} tone="success" disabled={busyId === family._id} onClick={() => requestJoin(family._id)}>Request</Button>
                     </div>
@@ -363,11 +367,11 @@ const FamilyHub = () => {
                       value={joinMessage[family._id] || ""}
                       onChange={(event) => setJoinMessage((current) => ({ ...current, [family._id]: event.target.value }))}
                       placeholder="Optional note for family admin"
-                      className="mt-3 h-10 w-full border border-white/10 bg-white/[0.03] px-3 text-xs text-white outline-none placeholder:text-gray-600 focus:border-emerald-400/40"
+                      className="ka-input mt-3 !h-10 !text-xs"
                     />
                   </article>
                 ))}
-                {families.length === 0 && <p className="py-6 text-sm text-gray-500">Search results will appear here.</p>}
+                {families.length === 0 && <p className="py-6 text-sm text-[var(--text-muted)]">Search results will appear here.</p>}
               </div>
             </section>
           </div>
@@ -378,3 +382,4 @@ const FamilyHub = () => {
 };
 
 export default FamilyHub;
+

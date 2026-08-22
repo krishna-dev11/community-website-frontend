@@ -1,14 +1,15 @@
 import React, { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { FaChevronLeft, FaChevronRight, FaSearch, FaSyncAlt } from "react-icons/fa";
+import { FiUsers } from "react-icons/fi";
 import { useSelector } from "react-redux";
 import { apiConnector } from "../../../../services/apiConnector";
 import { profileEndpoints } from "../../../../services/apis";
 
 const DirectoryField = ({ label, value }) => (
   <div className="min-w-0">
-    <p className="text-[10px] font-bold uppercase tracking-widest text-gray-600">{label}</p>
-    <p className="mt-1 truncate text-sm text-gray-200">{value || "Hidden"}</p>
+    <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">{label}</p>
+    <p className="mt-0.5 truncate text-xs sm:text-sm font-medium text-[var(--text-primary)]">{value || <span className="text-[var(--text-muted)] italic font-normal">Hidden</span>}</p>
   </div>
 );
 
@@ -67,72 +68,77 @@ const MemberDirectory = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black px-3 py-8 text-white md:px-8">
+    <div className="min-h-screen bg-[var(--bg)] px-3 py-6 text-[var(--text-primary)] md:px-6 transition-colors duration-300">
       <div className="mx-auto flex max-w-6xl flex-col gap-6">
-        <div className="flex flex-col gap-4 border-b border-white/10 pb-5">
+        <div className="flex flex-col gap-4 border-b border-[var(--border-subtle)] pb-6">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-emerald-300">Members</p>
-            <h1 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">Member Directory</h1>
-            <p className="mt-2 max-w-2xl text-sm text-gray-400">
+            <div className="eyebrow-badge mb-2">
+              <FiUsers size={13} />
+              <span>Verified Directory</span>
+            </div>
+            <h1 className="heading-hero text-[var(--text-primary)]">Member <span className="text-gradient">Directory</span></h1>
+            <p className="mt-2 max-w-2xl text-xs sm:text-sm text-[var(--text-secondary)] font-normal">
               Search active members while respecting each member's field-level privacy settings.
             </p>
           </div>
 
           <form onSubmit={submitSearch} className="grid gap-3 md:grid-cols-[1.3fr_0.8fr_0.8fr_auto]">
-            <label className="flex h-11 min-w-0 items-center gap-3 border border-white/10 bg-white/[0.03] px-3">
-              <FaSearch className="text-gray-500" size={13} />
+            <label className="flex h-11 min-w-0 items-center gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-4">
+              <FaSearch className="text-[var(--text-muted)] shrink-0" size={13} />
               <input
                 value={filters.q}
                 onChange={(event) => updateFilter("q", event.target.value)}
                 placeholder="Search name, profession, city"
-                className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-gray-600"
+                className="min-w-0 flex-1 bg-transparent text-xs sm:text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] border-none shadow-none focus:ring-0"
               />
             </label>
             <input
               value={filters.city}
               onChange={(event) => updateFilter("city", event.target.value)}
               placeholder="City"
-              className="h-11 border border-white/10 bg-white/[0.03] px-3 text-sm text-white outline-none placeholder:text-gray-600 focus:border-emerald-400/40"
+              className="ka-input !h-11 !py-0"
             />
             <input
               value={filters.profession}
               onChange={(event) => updateFilter("profession", event.target.value)}
               placeholder="Profession"
-              className="h-11 border border-white/10 bg-white/[0.03] px-3 text-sm text-white outline-none placeholder:text-gray-600 focus:border-emerald-400/40"
+              className="ka-input !h-11 !py-0"
             />
-            <button className="inline-flex h-11 items-center justify-center gap-2 border border-emerald-400/30 bg-emerald-400/10 px-4 text-[11px] font-bold uppercase tracking-widest text-emerald-200 transition hover:bg-emerald-400/20">
+            <button type="submit" className="btn-primary !h-11 !py-0 !px-5 !text-xs">
               <FaSyncAlt size={12} />
-              Search
+              <span>Search</span>
             </button>
           </form>
         </div>
 
         {loading ? (
-          <div className="flex h-56 items-center justify-center">
-            <div className="h-10 w-10 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent" />
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div key={index} className="h-48 animate-pulse rounded-3xl border border-[var(--border-subtle)] bg-[var(--surface)]" />
+            ))}
           </div>
         ) : members.length === 0 ? (
-          <div className="border border-dashed border-white/10 bg-white/[0.02] px-6 py-12 text-center">
-            <p className="text-sm font-semibold text-white">No members found</p>
-            <p className="mt-1 text-xs text-gray-500">Try a broader search or clear one of the filters.</p>
+          <div className="ka-card border-dashed px-6 py-12 text-center">
+            <p className="text-sm font-bold text-[var(--text-primary)]">No members found</p>
+            <p className="mt-1 text-xs text-[var(--text-muted)]">Try a broader search or clear one of the filters.</p>
           </div>
         ) : (
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {members.map((member) => (
-              <article key={member._id} className="border border-white/10 bg-white/[0.025] p-4 transition hover:border-emerald-400/30 hover:bg-white/[0.04]">
-                <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+              <article key={member._id} className="ka-card p-5">
+                <div className="flex items-center gap-3 border-b border-[var(--border-subtle)] pb-4">
                   <img
-                    src={member.imageUrl}
+                    src={member.imageUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${member.firstName || "Member"}`}
                     alt={`${member.firstName || "Member"} profile`}
-                    className="h-12 w-12 rounded-full border border-white/10 object-cover"
+                    className="h-12 w-12 rounded-2xl border border-[var(--border-subtle)] object-cover shadow-sm"
                   />
                   <div className="min-w-0">
-                    <h2 className="truncate text-base font-bold text-white">{member.firstName} {member.lastName}</h2>
-                    <p className="truncate text-xs text-gray-500">{member.family?.familyName || "No family linked"}</p>
+                    <h2 className="truncate text-base font-bold text-[var(--text-primary)]">{member.firstName} {member.lastName}</h2>
+                    <p className="truncate text-xs text-[var(--accent-primary)] font-medium">{member.family?.familyName || "Independent Member"}</p>
                   </div>
                 </div>
 
-                <div className="mt-4 grid grid-cols-2 gap-4">
+                <div className="mt-4 grid grid-cols-2 gap-3.5">
                   <DirectoryField label="City" value={member.profile?.currentCity} />
                   <DirectoryField label="Profession" value={member.profile?.profession} />
                   <DirectoryField label="Phone" value={member.profile?.contactNumber} />
@@ -145,25 +151,25 @@ const MemberDirectory = () => {
           </div>
         )}
 
-        <div className="flex flex-col gap-3 border-t border-white/10 pt-4 text-sm text-gray-400 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-3 border-t border-[var(--border-subtle)] pt-4 text-xs font-medium text-[var(--text-muted)] md:flex-row md:items-center md:justify-between">
           <p>{meta.total || 0} members found</p>
           <div className="flex items-center gap-2">
             <button
               onClick={() => changePage((meta.page || filters.page) - 1)}
               disabled={(meta.page || 1) <= 1}
-              className="inline-flex h-9 w-9 items-center justify-center border border-white/10 bg-white/[0.03] text-white disabled:cursor-not-allowed disabled:opacity-40"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-primary)] disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
             >
-              <FaChevronLeft size={12} />
+              <FaChevronLeft size={11} />
             </button>
-            <span className="px-2 text-xs font-bold uppercase tracking-widest text-gray-500">
+            <span className="px-3 text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
               Page {meta.page || filters.page} of {Math.max(meta.pages || 1, 1)}
             </span>
             <button
               onClick={() => changePage((meta.page || filters.page) + 1)}
               disabled={(meta.page || 1) >= Math.max(meta.pages || 1, 1)}
-              className="inline-flex h-9 w-9 items-center justify-center border border-white/10 bg-white/[0.03] text-white disabled:cursor-not-allowed disabled:opacity-40"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-primary)] disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
             >
-              <FaChevronRight size={12} />
+              <FaChevronRight size={11} />
             </button>
           </div>
         </div>
@@ -173,3 +179,4 @@ const MemberDirectory = () => {
 };
 
 export default MemberDirectory;
+

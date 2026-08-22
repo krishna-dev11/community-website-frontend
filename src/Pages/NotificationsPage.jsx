@@ -93,19 +93,19 @@ const NotificationsPage = () => {
   };
 
   return (
-    <main className="min-h-screen bg-[#071412] px-4 pb-16 pt-28 text-white sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-[var(--bg)] px-4 pb-16 pt-28 text-[var(--text-primary)] sm:px-6 lg:px-8 transition-colors duration-300">
       <section className="mx-auto flex w-full max-w-5xl flex-col gap-6">
-        <div className="border-b border-white/10 pb-6">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-emerald-200">
-            <FiBell size={15} />
-            Notification Center
+        <div className="border-b border-[var(--border-subtle)] pb-6">
+          <div className="eyebrow-badge mb-4">
+            <FiBell size={14} />
+            <span>Notification Center</span>
           </div>
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
-              <h1 className="text-4xl font-black leading-tight tracking-normal text-white sm:text-5xl">
+              <h1 className="heading-hero text-[var(--text-primary)] mb-2">
                 Notifications
               </h1>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-white/60">
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--text-secondary)] font-normal">
                 Track review updates, family actions, payments, applications, and committee messages in one place.
               </p>
             </div>
@@ -114,7 +114,7 @@ const NotificationsPage = () => {
                 type="button"
                 onClick={loadNotifications}
                 disabled={loading}
-                className="inline-flex h-11 items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 text-xs font-bold uppercase tracking-wider text-white/75 transition hover:bg-white/10 disabled:opacity-60"
+                className="inline-flex h-11 items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-5 text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] transition hover:text-[var(--text-primary)] disabled:opacity-60"
               >
                 <FiRefreshCw size={15} />
                 Refresh
@@ -123,7 +123,7 @@ const NotificationsPage = () => {
                 type="button"
                 onClick={markAllRead}
                 disabled={busyId === "all" || unreadCount === 0}
-                className="inline-flex h-11 items-center gap-2 rounded-lg bg-emerald-400 px-4 text-xs font-black uppercase tracking-wider text-black transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-60"
+                className="btn-primary !h-11 !py-0 !px-5 text-xs"
               >
                 <FiCheckCircle size={15} />
                 Mark All Read
@@ -132,7 +132,7 @@ const NotificationsPage = () => {
           </div>
         </div>
 
-        <div className="grid gap-3 rounded-lg border border-white/10 bg-white/[0.03] p-3 md:grid-cols-[1fr_auto] md:items-center">
+        <div className="grid gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] p-3 md:grid-cols-[1fr_auto] md:items-center">
           <div className="flex flex-wrap gap-2">
             {[
               { label: "All", value: "" },
@@ -143,18 +143,18 @@ const NotificationsPage = () => {
                 key={option.label}
                 type="button"
                 onClick={() => setStatus(option.value)}
-                className={`h-10 rounded-lg px-4 text-xs font-bold uppercase tracking-wider transition ${
+                className={`h-10 rounded-full px-5 text-xs font-bold uppercase tracking-wider transition cursor-pointer ${
                   status === option.value
-                    ? "bg-white text-black"
-                    : "border border-white/10 bg-white/5 text-white/65 hover:bg-white/10 hover:text-white"
+                    ? "bg-[var(--accent-primary)] text-[#070707] shadow-md"
+                    : "border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                 }`}
               >
                 {option.label}
               </button>
             ))}
           </div>
-          <div className="inline-flex w-fit items-center gap-2 rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-white/70">
-            <span className="h-2 w-2 rounded-full bg-emerald-400" />
+          <div className="inline-flex w-fit items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-3 py-2 text-xs text-[var(--text-secondary)] font-medium">
+            <span className="h-2 w-2 rounded-full bg-[var(--accent-primary)]" />
             {unreadCount} unread
           </div>
         </div>
@@ -162,13 +162,13 @@ const NotificationsPage = () => {
         {loading ? (
           <div className="grid gap-3">
             {Array.from({ length: 5 }).map((_, index) => (
-              <div key={index} className="h-28 animate-pulse rounded-lg border border-white/10 bg-white/5" />
+              <div key={index} className="h-28 animate-pulse rounded-3xl border border-[var(--border-subtle)] bg-[var(--surface)]" />
             ))}
           </div>
         ) : notifications.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-white/10 bg-white/[0.03] px-6 py-12 text-center">
-            <FiInbox className="mx-auto text-white/30" size={34} />
-            <p className="mt-4 text-sm text-white/55">No notifications found for this filter.</p>
+          <div className="ka-card px-6 py-12 text-center border-dashed">
+            <FiInbox className="mx-auto text-[var(--text-muted)]" size={34} />
+            <p className="mt-4 text-sm text-[var(--text-muted)]">No notifications found for this filter.</p>
           </div>
         ) : (
           <div className="grid gap-3">
@@ -178,18 +178,18 @@ const NotificationsPage = () => {
                 <article
                   className={`rounded-lg border p-4 transition ${
                     unread
-                      ? "border-emerald-400/25 bg-emerald-500/[0.08]"
-                      : "border-white/10 bg-white/[0.03] hover:bg-white/[0.05]"
+                      ? "border-[var(--accent-primary)]/25 bg-[var(--accent-primary)]/8"
+                      : "border-[var(--border-subtle)] bg-[var(--surface)] hover:bg-[var(--surface-raised)]"
                   }`}
                 >
                   <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className={`h-2.5 w-2.5 rounded-full ${unread ? "bg-emerald-400" : "bg-white/20"}`} />
-                        <h2 className="text-lg font-bold leading-snug text-white">{notification.title}</h2>
+                        <span className={`h-2.5 w-2.5 rounded-full ${unread ? "bg-[var(--accent-primary)]" : "bg-[var(--border-strong)]"}`} />
+                        <h2 className="text-lg font-bold leading-snug text-[var(--text-primary)]">{notification.title}</h2>
                       </div>
-                      <p className="mt-2 text-sm leading-6 text-white/62">{notification.message}</p>
-                      <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-white/38">
+                      <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">{notification.message}</p>
+                      <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-[var(--text-muted)]">
                         <span className="inline-flex items-center gap-1.5">
                           <FiClock size={13} />
                           {formatDateTime(notification.createdAt)}
@@ -205,7 +205,7 @@ const NotificationsPage = () => {
                           markRead(notification._id);
                         }}
                         disabled={busyId === notification._id}
-                        className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-emerald-400/30 bg-emerald-400/10 px-3 text-xs font-bold uppercase tracking-wider text-emerald-100 transition hover:bg-emerald-400/20 disabled:opacity-60"
+                        className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-full border border-[var(--accent-primary)]/30 bg-[var(--accent-primary)]/10 px-4 text-xs font-bold uppercase tracking-wider text-[var(--accent-primary)] transition hover:bg-[var(--accent-primary)]/20 disabled:opacity-60"
                       >
                         <FiCheck size={14} />
                         Read

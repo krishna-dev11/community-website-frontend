@@ -13,9 +13,10 @@ import {
 } from "react-icons/fi";
 import { apiConnector } from "../services/apiConnector";
 import { matrimonialEndpoints } from "../services/apis";
+import FileUploadWithPreview from "../Components/Common/FileUploadWithPreview";
 
-const inputClass = "h-11 rounded-lg border border-white/10 bg-black/25 px-3 text-sm text-white outline-none placeholder:text-white/30 focus:border-emerald-400";
-const textareaClass = "min-h-24 resize-none rounded-lg border border-white/10 bg-black/25 px-3 py-3 text-sm text-white outline-none placeholder:text-white/30 focus:border-emerald-400";
+const inputClass = "ka-input";
+const textareaClass = "ka-input min-h-24 resize-none";
 
 const formatDate = (value) => {
   if (!value) return "Not set";
@@ -59,16 +60,16 @@ const initialForm = {
 
 const Button = ({ children, className = "", tone = "neutral", icon: Icon, ...props }) => {
   const tones = {
-    neutral: "border-white/10 bg-white/5 text-white hover:bg-white/10",
-    success: "border-emerald-400/30 bg-emerald-400/10 text-emerald-100 hover:bg-emerald-400/20",
-    danger: "border-red-400/30 bg-red-400/10 text-red-100 hover:bg-red-400/20",
-    solid: "border-emerald-400 bg-emerald-400 text-black hover:bg-emerald-300",
+    neutral: "border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-primary)] hover:border-[var(--accent-primary)]/40",
+    success: "border border-[var(--accent-primary)]/30 bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/20",
+    danger: "border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20",
+    solid: "bg-[var(--accent-primary)] text-[#070707] font-black hover:opacity-90 shadow-md",
   };
 
   return (
     <button
       {...props}
-      className={`inline-flex h-11 items-center justify-center gap-2 rounded-lg border px-4 text-xs font-bold uppercase tracking-wider transition disabled:cursor-not-allowed disabled:opacity-60 ${tones[tone]} ${className}`}
+      className={`inline-flex h-11 items-center justify-center gap-2 rounded-full px-5 text-xs font-bold uppercase tracking-wider transition disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer ${tones[tone]} ${className}`}
     >
       {Icon ? <Icon size={15} /> : null}
       {children}
@@ -78,13 +79,13 @@ const Button = ({ children, className = "", tone = "neutral", icon: Icon, ...pro
 
 const Field = ({ label, children }) => (
   <label className="grid gap-1.5">
-    <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/45">{label}</span>
+    <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--text-muted)]">{label}</span>
     {children}
   </label>
 );
 
 const Status = ({ value }) => (
-  <span className="inline-flex w-fit rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white/65">
+  <span className="inline-flex w-fit rounded-full border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-[var(--accent-primary)]">
     {value || "UNKNOWN"}
   </span>
 );
@@ -140,24 +141,22 @@ const formToPayload = (form) => ({
     relation: form.guardianRelation,
     phone: form.guardianPhone,
   },
-  photos: form.photoUrl.trim() ? [{ url: form.photoUrl.trim() }] : [],
-  submitForReview: true,
 });
 
 const MatrimonialPage = () => {
   const { token } = useSelector((state) => state.auth);
-  const [activeTab, setActiveTab] = useState("profile");
+  const [activeTab, setActiveTab] = useState("browse");
   const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState(null);
-  const [myProfile, setMyProfile] = useState(null);
   const [profiles, setProfiles] = useState([]);
+  const [myProfile, setMyProfile] = useState(null);
   const [interests, setInterests] = useState({ sent: [], received: [] });
   const [contacts, setContacts] = useState({ sent: [], received: [] });
-  const [query, setQuery] = useState("");
-  const [gender, setGender] = useState("");
-  const [city, setCity] = useState("");
+  const [filters, setFilters] = useState({ gender: "", city: "", gotra: "", profession: "", q: "" });
   const [form, setForm] = useState(initialForm);
+  const [matrimonialPhotoFile, setMatrimonialPhotoFile] = useState(null);
   const [messageDrafts, setMessageDrafts] = useState({});
+  const [reportModal, setReportModal] = useState({ open: false, targetProfileId: null, reason: "" });
 
   const authConfig = useMemo(
     () => ({
@@ -171,22 +170,24 @@ const MatrimonialPage = () => {
     const response = await apiConnector("GET", matrimonialEndpoints.MY_PROFILE_API, null, authConfig);
     const profile = response.data?.data?.profile || null;
     setMyProfile(profile);
-    setForm(profileToForm(profile));
+    if (profile) setForm(profileToForm(profile));
   };
 
   const loadProfiles = async () => {
-    const params = Object.fromEntries(Object.entries({ q: query, gender, city, limit: 30 }).filter(([, value]) => value));
-    const response = await apiConnector("GET", matrimonialEndpoints.PROFILES_API, null, authConfig, params);
+    const response = await apiConnector("GET", matrimonialEndpoints.PROFILES_API, null, authConfig, {
+      ...filters,
+      limit: 24,
+    });
     setProfiles(response.data?.data?.profiles || []);
   };
 
   const loadInterests = async () => {
-    const response = await apiConnector("GET", matrimonialEndpoints.MY_INTERESTS_API, null, authConfig);
+    const response = await apiConnector("GET", matrimonialEndpoints.INTERESTS_API, null, authConfig);
     setInterests(response.data?.data || { sent: [], received: [] });
   };
 
   const loadContacts = async () => {
-    const response = await apiConnector("GET", matrimonialEndpoints.MY_CONTACT_REQUESTS_API, null, authConfig);
+    const response = await apiConnector("GET", matrimonialEndpoints.CONTACT_REQUESTS_API, null, authConfig);
     setContacts(response.data?.data || { sent: [], received: [] });
   };
 
@@ -216,8 +217,22 @@ const MatrimonialPage = () => {
     event.preventDefault();
     setBusyId("profile-save");
     try {
-      await apiConnector("POST", matrimonialEndpoints.MY_PROFILE_API, formToPayload(form), authConfig);
+      const formData = new FormData();
+      Object.entries(formToPayload(form)).forEach(([k, v]) => {
+        if (typeof v === "object" && v !== null) {
+          formData.append(k, JSON.stringify(v));
+        } else if (v !== undefined && v !== null && v !== "") {
+          formData.append(k, String(v));
+        }
+      });
+
+      if (matrimonialPhotoFile instanceof File) {
+        formData.append("photo", matrimonialPhotoFile);
+      }
+
+      await apiConnector("POST", matrimonialEndpoints.MY_PROFILE_API, formData, authConfig);
       toast.success("Matrimonial profile submitted for review");
+      setMatrimonialPhotoFile(null);
       await loadMine();
     } catch (error) {
       toast.error(error.response?.data?.message || "Unable to save matrimonial profile");
@@ -312,17 +327,17 @@ const MatrimonialPage = () => {
   };
 
   return (
-    <main className="min-h-screen bg-[#071412] px-4 pb-16 pt-28 text-white sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-[var(--bg)] px-4 pb-16 pt-28 text-[var(--text-primary)] sm:px-6 lg:px-8 transition-colors duration-300">
       <section className="mx-auto flex w-full max-w-7xl flex-col gap-6">
-        <div className="border-b border-white/10 pb-6">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-rose-400/30 bg-rose-500/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-rose-100">
-            <FiHeart size={15} />
-            Matrimonial
+        <div className="border-b border-[var(--border-subtle)] pb-6">
+          <div className="eyebrow-badge mb-4">
+            <FiHeart size={14} />
+            <span>Matrimonial</span>
           </div>
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
-              <h1 className="text-4xl font-black leading-tight tracking-normal sm:text-5xl">Matrimonial</h1>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-white/60">
+              <h1 className="heading-hero text-[var(--text-primary)] mb-2">Matrimonial <span className="text-gradient">Portal</span></h1>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--text-secondary)] font-normal">
                 Create a reviewed profile, browse approved matches, express interest, and request protected contact access.
               </p>
             </div>
@@ -340,8 +355,8 @@ const MatrimonialPage = () => {
               key={tab.key}
               type="button"
               onClick={() => setActiveTab(tab.key)}
-              className={`h-11 rounded-lg px-4 text-xs font-bold uppercase tracking-wider transition ${
-                activeTab === tab.key ? "bg-white text-black" : "border border-white/10 bg-white/5 text-white/65 hover:bg-white/10"
+              className={`h-11 rounded-full px-5 text-xs font-bold uppercase tracking-wider transition cursor-pointer ${
+                activeTab === tab.key ? "bg-[var(--accent-primary)] text-[#070707] shadow-md" : "border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
               }`}
             >
               {tab.label}
@@ -350,14 +365,14 @@ const MatrimonialPage = () => {
         </div>
 
         {loading ? (
-          <div className="h-56 animate-pulse rounded-lg border border-white/10 bg-white/5" />
+          <div className="h-56 animate-pulse rounded-3xl border border-[var(--border-subtle)] bg-[var(--surface)]" />
         ) : (
           <>
             {activeTab === "profile" && (
               <div className="grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
-                <form onSubmit={saveProfile} className="grid gap-4 rounded-lg border border-white/10 bg-white/[0.03] p-5">
-                  <div className="flex items-center justify-between gap-3">
-                    <h2 className="text-xl font-bold">Profile Details</h2>
+                <form onSubmit={saveProfile} className="grid gap-4 ka-card p-6 sm:p-8">
+                  <div className="flex items-center justify-between gap-3 border-b border-[var(--border-subtle)] pb-4">
+                    <h2 className="text-xl font-bold text-[var(--text-primary)]">Profile Details</h2>
                     {myProfile ? <Status value={myProfile.status} /> : null}
                   </div>
                   <div className="grid gap-4 md:grid-cols-2">
@@ -385,7 +400,18 @@ const MatrimonialPage = () => {
                     <Field label="Current City"><input className={inputClass} value={form.currentCity} onChange={(event) => updateForm("currentCity", event.target.value)} /></Field>
                     <Field label="Native Place"><input className={inputClass} value={form.nativePlace} onChange={(event) => updateForm("nativePlace", event.target.value)} /></Field>
                     <Field label="Gotra"><input className={inputClass} value={form.gotra} onChange={(event) => updateForm("gotra", event.target.value)} /></Field>
-                    <Field label="Photo URL"><input className={inputClass} value={form.photoUrl} onChange={(event) => updateForm("photoUrl", event.target.value)} /></Field>
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-black/30 p-3.5">
+                    <FileUploadWithPreview
+                      label="Matrimonial Profile Photograph"
+                      required={false}
+                      accept="image/jpeg,image/jpg,image/png,image/webp"
+                      maxSizeMB={10}
+                      helperText="Clear portrait photograph"
+                      file={matrimonialPhotoFile}
+                      onFileSelect={(file) => setMatrimonialPhotoFile(file)}
+                      existingUrl={form.photoUrl}
+                    />
                   </div>
                   <Field label="About"><textarea className={textareaClass} value={form.about} onChange={(event) => updateForm("about", event.target.value)} /></Field>
                   <Field label="Expectations"><textarea className={textareaClass} value={form.expectations} onChange={(event) => updateForm("expectations", event.target.value)} /></Field>
