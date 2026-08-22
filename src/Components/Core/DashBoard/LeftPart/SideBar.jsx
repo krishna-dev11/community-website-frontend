@@ -27,7 +27,8 @@ const SideBar = ({ isSidebarOpen, setIsSidebarOpen }) => {
     );
   }
 
-  const userRole = user?.accountType;
+  const userAccountType = user?.accountType;
+  const userRoles = user?.roles || [];
 
   return (
     <>
@@ -53,7 +54,9 @@ const SideBar = ({ isSidebarOpen, setIsSidebarOpen }) => {
         
         <div className="flex flex-col text-white translate-y-14 gap-y-4 flex-1 px-2 md:px-4 overflow-y-auto custom-scrollbar">
           {sidebarLinks.map((section, i) => {
-            if (section.roles && !section.roles.includes(userRole)) return null;
+            const accountAllowed = !section.accountTypes || section.accountTypes.includes(userAccountType);
+            const roleAllowed = !section.roles || section.roles.some((role) => userRoles.includes(role) || role === userAccountType);
+            if (!accountAllowed || !roleAllowed) return null;
 
             return (
               <div key={i} className="flex flex-col gap-y-3">

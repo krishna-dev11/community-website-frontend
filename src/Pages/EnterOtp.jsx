@@ -36,8 +36,7 @@ const EnterOtp = () => {
   const submitHandler = (e) => {
     e.preventDefault();
     if (!signUpData) return;
-    const { FirstName, lastName, CreatePassword, ConfirmPassword, EmailAddress, accountType } = signUpData;
-    dispatch(signUp(FirstName, lastName, EmailAddress, CreatePassword, ConfirmPassword, accountType, otp, navigate));
+    dispatch(signUp(signUpData, otp, navigate));
   };
 
   return (
@@ -51,8 +50,8 @@ const EnterOtp = () => {
             <FiShield size={32} />
           </div>
           <div>
-            <h2 className="text-3xl font-bold tracking-tight text-white">Identity Sync</h2>
-            <p className="text-gray-500 text-xs font-bold uppercase tracking-[0.2em] mt-1">Verification Code Transmitted</p>
+            <h2 className="text-3xl font-bold tracking-tight text-white">Email Verification</h2>
+            <p className="text-gray-500 text-xs font-bold uppercase tracking-[0.2em] mt-1">OTP sent to your email</p>
           </div>
         </div>
 
@@ -72,13 +71,13 @@ const EnterOtp = () => {
 
           <div className="flex flex-col gap-6">
             <button type="submit" className="w-full py-5 bg-white text-black font-bold rounded-2xl uppercase tracking-[0.2em] text-xs hover:bg-gray-200 transition-all shadow-[0_0_50px_rgba(255,255,255,0.15)] active:scale-95">
-              Authorize Access
+              Submit Registration
             </button>
 
             <div className="flex items-center justify-center gap-3">
               {canResend ? (
-                <button type="button" onClick={() => dispatch(sendOtp(signUpData.EmailAddress, navigate))} className="flex items-center gap-2 text-emerald-400 text-[10px] font-bold uppercase tracking-widest hover:text-white transition-colors">
-                  <FiRefreshCw /> Resend Protocol
+                <button type="button" onClick={() => dispatch(sendOtp(signUpData.email))} className="flex items-center gap-2 text-emerald-400 text-[10px] font-bold uppercase tracking-widest hover:text-white transition-colors">
+                  <FiRefreshCw /> Resend OTP
                 </button>
               ) : (
                 <span className="text-gray-600 text-[10px] font-bold uppercase tracking-widest">Retry Available in {timer}s</span>

@@ -6,17 +6,136 @@ export const endpoints = {
   SIGNUP_API: BASE_URL + "/auth/signUP",
   LOGIN_API: BASE_URL + "/auth/login",
   GOOGLE_AUTH_LOGIN_API : BASE_URL + "/auth/google-login",
-  LOGOUT_API: BASE_URL + "/auth/loginOut",
+  LOGOUT_API: BASE_URL + "/auth/logout",
   RESETPASSTOKEN_API: BASE_URL + "/auth/forgotpasswordToken",
   RESETPASSWORD_API: BASE_URL + "/auth/forgotPassword",
 }
 
 export const profileEndpoints = {
-  GET_USER_DETAILS_API: BASE_URL + "/profile/getUserDetails",
+  GET_USER_DETAILS_API: BASE_URL + "/profile/getAllUserDetails",
+  MEMBER_DIRECTORY_API: BASE_URL + "/profile/directory",
   GET_USER_ENROLLED_COURSES_API: BASE_URL + "/profile/getEnrolledCourses",
   GET_ALL_COURSES_OF_INSTRUCTOR_FOR_DASHBOARD : BASE_URL + "/profile/getAllCoursesOfInstructorForInstructorDashBoard",
   GET_INSTRUCTOR_DASHBOARD_DATA: BASE_URL + "/profile/GetInstructorDasboardData",
   
+}
+
+export const adminEndpoints = {
+  PENDING_REGISTRATIONS_API: BASE_URL + "/auth/registrations/pending",
+  REVIEW_REGISTRATION_API: (userId) => BASE_URL + `/auth/registrations/${userId}/review`,
+}
+
+export const familyEndpoints = {
+  MY_FAMILY_API: BASE_URL + "/families/me",
+  CREATE_FAMILY_API: BASE_URL + "/families",
+  SEARCH_FAMILIES_API: BASE_URL + "/families/search",
+  JOIN_FAMILY_API: (familyId) => BASE_URL + `/families/${familyId}/join-requests`,
+  FAMILY_JOIN_REQUESTS_API: (familyId) => BASE_URL + `/families/${familyId}/join-requests`,
+  REVIEW_FAMILY_JOIN_REQUEST_API: (familyId, requestId) => BASE_URL + `/families/${familyId}/join-requests/${requestId}`,
+  TRANSFER_FAMILY_ADMIN_API: (familyId) => BASE_URL + `/families/${familyId}/admin`,
+}
+
+export const contentEndpoints = {
+  NOTICES_API: BASE_URL + "/content/notices",
+  ADMIN_NOTICES_API: BASE_URL + "/content/admin/notices",
+  NOTICE_API: (noticeId) => BASE_URL + `/content/notices/${noticeId}`,
+  PUBLISH_NOTICE_API: (noticeId) => BASE_URL + `/content/notices/${noticeId}/publish`,
+  ARCHIVE_NOTICE_API: (noticeId) => BASE_URL + `/content/notices/${noticeId}/archive`,
+  PUBLICATIONS_API: BASE_URL + "/content/publications",
+  ADMIN_PUBLICATIONS_API: BASE_URL + "/content/admin/publications",
+  PUBLICATION_API: (publicationId) => BASE_URL + `/content/publications/${publicationId}`,
+  PUBLISH_PUBLICATION_API: (publicationId) => BASE_URL + `/content/publications/${publicationId}/publish`,
+  ARCHIVE_PUBLICATION_API: (publicationId) => BASE_URL + `/content/publications/${publicationId}/archive`,
+  PUBLICATION_DOWNLOAD_API: (publicationId) => BASE_URL + `/content/publications/${publicationId}/download`,
+  MANAGEMENT_API: BASE_URL + "/content/management",
+  MANAGEMENT_MEMBER_API: (memberId) => BASE_URL + `/content/management/${memberId}`,
+  ARCHIVE_MANAGEMENT_MEMBER_API: (memberId) => BASE_URL + `/content/management/${memberId}/archive`,
+  CMS_CONTENT_API: (key) => BASE_URL + `/content/cms/${key}`,
+  GOTRAS_API: BASE_URL + "/content/gotras",
+  GOTRA_API: (gotraId) => BASE_URL + `/content/gotras/${gotraId}`,
+  ARCHIVE_GOTRA_API: (gotraId) => BASE_URL + `/content/gotras/${gotraId}/archive`,
+  GALLERY_ALBUMS_API: BASE_URL + "/content/gallery/albums",
+  GALLERY_ALBUM_API: (albumId) => BASE_URL + `/content/gallery/albums/${albumId}`,
+  ARCHIVE_GALLERY_ALBUM_API: (albumId) => BASE_URL + `/content/gallery/albums/${albumId}/archive`,
+  GALLERY_PHOTOS_API: (albumId) => BASE_URL + `/content/gallery/albums/${albumId}/photos`,
+  ARCHIVE_GALLERY_PHOTO_API: (albumId, photoId) => BASE_URL + `/content/gallery/albums/${albumId}/photos/${photoId}/archive`,
+}
+
+export const opportunityEndpoints = {
+  JOBS_API: BASE_URL + "/opportunities/jobs",
+  APPLY_JOB_API: (jobId) => BASE_URL + `/opportunities/jobs/${jobId}/applications`,
+  SCHOLARSHIPS_API: BASE_URL + "/opportunities/scholarships",
+  APPLY_SCHOLARSHIP_API: (scholarshipId) => BASE_URL + `/opportunities/scholarships/${scholarshipId}/applications`,
+}
+
+export const paymentEndpoints = {
+  DONATION_CAMPAIGNS_API: BASE_URL + "/payments/donation-campaigns",
+  ADMIN_DONATION_CAMPAIGNS_API: BASE_URL + "/payments/admin/donation-campaigns",
+  DONATION_CAMPAIGN_API: (campaignId) => BASE_URL + `/payments/donation-campaigns/${campaignId}`,
+  ARCHIVE_DONATION_CAMPAIGN_API: (campaignId) => BASE_URL + `/payments/donation-campaigns/${campaignId}/archive`,
+  CREATE_DONATION_ORDER_API: BASE_URL + "/payments/donations/orders",
+  DONATIONS_API: BASE_URL + "/payments/donations",
+  MY_DONATIONS_API: BASE_URL + "/payments/me/donations",
+  CONTRIBUTIONS_API: BASE_URL + "/payments/contributions",
+  GENERATE_CONTRIBUTIONS_API: BASE_URL + "/payments/contributions/generate",
+  MARK_OVERDUE_CONTRIBUTIONS_API: BASE_URL + "/payments/contributions/mark-overdue",
+  OFFLINE_CONTRIBUTION_PAYMENT_API: (contributionId) => BASE_URL + `/payments/contributions/${contributionId}/payments/offline`,
+  WAIVE_CONTRIBUTION_API: (contributionId) => BASE_URL + `/payments/contributions/${contributionId}/waive`,
+}
+
+export const communityEndpoints = {
+  ISSUES_API: BASE_URL + "/community/issues",
+  UPDATE_ISSUE_STATUS_API: (issueId) => BASE_URL + `/community/issues/${issueId}/status`,
+  ISSUE_RESPONSES_API: (issueId) => BASE_URL + `/community/issues/${issueId}/responses`,
+  CONFIRM_ISSUE_RESOLUTION_API: (issueId) => BASE_URL + `/community/issues/${issueId}/confirm-resolution`,
+  MY_DHARAMSHALA_BOOKINGS_API: BASE_URL + "/community/me/dharamshala/bookings",
+  DHARAMSHALA_BOOKINGS_API: BASE_URL + "/community/dharamshala/bookings",
+  REVIEW_DHARAMSHALA_BOOKING_API: (bookingId) => BASE_URL + `/community/dharamshala/bookings/${bookingId}/review`,
+  CANCEL_DHARAMSHALA_BOOKING_API: (bookingId) => BASE_URL + `/community/dharamshala/bookings/${bookingId}/cancel`,
+  DHARAMSHALA_AVAILABILITY_API: BASE_URL + "/community/dharamshala/availability",
+  DHARAMSHALA_BLOCKED_DATES_API: BASE_URL + "/community/dharamshala/blocked-dates",
+  ARCHIVE_DHARAMSHALA_BLOCKED_DATE_API: (blockId) => BASE_URL + `/community/dharamshala/blocked-dates/${blockId}/archive`,
+  POLLS_API: BASE_URL + "/community/polls",
+  UPDATE_POLL_STATUS_API: (pollId) => BASE_URL + `/community/polls/${pollId}/status`,
+  POLL_RESULTS_API: (pollId) => BASE_URL + `/community/polls/${pollId}/results`,
+  CAST_VOTE_API: (pollId) => BASE_URL + `/community/polls/${pollId}/votes`,
+  POSTS_API: BASE_URL + "/community/posts",
+  POST_COMMENTS_API: (postId) => BASE_URL + `/community/posts/${postId}/comments`,
+  REPORT_POST_API: (postId) => BASE_URL + `/community/posts/${postId}/reports`,
+  COMMUNITY_REPORTS_API: BASE_URL + "/community/reports",
+  REVIEW_COMMUNITY_REPORT_API: (reportId) => BASE_URL + `/community/reports/${reportId}`,
+  ACHIEVEMENTS_API: BASE_URL + "/community/achievements",
+  ADMIN_ACHIEVEMENTS_API: BASE_URL + "/community/admin/achievements",
+  REVIEW_ACHIEVEMENT_API: (achievementId) => BASE_URL + `/community/achievements/${achievementId}/review`,
+  SHRADHANJALIS_API: BASE_URL + "/community/shradhanjalis",
+  ADMIN_SHRADHANJALIS_API: BASE_URL + "/community/admin/shradhanjalis",
+  REVIEW_SHRADHANJALI_API: (shradhanjaliId) => BASE_URL + `/community/shradhanjalis/${shradhanjaliId}/review`,
+  MEMBERSHIP_CARD_API: BASE_URL + "/community/membership-cards/me",
+}
+
+export const notificationEndpoints = {
+  NOTIFICATIONS_API: BASE_URL + "/notifications",
+  MARK_NOTIFICATION_READ_API: (notificationId) => BASE_URL + `/notifications/${notificationId}/read`,
+  MARK_ALL_NOTIFICATIONS_READ_API: BASE_URL + "/notifications/read-all",
+}
+
+export const matrimonialEndpoints = {
+  MY_PROFILE_API: BASE_URL + "/matrimonial/profiles/me",
+  PROFILE_VISIBILITY_API: BASE_URL + "/matrimonial/profiles/me/visibility",
+  PROFILES_API: BASE_URL + "/matrimonial/profiles",
+  PROFILE_API: (profileId) => BASE_URL + `/matrimonial/profiles/${profileId}`,
+  EXPRESS_INTEREST_API: (profileId) => BASE_URL + `/matrimonial/profiles/${profileId}/interests`,
+  MY_INTERESTS_API: BASE_URL + "/matrimonial/interests/me",
+  RESPOND_INTEREST_API: (interestId) => BASE_URL + `/matrimonial/interests/${interestId}`,
+  REQUEST_CONTACT_API: (interestId) => BASE_URL + `/matrimonial/interests/${interestId}/contact-requests`,
+  MY_CONTACT_REQUESTS_API: BASE_URL + "/matrimonial/contact-requests/me",
+  REVIEW_CONTACT_REQUEST_API: (requestId) => BASE_URL + `/matrimonial/contact-requests/${requestId}`,
+  REPORT_PROFILE_API: (profileId) => BASE_URL + `/matrimonial/profiles/${profileId}/reports`,
+  BLOCK_PROFILE_API: (profileId) => BASE_URL + `/matrimonial/profiles/${profileId}/block`,
+  ADMIN_PROFILES_API: BASE_URL + "/matrimonial/admin/profiles",
+  REVIEW_PROFILE_API: (profileId) => BASE_URL + `/matrimonial/admin/profiles/${profileId}/review`,
+  ADMIN_REPORTS_API: BASE_URL + "/matrimonial/admin/reports",
+  REVIEW_REPORT_API: (reportId) => BASE_URL + `/matrimonial/admin/reports/${reportId}`,
 }
 
 export const studentEndpoints = {

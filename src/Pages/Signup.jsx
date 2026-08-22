@@ -4,9 +4,9 @@ import Template from '../Components/Core/Auth/Template'
 const Signup = () => {
   return (
     <Template
-      title="Bold Voice"
-      desc1="Join Vijayvargiya Spoken English and start building confidence."
-      desc2="Personality development, communication practice, and guided coaching."
+      title="Samaj Member Registration"
+      desc1="Submit your member profile for committee review."
+      desc2="After OTP verification, your account stays pending until approved."
       formtype="signup"
     />
   )

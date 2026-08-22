@@ -4,9 +4,9 @@ import Template from '../Components/Core/Auth/Template'
 const Login = () => {
   return (
     <Template
-      title="Welcome Back To Bold Voice"
-      desc1="Continue your spoken English and personality development journey."
-      desc2="Coaching, confidence, and communication growth in one place."
+      title="Samaj Portal Login"
+      desc1="Approved members and invited admins can access the dashboard."
+      desc2="Pending applications are reviewed by the committee before login is enabled."
       formtype="login"
     />
   )

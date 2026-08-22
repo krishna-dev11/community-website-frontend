@@ -73,34 +73,36 @@ export function  sendOtp(email){
     }
 }
 
-export function signUp(firstName , lastName, email , password, confirmPassword, accountType, otp , navigate){
+export function signUp(registrationData, otp , navigate){
     return async (dispatch)=>{
         const toastId = toast.loading("loading...")
         dispatch(setLoading(true))
         
         try{
+            const payload = typeof registrationData === "object"
+                ? {
+                    ...registrationData,
+                    email: registrationData.email?.trim().toLowerCase(),
+                    otp,
+                  }
+                : {};
 
             const response = await apiConnector("POST" , SIGNUP_API , {
-                firstName,
-                lastName,
-                email,
-                password,
-                confirmPassword,
-                accountType,
-                otp
+                ...payload,
+                confirmPassword: payload.confirmPassword,
             })
 
            if (!response.data || !response.data.success) {
                throw new Error(response.data?.message || "Unknown error occurred");
             }
 
-            toast.success("SignUp Successful")
+            toast.success("Registration submitted for review")
             navigate('/login')
 
         }catch(error){
 
-            console.log(error)
-            console.log("eror in SignUp")
+            console.log(error.response?.data || error)
+            toast.error(error.response?.data?.message || "Registration failed")
 
         }
         dispatch(setLoading(false))
@@ -125,11 +127,14 @@ export function setLogin(email , password , navigate){
                 throw new Error(response.data.message)
             }
 
-            dispatch(settoken(response.data.token))
-            localStorage.setItem("token" , JSON.stringify(response.data.token))
+            const token = response.data.token || response.data.data?.token || response.data.data?.accessToken
+            const userData = response.data.user || response.data.data?.user || response.data.User
 
-            dispatch(setUser(response.data.User))
-            localStorage.setItem("user" , JSON.stringify(response.data.User))
+            dispatch(settoken(token))
+            localStorage.setItem("token" , JSON.stringify(token))
+
+            dispatch(setUser(userData))
+            localStorage.setItem("user" , JSON.stringify(userData))
             
             toast.success("Login")
             navigate("/")
@@ -140,6 +145,10 @@ export function setLogin(email , password , navigate){
              if(error.response?.data?.googleAuth)
              {
                 toast.error("Try to login Using Google")
+            }else if(error.response?.data?.code?.startsWith("ACCOUNT_")){
+                const status = error.response?.data?.details?.accountStatus
+                const reason = error.response?.data?.details?.latestReview?.reason
+                toast.error(reason ? `Account ${status}: ${reason}` : "Your registration is still under review")
             }else{
                 toast.error(error.response?.data?.message || "login failed")
              }
@@ -200,10 +209,10 @@ export function setLogOut(navigate){
         try{
 
             dispatch(setUser(null))
-            localStorage.clear("token")
+            localStorage.removeItem("token")
 
             dispatch(settoken(null))
-            localStorage.clear("user")
+            localStorage.removeItem("user")
 
             toast.success("LogOut")
 

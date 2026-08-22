@@ -1,27 +1,37 @@
-import React, { useState } from "react";
-import { FiEye, FiEyeOff, FiGithub, FiUser, FiMail, FiLock, FiArrowRight } from "react-icons/fi";
-import { useNavigate, Link } from "react-router-dom";
+import { useState } from "react";
+import { FiArrowRight, FiBriefcase, FiCalendar, FiFileText, FiHome, FiLock, FiMail, FiMapPin, FiShield, FiUser } from "react-icons/fi";
+import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useDispatch } from "react-redux";
 import { setSignUpData } from "../../../Slices/Auth";
-import { sendOtp, setGoogleLogin } from "../../../services/Operations/authAPI";
-import { setUser } from "../../../Slices/Profile";
-import { GoogleLogin } from "@react-oauth/google";
-import Tab from "../../Common/Tab";
-import { ACCOUNT_TYPE, TabData } from "../../../Utilities/Constaints";
+import { sendOtp } from "../../../services/Operations/authAPI";
+import { ACCOUNT_TYPE } from "../../../Utilities/Constaints";
+
+const registrationSteps = [
+  "Submit member application",
+  "Verify email with OTP",
+  "Committee review",
+  "Account activation",
+];
 
 const SignUpForm = () => {
   const [formData, setFormData] = useState({
-    FirstName: "",
+    firstName: "",
     lastName: "",
-    CreatePassword: "",
-    ConfirmPassword: "",
-    EmailAddress: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    contactNumber: "",
+    dateOfBirth: "",
+    gender: "",
+    nativePlace: "",
+    currentCity: "",
+    education: "",
+    profession: "",
+    gotra: "",
+    address: "",
+    about: "",
   });
-
-  const [showCreatepassword, setShowCreatepassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [accountType, setAccountType] = useState(ACCOUNT_TYPE.STUDENT);
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -31,195 +41,190 @@ const SignUpForm = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const SubmitHandler = async (event) => {
+  const submitHandler = async (event) => {
     event.preventDefault();
-    if (formData.ConfirmPassword !== formData.CreatePassword) {
+
+    if (formData.password !== formData.confirmPassword) {
       toast.error("Passwords do not match");
       return;
     }
-    const data = {
-      ...formData,
-      EmailAddress: formData.EmailAddress.trim().toLowerCase(),
-      accountType,
-    };
-    const otpSent = await dispatch(sendOtp(data.EmailAddress, navigate));
 
+    const payload = {
+      ...formData,
+      email: formData.email.trim().toLowerCase(),
+      accountType: ACCOUNT_TYPE.MEMBER,
+    };
+
+    const otpSent = await dispatch(sendOtp(payload.email));
     if (otpSent) {
-      dispatch(setSignUpData(data));
-      dispatch(setUser(data));
+      dispatch(setSignUpData(payload));
       navigate("/enterOtp");
     }
   };
 
-  const handleGoogleSuccess = async (credentialResponse) => {
-    if (!accountType) {
-      toast.error("Please select account type first");
-      return;
-    }
-    dispatch(setGoogleLogin(credentialResponse.credential, accountType, navigate));
-  };
-
-  const labelStyle = "text-[10px] font-bold uppercase tracking-[0.2em] text-[#6b7280] ml-1 mb-1.5 block";
+  const inputClass = "w-full rounded-lg border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-emerald-400";
+  const labelClass = "mb-2 block text-xs font-bold uppercase tracking-[0.16em] text-white/50";
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-[#000000] p-4 md:p-10 font-sans">
-      
-      
-      
-      <div className="w-full lg:w-[90%] max-w-6xl h-auto lg:h-[85vh] bg-[#0a0a0a] rounded-[2.5rem] lg:rounded-[3.5rem] shadow-[0_50px_100px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col lg:flex-row border border-[#ffffff]/5">
-
-        
-        
-        <div className="hidden md:flex w-full lg:w-1/2 bg-gradient-to-br from-[#1a0b2e] via-[#000000] to-[#0a0a0a] p-10 lg:p-14 flex flex-col justify-center relative overflow-hidden border-b lg:border-b-0 lg:border-r border-[#ffffff]/5">
-          <div className="absolute top-[-5%] left-[-5%] w-48 h-48 bg-[#6A0DAD]/10 blur-[80px] rounded-full" />
-          <div className="absolute bottom-[-5%] right-[-5%] w-48 h-48 bg-[#10b981]/5 blur-[80px] rounded-full" />
-
-          <div className="relative z-10 space-y-6 lg:space-y-8">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#6A0DAD]/20 flex items-center justify-center border border-[#6A0DAD]/30 shadow-lg shrink-0">
-                <span className="text-[#ffffff] font-black text-lg">V</span>
-              </div>
-              <div className="flex flex-col leading-tight">
-                <span className="text-[11px] font-bold uppercase tracking-[0.3em] text-[#ffffff]">Bold Voive</span>
-                <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-[#10b981]/80">Spoken English</span>
-              </div>
+    <main className="min-h-screen bg-[#071412] px-4 pb-14 pt-28 text-white sm:px-6 lg:px-8">
+      <section className="mx-auto grid w-full max-w-7xl gap-8 lg:grid-cols-[380px_minmax(0,1fr)]">
+        <aside className="rounded-lg border border-white/10 bg-white/[0.04] p-6 lg:sticky lg:top-28 lg:self-start">
+          <div className="mb-6 flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-400 text-black">
+              <FiShield size={24} />
             </div>
-
-            <div className="space-y-4">
-              <h1 className="text-[#ffffff] text-3xl lg:text-5xl font-bold tracking-tighter leading-tight">
-                Master Your <br /> 
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#6A0DAD] to-[#a78bfa]">Elite Fluency</span>
-              </h1>
-              <p className="text-[#9ca3af] text-sm font-light leading-relaxed max-w-[300px]">
-                Join the league of confident speakers. Refine your persona today.
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-y-5 pt-2">
-              {[{s: "01", t: "Identity Sync"}, {s: "02", t: "Goal Discovery"}, {s: "03", t: "Node Activation"}].map((step, i) => (
-                <div key={i} className={`flex items-center gap-4 ${i > 0 && "opacity-30"}`}>
-                  <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-[9px] ${i === 0 ? "bg-[#ffffff] text-[#000000]" : "border border-[#4b5563] text-[#4b5563]"}`}>
-                    {step.s}
-                  </div>
-                  <p className="text-[#ffffff] text-[10px] font-bold uppercase tracking-widest">{step.t}</p>
-                </div>
-              ))}
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.22em] text-emerald-300">Samaj Portal</p>
+              <h1 className="text-2xl font-black tracking-normal text-white">Member Registration</h1>
             </div>
           </div>
-        </div>
 
-        
-        
-<div className="w-full lg:w-1/2 bg-[#000000] p-6 lg:p-10 flex flex-col justify-center lg:overflow-hidden">
-  
-  
-  <div className="mb-4 lg:mb-6">
-    <h2 className="text-xl lg:text-2xl font-bold text-[#ffffff] tracking-tight text-center lg:text-left uppercase">
-      Register Candidate
-    </h2>
-    <p className="text-[#6b7280] text-[11px] mt-1 font-light text-center lg:text-left">
-      Initiate your transformation protocol.
-    </p>
-  </div>
+          <p className="text-sm leading-6 text-white/62">
+            Register as a Samaj member. Your account will stay pending until the committee reviews and approves the application.
+          </p>
 
-  
-  <div className="mb-4 flex justify-center lg:justify-start transform scale-90 origin-left">
-     <Tab tabData={TabData} accountType={accountType} setaccountType={setAccountType} />
-  </div>
+          <div className="mt-8 grid gap-4">
+            {registrationSteps.map((step, index) => (
+              <div key={step} className="flex items-center gap-3">
+                <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-black ${index === 0 ? "bg-emerald-400 text-black" : "border border-white/15 text-white/45"}`}>
+                  {index + 1}
+                </div>
+                <p className="text-sm font-semibold text-white/75">{step}</p>
+              </div>
+            ))}
+          </div>
 
-  <form onSubmit={SubmitHandler} className="flex flex-col gap-3">
-    
-    
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      <label>
-        <span className={labelStyle}>First Name</span>
-        <div className="relative group">
-          <FiUser className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#4b5563] group-focus-within:text-[#10b981] text-xs" />
-          <input 
-            required name="FirstName" type="text" placeholder="John" 
-            value={formData.FirstName} onChange={changeHandler} 
-            className="w-full bg-[#1A1A1A] border border-[#ffffff]/5 rounded-lg px-10 py-2.5 text-[#ffffff] placeholder-[#4b5563] focus:border-[#10b981]/30 outline-none transition-all text-xs" 
-          />
-        </div>
-      </label>
-      <label>
-        <span className={labelStyle}>Last Name</span>
-        <input 
-          required name="lastName" type="text" placeholder="Doe" 
-          value={formData.lastName} onChange={changeHandler} 
-          className="w-full bg-[#1A1A1A] border border-[#ffffff]/5 rounded-lg px-4 py-2.5 text-[#ffffff] placeholder-[#4b5563] focus:border-[#10b981]/30 outline-none transition-all text-xs" 
-        />
-      </label>
-    </div>
+          <div className="mt-8 rounded-lg border border-amber-300/20 bg-amber-300/10 p-4 text-sm leading-6 text-amber-50/80">
+            Admin accounts are not self-registered. Super Admin creates an invite and assigns admin roles after verification.
+          </div>
+        </aside>
 
-    
-    <label>
-      <span className={labelStyle}>Communication Node (Email)</span>
-      <div className="relative group">
-        <FiMail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#4b5563] group-focus-within:text-[#10b981] text-xs" />
-        <input 
-          required name="EmailAddress" type="email" placeholder="candidate@email.com" 
-          value={formData.EmailAddress} onChange={changeHandler} 
-          className="w-full bg-[#1A1A1A] border border-[#ffffff]/5 rounded-lg px-10 py-2.5 text-[#ffffff] placeholder-[#4b5563] focus:border-[#10b981]/30 outline-none transition-all text-xs" 
-        />
-      </div>
-    </label>
+        <form onSubmit={submitHandler} className="rounded-lg border border-white/10 bg-white/[0.035] p-5 sm:p-7">
+          <div className="mb-7 border-b border-white/10 pb-6">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-300">Application Details</p>
+            <h2 className="mt-2 text-3xl font-black tracking-normal text-white">Create your member application</h2>
+            <p className="mt-3 max-w-3xl text-sm leading-6 text-white/55">
+              These details become your community profile after approval. You can update profile information later from the dashboard.
+            </p>
+          </div>
 
-    
-    <div className="grid grid-cols-2 gap-3">
-      <label className="relative">
-        <span className={labelStyle}>Create Pass</span>
-        <div className="relative group">
-          <FiLock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#4b5563] text-xs" />
-          <input 
-            required name="CreatePassword" type={showCreatepassword ? "text" : "password"} 
-            placeholder="••••" value={formData.CreatePassword} onChange={changeHandler} 
-            className="w-full bg-[#1A1A1A] border border-[#ffffff]/5 rounded-lg px-10 py-2.5 text-[#ffffff] outline-none text-xs" 
-          />
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-[#4b5563]" onClick={() => setShowCreatepassword(!showCreatepassword)}>
-            {showCreatepassword ? <FiEyeOff size={14} /> : <FiEye size={14} />}
-          </span>
-        </div>
-      </label>
-      <label className="relative">
-        <span className={labelStyle}>Confirm Pass</span>
-        <input 
-          required name="ConfirmPassword" type={showConfirmPassword ? "text" : "password"} 
-          placeholder="••••" value={formData.ConfirmPassword} onChange={changeHandler} 
-          className="w-full bg-[#1A1A1A] border border-[#ffffff]/5 rounded-lg px-4 py-2.5 text-[#ffffff] outline-none text-xs" 
-        />
-      </label>
-    </div>
+          <div className="grid gap-5 md:grid-cols-2">
+            <label>
+              <span className={labelClass}>First name</span>
+              <div className="relative">
+                <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-white/35" />
+                <input required name="firstName" value={formData.firstName} onChange={changeHandler} className={`${inputClass} pl-10`} placeholder="First name" />
+              </div>
+            </label>
 
-    
-    <button type="submit" className="w-full bg-[#ffffff] text-[#000000] font-bold py-3 rounded-xl mt-2 uppercase tracking-[0.2em] text-[9px] shadow-[0_0_30px_rgba(255,255,255,0.1)] hover:bg-[#10b981] transition-all active:scale-95 flex items-center justify-center gap-2">
-      Sync Account <FiArrowRight size={14} />
-    </button>
+            <label>
+              <span className={labelClass}>Last name</span>
+              <input required name="lastName" value={formData.lastName} onChange={changeHandler} className={inputClass} placeholder="Last name" />
+            </label>
 
-    
-    <div className="flex flex-col gap-3 mt-2">
-      <div className="flex items-center gap-3">
-        <div className="h-[1px] bg-[#ffffff]/5 flex-1" />
-        <span className="text-[8px] font-bold text-[#4b5563] uppercase tracking-widest">Handshake</span>
-        <div className="h-[1px] bg-[#ffffff]/5 flex-1" />
-      </div>
-      <div className="flex gap-2">
-        <div className="flex-1 bg-[#ffffff]/[0.03] border border-[#ffffff]/5 py-1 rounded-lg flex justify-center scale-90 origin-center">
-          <GoogleLogin onSuccess={handleGoogleSuccess} onError={() => toast.error("Sync Failed")} />
-        </div>
-        <button type="button" className="flex-1 bg-[#ffffff]/[0.03] border border-[#ffffff]/5 rounded-lg text-[#ffffff] text-[9px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-[#ffffff]/5 transition-all">
-           Github
-        </button>
-      </div>
-    </div>
+            <label>
+              <span className={labelClass}>Email</span>
+              <div className="relative">
+                <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-white/35" />
+                <input required type="email" name="email" value={formData.email} onChange={changeHandler} className={`${inputClass} pl-10`} placeholder="you@example.com" />
+              </div>
+            </label>
 
-    <p className="text-[#4b5563] text-center text-[9px] font-bold uppercase tracking-widest mt-2">
-      Already verified? <Link to="/login" className="text-[#ffffff] hover:text-[#10b981] transition-colors ml-1">Access Terminal</Link>
-    </p>
-  </form>
-</div>
-      </div>
-    </div>
+            <label>
+              <span className={labelClass}>Contact number</span>
+              <input name="contactNumber" value={formData.contactNumber} onChange={changeHandler} className={inputClass} placeholder="+91..." />
+            </label>
+
+            <label>
+              <span className={labelClass}>Password</span>
+              <div className="relative">
+                <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-white/35" />
+                <input required type="password" name="password" value={formData.password} onChange={changeHandler} className={`${inputClass} pl-10`} placeholder="Create password" />
+              </div>
+            </label>
+
+            <label>
+              <span className={labelClass}>Confirm password</span>
+              <input required type="password" name="confirmPassword" value={formData.confirmPassword} onChange={changeHandler} className={inputClass} placeholder="Confirm password" />
+            </label>
+
+            <label>
+              <span className={labelClass}>Date of birth</span>
+              <div className="relative">
+                <FiCalendar className="absolute left-3 top-1/2 -translate-y-1/2 text-white/35" />
+                <input type="date" name="dateOfBirth" value={formData.dateOfBirth} onChange={changeHandler} className={`${inputClass} pl-10`} />
+              </div>
+            </label>
+
+            <label>
+              <span className={labelClass}>Gender</span>
+              <select name="gender" value={formData.gender} onChange={changeHandler} className={inputClass}>
+                <option value="">Select gender</option>
+                <option value="MALE">Male</option>
+                <option value="FEMALE">Female</option>
+                <option value="OTHER">Other</option>
+              </select>
+            </label>
+
+            <label>
+              <span className={labelClass}>Native place</span>
+              <div className="relative">
+                <FiHome className="absolute left-3 top-1/2 -translate-y-1/2 text-white/35" />
+                <input name="nativePlace" value={formData.nativePlace} onChange={changeHandler} className={`${inputClass} pl-10`} placeholder="Native place" />
+              </div>
+            </label>
+
+            <label>
+              <span className={labelClass}>Current city</span>
+              <div className="relative">
+                <FiMapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-white/35" />
+                <input name="currentCity" value={formData.currentCity} onChange={changeHandler} className={`${inputClass} pl-10`} placeholder="Current city" />
+              </div>
+            </label>
+
+            <label>
+              <span className={labelClass}>Education</span>
+              <input name="education" value={formData.education} onChange={changeHandler} className={inputClass} placeholder="Education" />
+            </label>
+
+            <label>
+              <span className={labelClass}>Profession</span>
+              <div className="relative">
+                <FiBriefcase className="absolute left-3 top-1/2 -translate-y-1/2 text-white/35" />
+                <input name="profession" value={formData.profession} onChange={changeHandler} className={`${inputClass} pl-10`} placeholder="Profession" />
+              </div>
+            </label>
+
+            <label>
+              <span className={labelClass}>Gotra</span>
+              <input name="gotra" value={formData.gotra} onChange={changeHandler} className={inputClass} placeholder="Gotra" />
+            </label>
+
+            <label>
+              <span className={labelClass}>Address</span>
+              <input name="address" value={formData.address} onChange={changeHandler} className={inputClass} placeholder="Address" />
+            </label>
+          </div>
+
+          <label className="mt-5 block">
+            <span className={labelClass}>About / family reference</span>
+            <div className="relative">
+              <FiFileText className="absolute left-3 top-4 text-white/35" />
+              <textarea name="about" value={formData.about} onChange={changeHandler} rows={4} className={`${inputClass} resize-none pl-10`} placeholder="Short introduction or reference for verification" />
+            </div>
+          </label>
+
+          <button type="submit" className="mt-7 flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-400 px-5 py-4 text-sm font-black uppercase tracking-wider text-black transition hover:bg-emerald-300">
+            Send OTP and Continue
+            <FiArrowRight size={17} />
+          </button>
+
+          <p className="mt-5 text-center text-sm text-white/45">
+            Already approved? <Link to="/login" className="font-bold text-emerald-300 hover:text-emerald-200">Login here</Link>
+          </p>
+        </form>
+      </section>
+    </main>
   );
 };
 

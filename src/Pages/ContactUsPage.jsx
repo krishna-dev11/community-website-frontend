@@ -1,5 +1,4 @@
 import ModernFooter from '../Components/Core/Home/ModernFooter'
-import TestimonialSlider from '../Components/Core/Home/Testimonial/TestimonialSlider'
 import GetInTouchSection from '../Components/Core/About.jsx/GetInTouchSection'
 
 const ContactUsPage = () => {
@@ -16,7 +15,6 @@ const ContactUsPage = () => {
 
   
      <div className=' bg-richblack-900'>
-     <TestimonialSlider/>
      </div>        
 
         <ModernFooter/>
