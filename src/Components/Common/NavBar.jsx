@@ -50,6 +50,7 @@ const navigationItems = [
     type: "dropdown",
     icon: FiUsers,
     items: [
+      { title: "Dharamshala Booking", path: "/dharamshala", desc: "Samaj guest houses & yatri niwas" },
       { title: "Member Directory", path: "/dashboard/directory", desc: "Connect with verified Samaj members" },
       { title: "Family Hub", path: "/dashboard/family", desc: "Household profiles & SSSM ID tree" },
       { title: "Community Hub & Issues", path: "/dashboard/community", desc: "Raise issues & track solutions" },

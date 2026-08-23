@@ -27,15 +27,15 @@ const statusStyles = {
   EXPIRED: "border-gray-400/30 bg-gray-400/10 text-gray-200",
 };
 
-const adminRoles = [
-  "SUPER_ADMIN",
-  "MODERATOR",
-  "TREASURER",
-  "MATRIMONIAL_ADMIN",
-  "SCHOLARSHIP_ADMIN",
-  "JOB_ADMIN",
-  "DHARAMSHALA_ADMIN",
-  "CONTENT_ADMIN",
+const adminRoleOptions = [
+  { id: "SUPER_ADMIN", label: "Super Admin", desc: "Full platform permissions & system access", superAdminOnly: true },
+  { id: "MODERATOR", label: "Community Moderator", desc: "Moderate posts, discussions, and reported content" },
+  { id: "TREASURER", label: "Treasurer", desc: "Manage donations, funds, and financial records" },
+  { id: "MATRIMONIAL_ADMIN", label: "Matrimonial Admin", desc: "Verify matrimony profiles and contact requests" },
+  { id: "SCHOLARSHIP_ADMIN", label: "Scholarship Admin", desc: "Review education aid and grant applications" },
+  { id: "JOB_ADMIN", label: "Job Admin", desc: "Manage career opportunities and applications" },
+  { id: "DHARAMSHALA_ADMIN", label: "Dharamshala Admin", desc: "Manage Samaj Bhawan & room bookings" },
+  { id: "CONTENT_ADMIN", label: "Content Admin", desc: "Manage notices, circulars, magazine & media" },
 ];
 
 const ActionButton = ({ children, icon: Icon, tone = "neutral", ...props }) => {
@@ -389,78 +389,113 @@ const AdminRegistrationQueue = () => {
           </div>
         ) : (
           /* Admin Invites Tab */
-          <div className="grid gap-5 lg:grid-cols-[0.85fr_1.15fr]">
-            <form onSubmit={createInvite} className="grid gap-4 rounded-2xl border border-white/10 bg-white/[0.02] p-6">
-              <div className="flex items-center gap-2">
-                <FaShieldAlt className="text-emerald-300" size={16} />
-                <h2 className="text-lg font-bold text-white">Create Admin Invite</h2>
+          <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
+            <form onSubmit={createInvite} className="ka-card p-6 flex flex-col gap-4">
+              <div className="flex items-center gap-2 border-b border-[var(--border-subtle)] pb-3">
+                <FaShieldAlt className="text-[var(--accent-primary)]" size={18} />
+                <h2 className="text-base font-bold text-[var(--text-primary)]">Invite New Administrator</h2>
               </div>
+
               <label className="grid gap-1.5">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Email Address</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Administrator Email</span>
                 <input
                   type="email"
                   value={inviteForm.email}
                   onChange={(event) => setInviteForm((current) => ({ ...current, email: event.target.value }))}
-                  className="h-11 rounded-xl border border-white/10 bg-white/[0.03] px-3 text-sm text-white outline-none placeholder:text-gray-600 focus:border-emerald-400/40"
+                  placeholder="admin@samajportal.org"
+                  className="ka-input"
                   required
                 />
               </label>
+
               <div className="grid gap-2">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Assigned Roles</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
+                  Select Administrative Permissions
+                </span>
                 <div className="grid gap-2 sm:grid-cols-2">
-                  {adminRoles.map((role) => {
-                    const selected = inviteForm.roles.includes(role);
-                    return (
-                      <button
-                        type="button"
-                        key={role}
-                        onClick={() => toggleInviteRole(role)}
-                        className={`h-10 rounded-xl border px-3 text-left text-[10px] font-bold uppercase tracking-wider transition ${
-                          selected
-                            ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-200"
-                            : "border-white/10 bg-white/[0.03] text-gray-400 hover:bg-white/[0.06]"
-                        }`}
-                      >
-                        {role}
-                      </button>
-                    );
-                  })}
+                  {adminRoleOptions
+                    .filter((opt) => !opt.superAdminOnly || user?.roles?.includes("SUPER_ADMIN"))
+                    .map((opt) => {
+                      const selected = inviteForm.roles.includes(opt.id);
+                      return (
+                        <div
+                          key={opt.id}
+                          onClick={() => toggleInviteRole(opt.id)}
+                          className={`p-3 rounded-2xl border transition-all cursor-pointer select-none flex items-start gap-2.5 ${
+                            selected
+                              ? "border-[var(--accent-primary)] bg-[var(--accent-primary)]/10 text-[var(--text-primary)] shadow-sm"
+                              : "border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:border-[var(--border-strong)]"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selected}
+                            readOnly
+                            className="mt-0.5 h-3.5 w-3.5 accent-[var(--accent-primary)] rounded cursor-pointer"
+                          />
+                          <div className="overflow-hidden">
+                            <p className={`text-xs font-bold ${selected ? "text-[var(--accent-primary)]" : "text-[var(--text-primary)]"}`}>
+                              {opt.label}
+                            </p>
+                            <p className="text-[10px] text-[var(--text-muted)] line-clamp-2 mt-0.5 leading-tight">
+                              {opt.desc}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
                 </div>
               </div>
+
               <ActionButton icon={FaPaperPlane} tone="success" disabled={activeUserId === "invite"}>
-                Send Admin Invite Link
+                {activeUserId === "invite" ? "Generating Invite..." : "Send Admin Invitation Link"}
               </ActionButton>
             </form>
 
-            <section className="grid gap-3">
+            <section className="flex flex-col gap-3">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1">
+                Issued Administrator Invitations ({invites.length})
+              </h2>
               {invites.map((invite) => (
-                <article key={invite._id} className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
-                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                <article key={invite._id} className="ka-card p-5">
+                  <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
                     <div>
-                      <h3 className="font-bold text-white">{invite.email}</h3>
-                      <p className="mt-1 text-sm text-gray-400">{invite.roles?.join(", ")}</p>
-                      <p className="mt-2 text-xs text-gray-500">
-                        Invited by {invite.invitedBy?.firstName || "Admin"} · expires {new Date(invite.expiresAt).toLocaleDateString("en-IN")}
+                      <h3 className="font-bold text-sm text-[var(--text-primary)]">{invite.email}</h3>
+                      <div className="flex flex-wrap gap-1.5 mt-1.5">
+                        {invite.roles?.map((r, i) => (
+                          <span
+                            key={i}
+                            className="inline-flex rounded-md border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[var(--accent-primary)]"
+                          >
+                            {r}
+                          </span>
+                        ))}
+                      </div>
+                      <p className="mt-2 text-[11px] text-[var(--text-muted)]">
+                        Invited by {invite.invitedBy?.firstName || "Admin"} • Expires {new Date(invite.expiresAt).toLocaleDateString("en-IN")}
                       </p>
                     </div>
                     <span
-                      className={`inline-flex w-fit rounded-md border px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest ${
-                        statusStyles[invite.status] || "border-white/10 bg-white/[0.03] text-gray-300"
+                      className={`inline-flex w-fit rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                        statusStyles[invite.status] || "border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-muted)]"
                       }`}
                     >
                       {invite.status}
                     </span>
                   </div>
-                  <div className="mt-4">
-                    <ActionButton
-                      icon={FaTimes}
-                      tone="danger"
-                      disabled={invite.status !== "PENDING" || activeUserId === invite._id}
-                      onClick={() => revokeInvite(invite._id)}
-                    >
-                      Revoke Invite
-                    </ActionButton>
-                  </div>
+
+                  {invite.status === "PENDING" ? (
+                    <div className="mt-3 border-t border-[var(--border-subtle)] pt-3 flex justify-end">
+                      <ActionButton
+                        icon={FaTimes}
+                        tone="danger"
+                        disabled={activeUserId === invite._id}
+                        onClick={() => revokeInvite(invite._id)}
+                      >
+                        Revoke Invitation
+                      </ActionButton>
+                    </div>
+                  ) : null}
                 </article>
               ))}
               {invites.length === 0 && <EmptyState />}

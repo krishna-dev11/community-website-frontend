@@ -475,15 +475,28 @@ const CommunityAdmin = () => {
             {activeTab === "bookings" && (
               <section className="grid gap-4">
                 {bookings.map((booking) => (
-                  <article key={booking._id} className="border border-white/10 bg-white/[0.02] p-5">
+                  <article key={booking._id} className="border border-white/10 bg-white/[0.02] p-5 rounded-xl">
                     <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                      <div>
-                        <h2 className="text-lg font-bold text-white">{booking.purpose}</h2>
-                        <p className="mt-1 text-sm text-gray-500">
-                          {formatDate(booking.startDate)} to {formatDate(booking.endDate)} - {booking.roomsRequested || 1} room(s)
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <h2 className="text-lg font-bold text-white">
+                            {booking.dharamshalaName || booking.dharamshala?.name || "Samaj Dharamshala"} — {booking.roomType || "Standard"}
+                          </h2>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${booking.isMember ? "bg-emerald-500/20 text-emerald-300" : "bg-amber-500/20 text-amber-300"}`}>
+                            {booking.isMember ? "MEMBER" : "GUEST"}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-400">
+                          <strong>Purpose:</strong> {booking.purpose}
                         </p>
-                        <p className="mt-2 text-xs text-gray-600">
-                          Requested by {booking.requester?.firstName || booking.guestName || "Member"}
+                        <p className="text-xs text-gray-500">
+                          📅 {formatDate(booking.startDate)} to {formatDate(booking.endDate)} · {booking.roomsRequested || 1} room(s) · {booking.numberOfGuests || 1} guest(s)
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          👤 <strong>Applicant:</strong> {booking.guestName || `${booking.requester?.firstName || ""} ${booking.requester?.lastName || ""}`} ({booking.guestPhone || "No Phone"}) · {booking.guestEmail || booking.requester?.email || ""}
+                        </p>
+                        <p className="text-xs font-bold text-emerald-400">
+                          💰 Total Amount: ₹{booking.totalAmount || 0} ({booking.paymentStatus || "PENDING"})
                         </p>
                       </div>
                       <Status value={booking.status} />

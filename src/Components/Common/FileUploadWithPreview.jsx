@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { FiUploadCloud, FiImage, FiFileText, FiTrash2, FiCheck, FiAlertCircle } from "react-icons/fi";
 import toast from "react-hot-toast";
+import { compressImage, CompressionPresets } from "../../Utilities/imageCompressor";
 
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
@@ -14,9 +15,11 @@ const FileUploadWithPreview = ({
   helperText,
   existingUrl = null,
   id,
+  isDocument = false,
 }) => {
   const [preview, setPreview] = useState(null);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isCompressing, setIsCompressing] = useState(false);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -35,7 +38,7 @@ const FileUploadWithPreview = ({
     }
   }, [file, existingUrl]);
 
-  const validateAndSet = (selectedFile) => {
+  const validateAndSet = async (selectedFile) => {
     if (!selectedFile) return;
 
     // Check size
@@ -64,7 +67,22 @@ const FileUploadWithPreview = ({
       }
     }
 
-    onFileSelect(selectedFile);
+    // If it's an image, apply intelligent client-side optimization
+    if (selectedFile.type && selectedFile.type.startsWith("image/")) {
+      try {
+        setIsCompressing(true);
+        const preset = isDocument ? CompressionPresets.DOCUMENT : CompressionPresets.PHOTO;
+        const optimizedFile = await compressImage(selectedFile, preset);
+        onFileSelect(optimizedFile);
+      } catch (err) {
+        onFileSelect(selectedFile);
+      } finally {
+        setIsCompressing(false);
+      }
+    } else {
+      // PDF or non-image, leave completely untouched
+      onFileSelect(selectedFile);
+    }
   };
 
   const handleChange = (e) => {

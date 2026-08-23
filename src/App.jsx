@@ -35,6 +35,7 @@ import NotificationsPage from "./Pages/NotificationsPage";
 import MatrimonialPage from "./Pages/MatrimonialPage";
 import AdminInviteAcceptPage from "./Pages/AdminInviteAcceptPage";
 import VerifyMemberCardPage from "./Pages/VerifyMemberCardPage";
+import DharamshalaPage from "./Pages/DharamshalaPage";
 
 // Initialize theme from localStorage before first React paint — prevents color flash
 initTheme();
@@ -52,6 +53,7 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/contact" element={<ContactUsPage />} />
+        <Route path="/dharamshala" element={<DharamshalaPage />} />
         <Route path="/notices" element={<PublicResourcePage type="notices" />} />
         <Route path="/publications" element={<PublicResourcePage type="publications" />} />
         <Route path="/gallery" element={<PublicResourcePage type="gallery" />} />

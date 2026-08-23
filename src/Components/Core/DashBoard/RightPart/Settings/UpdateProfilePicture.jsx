@@ -2,6 +2,7 @@ import React, { useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { FiUpload, FiImage } from "react-icons/fi";
 import { updateDisplayPicture } from "../../../../../services/Operations/DashBoard";
+import { compressImage, CompressionPresets } from "../../../../../Utilities/imageCompressor";
 
 const UpdateProfilePicture = () => {
   const { user } = useSelector((state) => state.profile);
@@ -13,9 +14,13 @@ const UpdateProfilePicture = () => {
   const [imageFile, setImageFile] = useState(null);
   const fileInputRef = useRef(null);
 
-  const changeHandler = (e) => {
+  const changeHandler = async (e) => {
     const file = e.target.files[0];
-    if (file) { setImageFile(file); previewFile(file); }
+    if (file) {
+      const compressed = await compressImage(file, CompressionPresets.AVATAR);
+      setImageFile(compressed);
+      previewFile(compressed);
+    }
   };
 
   const previewFile = (file) => {

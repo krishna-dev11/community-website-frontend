@@ -1,23 +1,23 @@
 export const chat_visit_call = [
-    {
-        id: 1 ,
-        heading:"Chat on us",
-        description:"Our friendly team is here to help.",
-        icon:"FaMessage",
-        detail:"@mail address"
-    },
-    {
-        id: 2,
-        heading:"Visit us",
-        description:"Come and say hello at our office HQ.",
-        icon:"FaEarthAfrica",
-        detail:"Here is the location/ address"
-    },
-    {
-        id: 3,
-        heading:"Call us",
-        description:"Mon - Fri From 8am to 5pm",
-        icon:"FaPhone",
-        detail:"+123 456 7890"
-    }
-]
+  {
+    id: 1,
+    heading: "Email Secretariat",
+    description: "Write to our administrative helpdesk for queries.",
+    icon: "FaEnvelope",
+    detail: "helpdesk@samajportal.org",
+  },
+  {
+    id: 2,
+    heading: "Visit Samaj Bhawan",
+    description: "Head Secretariat & Community Hall office.",
+    icon: "FaMapMarkerAlt",
+    detail: "Samaj Bhawan, Community Center Road, Sector 5, New Delhi - 110001",
+  },
+  {
+    id: 3,
+    heading: "Call / WhatsApp",
+    description: "Mon - Sat from 9:00 AM to 6:00 PM",
+    icon: "FaPhone",
+    detail: "+91 98765 43210 / +91 11 2345 6789",
+  },
+];

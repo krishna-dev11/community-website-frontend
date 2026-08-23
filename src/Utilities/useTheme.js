@@ -7,8 +7,7 @@ const THEME_KEY = "samaj_theme";
  * Reads the persisted preference from localStorage and syncs it
  * to the `data-theme` attribute on <html> so CSS variables flip automatically.
  *
- * Usage:
- *   const { theme, toggleTheme, isDark } = useTheme();
+ * Default theme on first visit: "light"
  */
 export function useTheme() {
   const getInitial = () => {
@@ -18,10 +17,8 @@ export function useTheme() {
     } catch {
       // ignore SSR / private-mode errors
     }
-    // Default: prefer system preference, fall back to dark
-    return window.matchMedia?.("(prefers-color-scheme: light)").matches
-      ? "light"
-      : "dark";
+    // Default to light mode for all first-time visitors
+    return "light";
   };
 
   const [theme, setTheme] = useState(getInitial);
@@ -53,7 +50,9 @@ export function initTheme() {
       document.documentElement.setAttribute("data-theme", saved);
       return;
     }
-    const prefersDark = window.matchMedia?.("(prefers-color-scheme: dark)").matches;
-    document.documentElement.setAttribute("data-theme", prefersDark ? "dark" : "light");
-  } catch {}
+    // Default to light
+    document.documentElement.setAttribute("data-theme", "light");
+  } catch {
+    document.documentElement.setAttribute("data-theme", "light");
+  }
 }

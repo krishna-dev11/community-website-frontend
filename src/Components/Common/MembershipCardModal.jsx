@@ -14,7 +14,7 @@ import QRCode from "react-qr-code";
 import { jsPDF } from "jspdf";
 import toast from "react-hot-toast";
 
-const generateCardImage = async (cardData, verificationUrl, formattedMemberId) => {
+export const generateCardImage = async (cardData, verificationUrl, formattedMemberId) => {
   const canvas = document.createElement("canvas");
   const width = 1000;
   const height = 580;

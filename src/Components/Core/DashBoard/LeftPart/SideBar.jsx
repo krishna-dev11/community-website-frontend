@@ -45,8 +45,8 @@ const SideBar = ({ isSidebarOpen, setIsSidebarOpen }) => {
       `}>
         <div className="absolute bottom-[-10%] left-[-20%] w-[300px] h-[300px] bg-[var(--accent-primary)]/5 blur-[100px] rounded-full pointer-events-none" />
 
-        {/* Scrollable Navigation Area - properly bounded with min-h-0 and generous bottom padding so Finance section is 100% visible */}
-        <div className="flex flex-col text-[var(--text-primary)] pt-20 md:pt-4 pb-28 gap-y-5 flex-1 min-h-0 px-2.5 md:px-4 overflow-y-auto custom-scrollbar">
+        {/* Scrollable Navigation Area - generous top and bottom padding so upper items and bottom Finance section are 100% visible */}
+        <div className="flex flex-col text-[var(--text-primary)] pt-20 md:pt-20 pb-28 gap-y-4 flex-1 min-h-0 px-2.5 md:px-4 overflow-y-auto custom-scrollbar">
           {sidebarLinks.map((section, i) => {
             const accountAllowed = !section.accountTypes || section.accountTypes.includes(userAccountType);
             const roleAllowed = !section.roles || section.roles.some((role) => userRoles.includes(role) || role === userAccountType);

@@ -14,23 +14,37 @@ const UpdateProfile = () => {
   const { register, handleSubmit, setValue, getValues, reset, formState: { errors } } = useForm({
     defaultValues: {
       FirstName: user?.firstName || "",
+      middleName: user?.additionalDetails?.middleName || "",
       LastName: user?.lastName || "",
       dateOfBirth: user?.additionalDetails?.dateOfBirth || "",
       contactNumber: user?.additionalDetails?.contactNumber || "",
-      about: user?.additionalDetails?.about || "",
       gender: user?.additionalDetails?.gender || "",
+      nativePlace: user?.additionalDetails?.nativePlace || "",
+      currentCity: user?.additionalDetails?.currentCity || "",
+      address: user?.additionalDetails?.address || "",
+      education: user?.additionalDetails?.education || "",
+      profession: user?.additionalDetails?.profession || "",
+      gotra: user?.additionalDetails?.gotra || "",
+      about: user?.additionalDetails?.about || "",
     }
   });
 
   useEffect(() => {
     if (user) {
       reset({
-        FirstName: user?.firstName,
-        LastName: user?.lastName,
-        dateOfBirth: user?.additionalDetails?.dateOfBirth,
-        contactNumber: user?.additionalDetails?.contactNumber,
-        about: user?.additionalDetails?.about,
-        gender: user?.additionalDetails?.gender,
+        FirstName: user?.firstName || "",
+        middleName: user?.additionalDetails?.middleName || "",
+        LastName: user?.lastName || "",
+        dateOfBirth: user?.additionalDetails?.dateOfBirth || "",
+        contactNumber: user?.additionalDetails?.contactNumber || "",
+        gender: user?.additionalDetails?.gender || "",
+        nativePlace: user?.additionalDetails?.nativePlace || "",
+        currentCity: user?.additionalDetails?.currentCity || "",
+        address: user?.additionalDetails?.address || "",
+        education: user?.additionalDetails?.education || "",
+        profession: user?.additionalDetails?.profession || "",
+        gotra: user?.additionalDetails?.gotra || "",
+        about: user?.additionalDetails?.about || "",
       });
     }
   }, [user, reset]);
@@ -42,45 +56,109 @@ const UpdateProfile = () => {
 
   return (
     <form onSubmit={handleSubmit(onFormSubmit)} className="flex flex-col gap-6">
+      {/* 1. Personal Details */}
       <div className="ka-card p-6 md:p-8">
         <div className="mb-6 border-b border-[var(--border-subtle)] pb-4">
-          <div className="eyebrow-badge mb-1">Information</div>
+          <div className="eyebrow-badge mb-1">Section 1</div>
           <h3 className="text-xl font-bold tracking-tight text-[var(--text-primary)]">
-            Personal <span className="text-gradient">Details</span>
+            Personal <span className="text-gradient">Information</span>
           </h3>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <label>
-            <span className={labelStyle}>First Name</span>
-            <input type="text" placeholder="John" {...register("FirstName", { required: true })} className={inputStyle} />
+            <span className={labelStyle}>First Name *</span>
+            <input type="text" placeholder="First Name" {...register("FirstName", { required: true })} className={inputStyle} />
           </label>
 
           <label>
-            <span className={labelStyle}>Last Name</span>
-            <input type="text" placeholder="Doe" {...register("LastName", { required: true })} className={inputStyle} />
+            <span className={labelStyle}>Middle Name</span>
+            <input type="text" placeholder="Middle Name" {...register("middleName")} className={inputStyle} />
+          </label>
+
+          <label>
+            <span className={labelStyle}>Last Name *</span>
+            <input type="text" placeholder="Last Name" {...register("LastName", { required: true })} className={inputStyle} />
           </label>
 
           <label>
             <span className={labelStyle}>Date of Birth</span>
-            <input type="date" {...register("dateOfBirth", { required: true })} className={inputStyle} />
+            <input type="date" {...register("dateOfBirth")} className={inputStyle} />
           </label>
 
           <label>
             <span className={labelStyle}>Contact Number</span>
-            <input type="tel" placeholder="10-digit number" {...register("contactNumber", { required: true, maxLength: 10 })} className={inputStyle} />
+            <input type="tel" placeholder="10-digit number" {...register("contactNumber", { maxLength: 15 })} className={inputStyle} />
           </label>
 
-          <div className="md:col-span-2">
+          <label>
+            <span className={labelStyle}>Gotra</span>
+            <input type="text" placeholder="e.g. Kashyap, Garg" {...register("gotra")} className={inputStyle} />
+          </label>
+
+          <div className="md:col-span-3">
             <span className={labelStyle}>Gender Identity</span>
             <div className="bg-[var(--surface-elevated)] border border-[var(--border-subtle)] p-4 rounded-2xl">
               <CustomRadioButton name="gender" register={register} setValue={setValue} errors={errors} getValues={getValues} />
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* 2. Address & Residence */}
+      <div className="ka-card p-6 md:p-8">
+        <div className="mb-6 border-b border-[var(--border-subtle)] pb-4">
+          <div className="eyebrow-badge mb-1">Section 2</div>
+          <h3 className="text-xl font-bold tracking-tight text-[var(--text-primary)]">
+            Location & <span className="text-gradient">Residence</span>
+          </h3>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <label>
+            <span className={labelStyle}>Native Place / Mool Niwas</span>
+            <input type="text" placeholder="e.g. Jaipur, Nagaur, etc." {...register("nativePlace")} className={inputStyle} />
+          </label>
+
+          <label>
+            <span className={labelStyle}>Current City</span>
+            <input type="text" placeholder="e.g. Mumbai, Delhi, Ahmedabad" {...register("currentCity")} className={inputStyle} />
+          </label>
 
           <div className="md:col-span-2">
-            <span className={labelStyle}>Bio / About</span>
-            <textarea rows={4} placeholder="Describe yourself..." {...register("about")} className={`${inputStyle} resize-none`} />
+            <label>
+              <span className={labelStyle}>Complete Residential Address</span>
+              <textarea rows={2} placeholder="House / Flat No., Street, Landmark, Pincode" {...register("address")} className={`${inputStyle} resize-none`} />
+            </label>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Education & Profession */}
+      <div className="ka-card p-6 md:p-8">
+        <div className="mb-6 border-b border-[var(--border-subtle)] pb-4">
+          <div className="eyebrow-badge mb-1">Section 3</div>
+          <h3 className="text-xl font-bold tracking-tight text-[var(--text-primary)]">
+            Education & <span className="text-gradient">Profession</span>
+          </h3>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <label>
+            <span className={labelStyle}>Highest Qualification</span>
+            <input type="text" placeholder="e.g. B.Tech, CA, MBBS, MBA, M.Com" {...register("education")} className={inputStyle} />
+          </label>
+
+          <label>
+            <span className={labelStyle}>Profession / Occupation</span>
+            <input type="text" placeholder="e.g. Software Engineer, Business Owner, Chartered Accountant" {...register("profession")} className={inputStyle} />
+          </label>
+
+          <div className="md:col-span-2">
+            <label>
+              <span className={labelStyle}>Bio / About Yourself</span>
+              <textarea rows={3} placeholder="Write a short summary about yourself..." {...register("about")} className={`${inputStyle} resize-none`} />
+            </label>
           </div>
         </div>
       </div>

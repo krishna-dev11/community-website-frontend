@@ -23,11 +23,12 @@ import {
   FiCalendar,
 } from "react-icons/fi";
 import QRCode from "react-qr-code";
-import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
 import { useSelector } from "react-redux";
 import { apiConnector } from "../../../../services/apiConnector";
 import { communityEndpoints } from "../../../../services/apis";
 import FileUploadWithPreview from "../../../Common/FileUploadWithPreview";
+import { generateCardImage } from "../../../Common/MembershipCardModal";
 
 const tabs = [
   { key: "card", label: "Membership Card", icon: FaIdCard },
@@ -236,28 +237,32 @@ const CommunityHub = () => {
   const updateShradhanjali = (key, value) => setShradhanjaliForm((current) => ({ ...current, [key]: value }));
 
   const handleDownloadCard = async () => {
-    if (!cardRef.current) return;
+    if (!card) return;
     try {
       setDownloadingCard(true);
-      const canvas = await html2canvas(cardRef.current, {
-        scale: 3,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: "#06130e",
+      const verificationUrl = card?.memberId
+        ? `${window.location.origin}/verify-member/${card.memberId}`
+        : `${window.location.origin}/verify-member/sample`;
+
+      const formattedMemberId = card?.memberId
+        ? `SMJ-${String(card.memberId).slice(-8).toUpperCase()}`
+        : "SMJ-MEMBER";
+
+      const imageBase64 = await generateCardImage(card, verificationUrl, formattedMemberId);
+
+      const pdf = new jsPDF({
+        orientation: "landscape",
+        unit: "mm",
+        format: [148, 105],
       });
 
-      const image = canvas.toDataURL("image/png");
-      const link = document.createElement("a");
+      pdf.addImage(imageBase64, "PNG", 4, 4, 140, 97);
       const cleanName = (card?.name || "Member").replace(/\s+/g, "_");
-      link.href = image;
-      link.download = `Samaj_Membership_Card_${cleanName}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      toast.success("Membership card image downloaded!");
+      pdf.save(`Samaj_Membership_Card_${cleanName}.pdf`);
+      toast.success("Membership card PDF downloaded!");
     } catch (err) {
       console.error("Card download error:", err);
-      toast.error("Failed to generate download image");
+      toast.error("Failed to generate PDF card");
     } finally {
       setDownloadingCard(false);
     }

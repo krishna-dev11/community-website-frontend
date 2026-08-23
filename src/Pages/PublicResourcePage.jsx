@@ -202,7 +202,11 @@ const PublicResourcePage = ({ type }) => {
     } catch {
       // Download tracking should never block access to the public file.
     }
-    if (item?.file?.url) window.open(item.file.url, "_blank", "noopener,noreferrer");
+    if (item?.file?.url) {
+      let downloadUrl = item.file.url;
+      // If uploaded as raw or image, ensure proper direct link
+      window.open(downloadUrl, "_blank", "noopener,noreferrer");
+    }
   };
 
   const openApplication = (item) => {

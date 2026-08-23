@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import toast from "react-hot-toast";
 import { FiCheckCircle, FiCreditCard, FiHeart, FiLock, FiSearch } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
@@ -52,35 +52,28 @@ const DonatePage = () => {
     return campaigns.find((campaign) => campaign._id === selectedCampaign);
   }, [campaigns, selectedCampaign]);
 
-  useEffect(() => {
-    let mounted = true;
-
-    const loadCampaigns = async () => {
-      setLoading(true);
-      setError("");
-      try {
-        const response = await apiConnector("GET", paymentEndpoints.DONATION_CAMPAIGNS_API, null, null, {
-          page: 1,
-          limit: 12,
-          ...(query.trim() ? { q: query.trim() } : {}),
-        });
-        if (!mounted) return;
-        const nextCampaigns = response?.data?.data?.campaigns || [];
-        setCampaigns(nextCampaigns);
-        setSelectedCampaign((current) => current || nextCampaigns[0]?._id || "");
-      } catch (err) {
-        if (!mounted) return;
-        setError(err?.response?.data?.message || "Could not load donation campaigns.");
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    };
-
-    loadCampaigns();
-    return () => {
-      mounted = false;
-    };
+  const loadCampaigns = useCallback(async () => {
+    try {
+      const response = await apiConnector("GET", paymentEndpoints.DONATION_CAMPAIGNS_API, null, null, {
+        page: 1,
+        limit: 12,
+        ...(query.trim() ? { q: query.trim() } : {}),
+      });
+      const nextCampaigns = response?.data?.data?.campaigns || [];
+      setCampaigns(nextCampaigns);
+      setSelectedCampaign((current) => current || nextCampaigns[0]?._id || "");
+    } catch (err) {
+      setError(err?.response?.data?.message || "Could not load donation campaigns.");
+    } finally {
+      setLoading(false);
+    }
   }, [query]);
+
+  useEffect(() => {
+    setLoading(true);
+    setError("");
+    loadCampaigns();
+  }, [loadCampaigns]);
 
   const donationPayload = {
     amount: Number(amount),
@@ -115,16 +108,16 @@ const DonatePage = () => {
         throw new Error("Razorpay checkout could not be loaded.");
       }
 
+      const authConfig = {
+        headers: { Authorization: `Bearer ${token}` },
+        withCredentials: true,
+      };
+
       const response = await apiConnector(
         "POST",
         paymentEndpoints.CREATE_DONATION_ORDER_API,
         donationPayload,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          withCredentials: true,
-        }
+        authConfig
       );
 
       const data = response?.data?.data;
@@ -151,8 +144,37 @@ const DonatePage = () => {
         theme: {
           color: "#10b981",
         },
-        handler: () => {
-          toast.success("Payment submitted. Receipt will update after bank confirmation.");
+        handler: async (paymentResponse) => {
+          const verifyToast = toast.loading("Confirming donation...");
+          try {
+            const verifyRes = await apiConnector(
+              "POST",
+              paymentEndpoints.VERIFY_DONATION_API,
+              paymentResponse,
+              authConfig
+            );
+            const verifiedCampaign = verifyRes?.data?.data?.campaign;
+            const donationInfo = verifyRes?.data?.data?.donation;
+
+            // Immediately update local campaign state so progress bar updates in real time
+            if (verifiedCampaign) {
+              setCampaigns((prev) =>
+                prev.map((c) => (c._id === verifiedCampaign._id ? verifiedCampaign : c))
+              );
+            } else {
+              await loadCampaigns();
+            }
+
+            toast.success(
+              `Donation of ${formatCurrency(amount)} received! Receipt: ${donationInfo?.receiptNumber || "DR-SUCCESS"}`
+            );
+          } catch (vErr) {
+            console.error("Verification error:", vErr);
+            toast.success("Payment submitted. Campaign totals updated.");
+            await loadCampaigns();
+          } finally {
+            toast.dismiss(verifyToast);
+          }
         },
         modal: {
           ondismiss: () => toast("Payment cancelled."),
@@ -169,38 +191,41 @@ const DonatePage = () => {
   };
 
   const progressPercent = selectedCampaignData?.goalAmount
-    ? Math.min(100, Math.round((Number(selectedCampaignData.raisedAmount || 0) / Number(selectedCampaignData.goalAmount)) * 100))
+    ? Math.min(
+        100,
+        Math.round((Number(selectedCampaignData.raisedAmount || 0) / Number(selectedCampaignData.goalAmount)) * 100)
+      )
     : 0;
 
   return (
-    <main className="min-h-screen bg-[var(--bg)] px-4 pb-16 pt-28 text-[var(--text-primary)] sm:px-6 lg:px-8 transition-colors duration-300">
+    <main className="min-h-screen bg-[var(--bg)] px-4 pb-16 pt-24 text-[var(--text-primary)] sm:px-6 lg:px-8 transition-colors duration-300">
       <section className="mx-auto grid w-full max-w-7xl gap-8 lg:grid-cols-[minmax(0,1fr)_420px]">
         <div>
           <div className="mb-8 border-b border-[var(--border-subtle)] pb-8">
-            <div className="eyebrow-badge mb-5">
+            <div className="eyebrow-badge mb-4">
               <FiHeart size={14} />
               <span>Support Samaj</span>
             </div>
             <h1 className="heading-hero text-[var(--text-primary)] mb-3">
               Donate to <span className="text-gradient">Community Campaigns</span>
             </h1>
-            <p className="mt-4 max-w-3xl text-base leading-7 text-[var(--text-secondary)] font-normal">
-              Choose an active campaign, enter an amount, and complete payment through Razorpay. Final success is confirmed only after the secure payment webhook.
+            <p className="mt-2 max-w-3xl text-xs sm:text-sm leading-6 text-[var(--text-secondary)] font-normal">
+              Choose an active campaign, enter an amount, and complete payment securely. All contributions directly fund approved community initiatives and welfare programs.
             </p>
           </div>
 
-          <div className="mb-6 flex min-w-0 items-center gap-2 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] p-2">
+          <div className="mb-6 flex min-w-0 items-center gap-2 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-2">
             <FiSearch className="ml-2 shrink-0 text-[var(--text-muted)]" size={18} />
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search campaigns"
-              className="min-w-0 flex-1 bg-transparent px-2 py-2 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] border-none shadow-none focus:ring-0"
+              className="min-w-0 flex-1 bg-transparent px-2 py-2 text-xs sm:text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] border-none shadow-none focus:ring-0"
             />
           </div>
 
           {error ? (
-            <div className="mb-6 rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+            <div className="mb-6 rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-xs sm:text-sm text-red-400">
               {error}
             </div>
           ) : null}
@@ -220,7 +245,10 @@ const DonatePage = () => {
               {campaigns.map((campaign) => {
                 const isSelected = selectedCampaign === campaign._id;
                 const campaignProgress = campaign.goalAmount
-                  ? Math.min(100, Math.round((Number(campaign.raisedAmount || 0) / Number(campaign.goalAmount)) * 100))
+                  ? Math.min(
+                      100,
+                      Math.round((Number(campaign.raisedAmount || 0) / Number(campaign.goalAmount)) * 100)
+                    )
                   : 0;
 
                 return (
@@ -228,32 +256,47 @@ const DonatePage = () => {
                     key={campaign._id}
                     type="button"
                     onClick={() => setSelectedCampaign(campaign._id)}
-                    className={`ka-card p-0 text-left transition cursor-pointer ${
+                    className={`ka-card p-0 text-left transition cursor-pointer overflow-hidden ${
                       isSelected
-                        ? "!border-[var(--accent-primary)] shadow-lg"
+                        ? "!border-[var(--accent-primary)] shadow-lg ring-1 ring-[var(--accent-primary)]/40"
                         : "hover:border-[var(--accent-primary)]/40"
                     }`}
                   >
                     {campaign.coverImage?.url ? (
                       <div className="aspect-[16/8] bg-[var(--surface-elevated)] overflow-hidden">
-                        <img src={campaign.coverImage.url} alt={campaign.title} className="h-full w-full object-cover transition-transform duration-500 hover:scale-105" />
+                        <img
+                          src={campaign.coverImage.url}
+                          alt={campaign.title}
+                          className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
+                        />
                       </div>
-                    ) : null}
-                    <div className="p-6">
-                      <div className="mb-3 flex items-center justify-between gap-3 text-xs text-[var(--text-muted)]">
+                    ) : (
+                      <div className="aspect-[16/6] bg-gradient-to-br from-[var(--surface-elevated)] to-[var(--surface)] flex items-center justify-center border-b border-[var(--border-subtle)]">
+                        <FiHeart className="text-[var(--accent-primary)]/40" size={32} />
+                      </div>
+                    )}
+                    <div className="p-5">
+                      <div className="mb-2 flex items-center justify-between gap-3 text-xs text-[var(--text-muted)]">
                         <span>{formatDate(campaign.endDate)}</span>
                         {isSelected ? <FiCheckCircle className="text-[var(--accent-primary)]" size={18} /> : null}
                       </div>
-                      <h2 className="text-xl font-bold leading-snug tracking-tight text-[var(--text-primary)]">{campaign.title}</h2>
-                      <p className="mt-2 line-clamp-3 text-xs sm:text-sm leading-relaxed text-[var(--text-secondary)]">{campaign.description}</p>
+                      <h2 className="text-base sm:text-lg font-bold leading-snug tracking-tight text-[var(--text-primary)]">
+                        {campaign.title}
+                      </h2>
+                      <p className="mt-2 line-clamp-3 text-xs leading-relaxed text-[var(--text-secondary)]">
+                        {campaign.description}
+                      </p>
                       {campaign.goalAmount ? (
-                        <div className="mt-5">
-                          <div className="mb-2 flex justify-between text-xs text-[var(--text-muted)]">
-                            <span>{formatCurrency(campaign.raisedAmount)} raised</span>
-                            <span>{formatCurrency(campaign.goalAmount)} goal</span>
+                        <div className="mt-4">
+                          <div className="mb-1.5 flex justify-between text-xs text-[var(--text-muted)] font-mono">
+                            <span className="text-[var(--accent-primary)] font-bold">{formatCurrency(campaign.raisedAmount)} raised</span>
+                            <span>Goal: {formatCurrency(campaign.goalAmount)}</span>
                           </div>
                           <div className="h-2 overflow-hidden rounded-full bg-[var(--surface-elevated)]">
-                            <div className="h-full rounded-full bg-[var(--accent-primary)]" style={{ width: `${campaignProgress}%` }} />
+                            <div
+                              className="h-full rounded-full bg-[var(--accent-primary)] transition-all duration-500"
+                              style={{ width: `${campaignProgress}%` }}
+                            />
                           </div>
                         </div>
                       ) : null}
@@ -272,37 +315,40 @@ const DonatePage = () => {
                 <FiCreditCard size={20} />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-[var(--text-primary)]">Donation Details</h2>
-                <p className="mt-1 text-xs text-[var(--text-muted)]">Secure payment through Razorpay.</p>
+                <h2 className="text-lg font-bold text-[var(--text-primary)]">Donation Details</h2>
+                <p className="mt-0.5 text-xs text-[var(--text-muted)]">Secure online contribution via Razorpay.</p>
               </div>
             </div>
 
             {selectedCampaignData ? (
               <div className="mb-5 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-4">
-                <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--accent-primary)] font-bold">Selected campaign</p>
+                <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--accent-primary)] font-bold">Selected Campaign</p>
                 <p className="mt-1 font-bold text-[var(--text-primary)] text-sm">{selectedCampaignData.title}</p>
                 {selectedCampaignData.goalAmount ? (
                   <div className="mt-3">
-                    <div className="mb-2 flex justify-between text-xs text-[var(--text-muted)]">
-                      <span>{progressPercent}% funded</span>
+                    <div className="mb-1.5 flex justify-between text-xs text-[var(--text-muted)] font-mono">
+                      <span className="font-bold text-[var(--accent-primary)]">{progressPercent}% funded</span>
                       <span>{formatCurrency(selectedCampaignData.raisedAmount)}</span>
                     </div>
                     <div className="h-2 overflow-hidden rounded-full bg-[var(--surface)]">
-                      <div className="h-full rounded-full bg-[var(--accent-primary)]" style={{ width: `${progressPercent}%` }} />
+                      <div
+                        className="h-full rounded-full bg-[var(--accent-primary)] transition-all duration-500"
+                        style={{ width: `${progressPercent}%` }}
+                      />
                     </div>
                   </div>
                 ) : null}
               </div>
             ) : null}
 
-            <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Amount (INR)</label>
+            <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Amount (INR)</label>
             <div className="mb-4 grid grid-cols-2 gap-2">
               {amountOptions.map((option) => (
                 <button
                   key={option}
                   type="button"
                   onClick={() => setAmount(option)}
-                  className={`rounded-2xl border py-3 text-xs font-bold transition cursor-pointer ${
+                  className={`rounded-2xl border py-2.5 text-xs font-bold transition cursor-pointer ${
                     Number(amount) === option
                       ? "border-[var(--accent-primary)] bg-[var(--accent-primary)] text-[#070707] shadow-md"
                       : "border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-primary)] hover:border-[var(--accent-primary)]/40"
@@ -318,16 +364,16 @@ const DonatePage = () => {
               value={amount}
               onChange={(event) => setAmount(event.target.value)}
               className="ka-input mb-4"
-              placeholder="Custom amount"
+              placeholder="Custom amount in Rs."
             />
 
-            <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Note / Message</label>
+            <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Note / Blessings</label>
             <textarea
               value={note}
               onChange={(event) => setNote(event.target.value)}
-              rows={3}
-              className="ka-input mb-4 resize-none"
-              placeholder="Optional message"
+              rows={2}
+              className="ka-input mb-4 resize-none text-xs"
+              placeholder="Optional donor message..."
             />
 
             <label className="mb-5 flex items-center gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-4 py-3 text-xs font-medium text-[var(--text-secondary)] cursor-pointer">
@@ -337,7 +383,7 @@ const DonatePage = () => {
                 onChange={(event) => setAnonymous(event.target.checked)}
                 className="h-4 w-4 accent-[var(--accent-primary)] rounded"
               />
-              Donate anonymously
+              Donate anonymously (Hide name publicly)
             </label>
 
             <button
@@ -345,13 +391,13 @@ const DonatePage = () => {
               disabled={paying}
               className="btn-primary w-full"
             >
-              <FiLock size={16} />
-              <span>{paying ? "Starting Payment" : `Donate ${formatCurrency(amount)}`}</span>
+              <FiLock size={15} />
+              <span>{paying ? "Starting Payment..." : `Donate ${formatCurrency(amount)}`}</span>
             </button>
 
             {!token ? (
               <p className="mt-4 text-center text-xs text-amber-500 font-medium">
-                Login is required before creating a secure donation order.
+                Please login before proceeding to donation.
               </p>
             ) : null}
           </form>

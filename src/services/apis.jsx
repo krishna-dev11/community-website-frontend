@@ -94,6 +94,7 @@ export const paymentEndpoints = {
   DONATION_CAMPAIGN_API: (campaignId) => BASE_URL + `/payments/donation-campaigns/${campaignId}`,
   ARCHIVE_DONATION_CAMPAIGN_API: (campaignId) => BASE_URL + `/payments/donation-campaigns/${campaignId}/archive`,
   CREATE_DONATION_ORDER_API: BASE_URL + "/payments/donations/orders",
+  VERIFY_DONATION_API: BASE_URL + "/payments/donations/verify",
   DONATIONS_API: BASE_URL + "/payments/donations",
   MY_DONATIONS_API: BASE_URL + "/payments/me/donations",
   CONTRIBUTIONS_API: BASE_URL + "/payments/contributions",
@@ -106,6 +107,8 @@ export const paymentEndpoints = {
 }
 
 export const communityEndpoints = {
+  DHARAMSHALAS_API: BASE_URL + "/community/dharamshalas",
+  DHARAMSHALA_DETAIL_API: (id) => BASE_URL + `/community/dharamshalas/${id}`,
   ISSUES_API: BASE_URL + "/community/issues",
   UPDATE_ISSUE_STATUS_API: (issueId) => BASE_URL + `/community/issues/${issueId}/status`,
   ISSUE_RESPONSES_API: (issueId) => BASE_URL + `/community/issues/${issueId}/responses`,
