@@ -16,10 +16,11 @@ import {
   FaTimes,
   FaGlobe,
 } from "react-icons/fa";
-import { FiX } from "react-icons/fi";
+import { FiX, FiFileText, FiEye } from "react-icons/fi";
 import { useSelector } from "react-redux";
 import { apiConnector } from "../../../../services/apiConnector";
 import { communityEndpoints } from "../../../../services/apis";
+import DocViewer from "../../../Common/DocViewer";
 
 const tabs = [
   { key: "issues", label: "Issues", icon: FaExclamationCircle },
@@ -107,6 +108,7 @@ const CommunityAdmin = () => {
   const [solutionModal, setSolutionModal] = useState(null); // { issueId, title, description }
   const [solutionForm, setSolutionForm] = useState({ solutionTitle: "", solutionSummary: "", solutionDetails: "", solutionCategory: "INFRASTRUCTURE" });
   const [publishingSolution, setPublishingSolution] = useState(false);
+  const [viewingDoc, setViewingDoc] = useState(null);
 
   const authConfig = useMemo(
     () => ({
@@ -372,7 +374,13 @@ const CommunityAdmin = () => {
       await apiConnector(
         "POST",
         communityEndpoints.PUBLISH_ISSUE_SOLUTION_API(solutionModal.issueId),
-        solutionForm,
+        {
+          title: solutionForm.solutionTitle,
+          summary: solutionForm.solutionSummary,
+          solution: solutionForm.solutionDetails,
+          category: solutionForm.solutionCategory,
+          ...solutionForm,
+        },
         authConfig
       );
       toast.success("Published as community solution");
@@ -813,43 +821,82 @@ const CommunityAdmin = () => {
 
             {activeTab === "achievements" && (
               <section className="grid gap-4">
-                {achievements.map((achievement) => (
-                  <article key={achievement._id} className="border border-white/10 bg-white/[0.02] p-5">
-                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                      <div className="flex min-w-0 gap-3">
-                        {achievement.image?.url ? <img src={achievement.image.url} alt={achievement.title} className="h-16 w-20 object-cover" /> : null}
-                        <div className="min-w-0">
-                          <h2 className="text-lg font-bold text-white">{achievement.title}</h2>
-                          <p className="mt-1 text-sm text-gray-500">{achievement.achieverName} - {achievement.category || "General"}</p>
-                          <p className="mt-2 line-clamp-2 text-xs text-gray-600">{achievement.description}</p>
+                {achievements.map((achievement) => {
+                  const photoUrl = achievement.recipientPhoto?.url || achievement.image?.url;
+                  const docUrl = achievement.supportingDocument?.url;
+                  return (
+                    <article key={achievement._id} className="border border-white/10 bg-white/[0.02] p-5 rounded-2xl">
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="flex min-w-0 gap-4">
+                          {photoUrl ? (
+                            <div className="relative shrink-0 w-20 h-28 sm:w-24 sm:h-32 rounded-xl overflow-hidden border border-[var(--border-subtle)] bg-[var(--surface-elevated)] shadow-md">
+                              <img
+                                src={photoUrl}
+                                alt={achievement.title}
+                                className="h-full w-full object-cover"
+                              />
+                              <span className="absolute bottom-1 right-1 rounded bg-black/70 px-1 py-0.5 text-[8px] font-bold text-white uppercase">
+                                9:16 Photo
+                              </span>
+                            </div>
+                          ) : null}
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h2 className="text-base sm:text-lg font-bold text-white">{achievement.title}</h2>
+                              <span className="rounded-md bg-[var(--accent-primary)]/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[var(--accent-primary)] border border-[var(--accent-primary)]/20">
+                                {achievement.category || "General"}
+                              </span>
+                            </div>
+                            <p className="mt-1 text-xs text-gray-400">
+                              Honoree: <strong className="text-white">{achievement.achieverName}</strong> {achievement.organization ? `· ${achievement.organization}` : ""} {achievement.year ? `(${achievement.year})` : ""}
+                            </p>
+                            <p className="mt-2 line-clamp-2 text-xs text-gray-400">{achievement.description}</p>
+
+                            {docUrl && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setViewingDoc({
+                                    url: docUrl,
+                                    title: `${achievement.achieverName} - Verification Proof`,
+                                  })
+                                }
+                                className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-300 transition hover:bg-emerald-500/20 cursor-pointer"
+                              >
+                                <FiFileText size={13} />
+                                <span>View Uploaded Proof Document</span>
+                                <FiEye size={12} />
+                              </button>
+                            )}
+                          </div>
                         </div>
+                        <Status value={achievement.status} />
                       </div>
-                      <Status value={achievement.status} />
-                    </div>
-                    <div className="mt-4 grid gap-3 border-t border-white/10 pt-4 lg:grid-cols-[1fr_auto_auto_auto]">
-                      <input
-                        className={inputClass}
-                        value={reviewDrafts[achievement._id]?.reason || ""}
-                        onChange={(event) =>
-                          setReviewDrafts((current) => ({
-                            ...current,
-                            [achievement._id]: { reason: event.target.value },
-                          }))
-                        }
-                        placeholder="Review reason"
-                      />
-                      <Button tone="success" onClick={() => reviewStory("achievement", achievement._id, "PUBLISHED")} disabled={busyId === achievement._id}>
-                        Publish
-                      </Button>
-                      <Button tone="warning" onClick={() => reviewStory("achievement", achievement._id, "REJECTED")} disabled={busyId === achievement._id}>
-                        Reject
-                      </Button>
-                      <Button tone="danger" onClick={() => reviewStory("achievement", achievement._id, "ARCHIVED")} disabled={busyId === achievement._id}>
-                        Archive
-                      </Button>
-                    </div>
-                  </article>
-                ))}
+                      <div className="mt-4 grid gap-3 border-t border-white/10 pt-4 lg:grid-cols-[1fr_auto_auto_auto]">
+                        <input
+                          className={inputClass}
+                          value={reviewDrafts[achievement._id]?.reason || ""}
+                          onChange={(event) =>
+                            setReviewDrafts((current) => ({
+                              ...current,
+                              [achievement._id]: { reason: event.target.value },
+                            }))
+                          }
+                          placeholder="Review reason"
+                        />
+                        <Button tone="success" onClick={() => reviewStory("achievement", achievement._id, "PUBLISHED")} disabled={busyId === achievement._id}>
+                          Publish
+                        </Button>
+                        <Button tone="warning" onClick={() => reviewStory("achievement", achievement._id, "REJECTED")} disabled={busyId === achievement._id}>
+                          Reject
+                        </Button>
+                        <Button tone="danger" onClick={() => reviewStory("achievement", achievement._id, "ARCHIVED")} disabled={busyId === achievement._id}>
+                          Archive
+                        </Button>
+                      </div>
+                    </article>
+                  );
+                })}
                 {achievements.length === 0 && <Empty text="No achievement submissions found." />}
               </section>
             )}
@@ -902,91 +949,103 @@ const CommunityAdmin = () => {
     </div>
 
     {/* Publish as Community Solution Modal */}
-    {solutionModal && (
-      <div className="fixed inset-0 z-[1300] flex items-center justify-center bg-black/75 px-4 py-8 backdrop-blur-md">
-        <form
-          onSubmit={publishSolution}
-          className="max-h-[90vh] w-full max-w-xl overflow-y-auto ka-card p-6 shadow-2xl border border-[var(--border-strong)]"
+ {solutionModal && (
+  <div className="fixed inset-0 z-[1300] flex items-center justify-center bg-black/75 px-4 py-8 backdrop-blur-md">
+    <form
+      onSubmit={publishSolution}
+      /* 1. Added flex flex-col & removed scroll from outer form */
+      className="flex max-h-[90vh] w-full max-w-xl flex-col ka-card p-6 shadow-2xl border border-[var(--border-strong)]"
+    >
+      {/* Header (Fixed) */}
+      <div className="mb-5 flex items-start justify-between gap-4 border-b border-[var(--border-subtle)] pb-4 shrink-0">
+        <div>
+          <span className="eyebrow-badge mb-2"><FaGlobe size={10} /><span>Publish Solution</span></span>
+          <h2 className="mt-2 text-xl font-bold text-[var(--text-primary)]">{solutionModal.title}</h2>
+          <p className="mt-1 text-xs text-[var(--text-muted)] line-clamp-2">{solutionModal.description}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setSolutionModal(null)}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer"
         >
-          <div className="mb-5 flex items-start justify-between gap-4 border-b border-[var(--border-subtle)] pb-4">
-            <div>
-              <span className="eyebrow-badge mb-2"><FaGlobe size={10} /><span>Publish Solution</span></span>
-              <h2 className="mt-2 text-xl font-bold text-[var(--text-primary)]">{solutionModal.title}</h2>
-              <p className="mt-1 text-xs text-[var(--text-muted)] line-clamp-2">{solutionModal.description}</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setSolutionModal(null)}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer"
-            >
-              <FiX size={18} />
-            </button>
-          </div>
-
-          <div className="grid gap-4">
-            <Field label="Solution Title *">
-              <input
-                className={inputClass}
-                value={solutionForm.solutionTitle}
-                onChange={(event) => setSolutionForm((current) => ({ ...current, solutionTitle: event.target.value }))}
-                placeholder="Clear, descriptive title for the public solution"
-                required
-              />
-            </Field>
-            <Field label="Category">
-              <select
-                className={inputClass}
-                value={solutionForm.solutionCategory}
-                onChange={(event) => setSolutionForm((current) => ({ ...current, solutionCategory: event.target.value }))}
-              >
-                <option value="INFRASTRUCTURE">Infrastructure</option>
-                <option value="WATER">Water / Utilities</option>
-                <option value="SAFETY">Safety</option>
-                <option value="ENVIRONMENT">Environment</option>
-                <option value="COMMUNITY_SERVICE">Community Service</option>
-                <option value="HEALTH">Health</option>
-                <option value="EDUCATION">Education</option>
-                <option value="OTHER">Other</option>
-              </select>
-            </Field>
-            <Field label="Short Summary">
-              <input
-                className={inputClass}
-                value={solutionForm.solutionSummary}
-                onChange={(event) => setSolutionForm((current) => ({ ...current, solutionSummary: event.target.value }))}
-                placeholder="One-line summary of how the issue was resolved"
-              />
-            </Field>
-            <Field label="Detailed Solution">
-              <textarea
-                className={textareaClass}
-                value={solutionForm.solutionDetails}
-                onChange={(event) => setSolutionForm((current) => ({ ...current, solutionDetails: event.target.value }))}
-                placeholder="Step-by-step resolution details, resources used, timeline, and outcome"
-              />
-            </Field>
-          </div>
-
-          <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            <button
-              type="button"
-              onClick={() => setSolutionModal(null)}
-              className="btn-secondary w-full"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={publishingSolution}
-              className="btn-primary w-full"
-            >
-              <FaGlobe size={14} />
-              <span>{publishingSolution ? "Publishing..." : "Publish Solution"}</span>
-            </button>
-          </div>
-        </form>
+          <FiX size={18} />
+        </button>
       </div>
-    )}
+
+      {/* 2. Scrollable Middle Area (Added overflow-y-auto & flex-1) */}
+      <div className="grid gap-4 overflow-y-auto flex-1 pr-1">
+        <Field label="Solution Title *">
+          <input
+            className={inputClass}
+            value={solutionForm.solutionTitle}
+            onChange={(event) => setSolutionForm((current) => ({ ...current, solutionTitle: event.target.value }))}
+            placeholder="Clear, descriptive title for the public solution"
+            required
+          />
+        </Field>
+        <Field label="Category">
+          <select
+            className={inputClass}
+            value={solutionForm.solutionCategory}
+            onChange={(event) => setSolutionForm((current) => ({ ...current, solutionCategory: event.target.value }))}
+          >
+            <option value="INFRASTRUCTURE">Infrastructure</option>
+            <option value="WATER">Water / Utilities</option>
+            <option value="SAFETY">Safety</option>
+            <option value="ENVIRONMENT">Environment</option>
+            <option value="COMMUNITY_SERVICE">Community Service</option>
+            <option value="HEALTH">Health</option>
+            <option value="EDUCATION">Education</option>
+            <option value="OTHER">Other</option>
+          </select>
+        </Field>
+        <Field label="Short Summary">
+          <input
+            className={inputClass}
+            value={solutionForm.solutionSummary}
+            onChange={(event) => setSolutionForm((current) => ({ ...current, solutionSummary: event.target.value }))}
+            placeholder="One-line summary of how the issue was resolved"
+          />
+        </Field>
+        <Field label="Detailed Solution">
+          <textarea
+            className={textareaClass}
+            value={solutionForm.solutionDetails}
+            onChange={(event) => setSolutionForm((current) => ({ ...current, solutionDetails: event.target.value }))}
+            placeholder="Step-by-step resolution details, resources used, timeline, and outcome"
+          />
+        </Field>
+      </div>
+
+      {/* Footer Buttons (Fixed) */}
+      <div className="mt-6 grid gap-3 sm:grid-cols-2 shrink-0 pt-2">
+        <button
+          type="button"
+          onClick={() => setSolutionModal(null)}
+          className="btn-secondary w-full"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={publishingSolution}
+          className="btn-primary w-full"
+        >
+          <FaGlobe size={14} />
+          <span>{publishingSolution ? "Publishing..." : "Publish Solution"}</span>
+        </button>
+      </div>
+    </form>
+  </div>
+)}
+
+    {/* Document Viewer Modal */}
+    <DocViewer
+      isOpen={Boolean(viewingDoc)}
+      onClose={() => setViewingDoc(null)}
+      url={viewingDoc?.url}
+      title={viewingDoc?.title}
+    />
     </>
   );
 };

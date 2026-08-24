@@ -26,6 +26,7 @@ import {
 } from "react-icons/fi";
 import { apiConnector } from "../services/apiConnector";
 import { communityEndpoints, contentEndpoints, opportunityEndpoints } from "../services/apis";
+import DocViewer from "../Components/Common/DocViewer";
 
 const formatDate = (value) => {
   if (!value) return "Open";
@@ -218,6 +219,7 @@ const PublicResourcePage = ({ type }) => {
   const [openAlbum, setOpenAlbum] = useState(null);
   const [albumLoading, setAlbumLoading] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(null);
+  const [viewingDoc, setViewingDoc] = useState(null);
 
   const params = useMemo(() => {
     const next = { page: 1, limit: type === "gallery" ? 12 : 10 };
@@ -288,7 +290,22 @@ const PublicResourcePage = ({ type }) => {
       await apiConnector("POST", contentEndpoints.PUBLICATION_DOWNLOAD_API(item._id));
     } catch {}
     if (item?.file?.url) {
-      window.open(item.file.url, "_blank", "noopener,noreferrer");
+      let downloadUrl = item.file.url;
+      if (downloadUrl.includes("cloudinary.com") && downloadUrl.includes("/upload/")) {
+        downloadUrl = downloadUrl.replace("/upload/", "/upload/fl_attachment/");
+      }
+      const cleanTitle = (item.title || "Samaj_Patrika").replace(/[^a-zA-Z0-9_-]/g, "_");
+      const a = document.createElement("a");
+      a.href = downloadUrl;
+      a.download = `${cleanTitle}.pdf`;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      toast.success("Publication download started");
+    } else {
+      toast.error("Publication file not found");
     }
   };
 
@@ -540,17 +557,30 @@ const PublicResourcePage = ({ type }) => {
 
                   <div className="pt-4 mt-4 border-t border-[var(--border-subtle)]">
                     {type === "publications" && item.file?.url ? (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handlePublicationDownload(item);
-                        }}
-                        className="btn-primary !py-2.5 !px-5 !text-xs w-full"
-                      >
-                        <FiDownload size={15} />
-                        <span>Download Edition</span>
-                      </button>
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setViewingDoc({ url: item.file.url, title: item.title });
+                          }}
+                          className="btn-secondary !py-2 !px-4 !text-xs w-full sm:w-auto"
+                        >
+                          <FiFileText size={14} />
+                          <span>Read Online</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePublicationDownload(item);
+                          }}
+                          className="btn-primary !py-2.5 !px-5 !text-xs w-full sm:flex-1"
+                        >
+                          <FiDownload size={15} />
+                          <span>Download Edition</span>
+                        </button>
+                      </div>
                     ) : type === "gallery" ? (
                       <button
                         type="button"
@@ -1096,6 +1126,14 @@ const PublicResourcePage = ({ type }) => {
           </form>
         </div>
       ) : null}
+
+      {/* Document / Publication Viewer */}
+      <DocViewer
+        isOpen={Boolean(viewingDoc)}
+        onClose={() => setViewingDoc(null)}
+        url={viewingDoc?.url}
+        title={viewingDoc?.title}
+      />
     </main>
   );
 };

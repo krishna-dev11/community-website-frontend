@@ -324,26 +324,26 @@ const MembershipCardModal = ({ isOpen, onClose }) => {
     : "SMJ-MEMBER";
 
   return (
-    <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/80 p-4 backdrop-blur-md">
-      <div className="relative w-full max-w-xl ka-card p-6 sm:p-8 shadow-[0_30px_90px_rgba(0,0,0,0.95)]">
+    <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/85 p-2 sm:p-4 backdrop-blur-md overflow-y-auto translate-y-[50px] ">
+      <div className="relative w-full max-w-xl max-h-[94vh] overflow-y-auto overflow-x-hidden ka-card p-4 sm:p-6 md:p-8 shadow-[0_30px_90px_rgba(0,0,0,0.95)] my-auto rounded-2xl">
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute right-5 top-5 flex h-9 w-9 items-center justify-center rounded-full border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-secondary)] transition-all hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] cursor-pointer"
+          className="absolute right-3.5 top-3.5 sm:right-5 sm:top-5 z-20 flex h-9 w-9 items-center justify-center rounded-full border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-secondary)] transition-all hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] cursor-pointer"
         >
           <FiX size={18} />
         </button>
 
         {/* Modal Header */}
-        <div className="mb-6 flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--accent-primary)]/30 bg-[var(--accent-primary)]/10 text-[var(--accent-primary)]">
-            <FiShield size={22} />
+        <div className="mb-4 sm:mb-6 flex items-center gap-3 pr-10">
+          <div className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--accent-primary)]/30 bg-[var(--accent-primary)]/10 text-[var(--accent-primary)]">
+            <FiShield size={20} />
           </div>
-          <div>
-            <h2 className="text-base font-bold uppercase tracking-wider text-[var(--text-primary)]">
+          <div className="min-w-0">
+            <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider text-[var(--text-primary)] truncate">
               Official Digital Membership Card
             </h2>
-            <p className="text-xs text-[var(--accent-primary)] font-medium">Samaj Community Verified Identity</p>
+            <p className="text-[11px] sm:text-xs text-[var(--accent-primary)] font-medium truncate">Samaj Community Verified Identity</p>
           </div>
         </div>
 
@@ -353,30 +353,22 @@ const MembershipCardModal = ({ isOpen, onClose }) => {
             <p className="text-xs text-[var(--text-secondary)]">Generating secure membership card credential...</p>
           </div>
         ) : error || !cardData ? (
-          <div className="rounded-2xl border border-dashed border-red-500/30 bg-red-500/5 p-8 text-center">
+          <div className="rounded-2xl border border-dashed border-red-500/30 bg-red-500/5 p-6 sm:p-8 text-center">
             <p className="text-sm font-bold text-red-400">{error || "Card not available."}</p>
             <p className="mt-2 text-xs text-[var(--text-secondary)]">
               Official membership cards are generated automatically once your application is approved and verified by the Super Admin.
             </p>
           </div>
         ) : (
-          <div>
+          <div className="w-full overflow-hidden">
             {/* THE DIGITAL MEMBERSHIP CARD */}
             <div
               ref={cardRef}
               data-membership-card="true"
+              className="w-full min-h-[300px] sm:min-h-[310px] rounded-2xl p-4 sm:p-6 relative overflow-hidden text-white shadow-2xl border-2 border-[#00DFA5]"
               style={{
-                width: "100%",
-                minHeight: "310px",
                 backgroundColor: "#07140e",
                 backgroundImage: "linear-gradient(135deg, #0d221a 0%, #06140e 60%, #030a07 100%)",
-                border: "2px solid #00DFA5",
-                borderRadius: "16px",
-                padding: "24px",
-                position: "relative",
-                overflow: "hidden",
-                color: "#ffffff",
-                boxShadow: "0 20px 50px rgba(0,0,0,0.5)",
               }}
             >
               {/* Decorative background glows */}
@@ -486,20 +478,11 @@ const MembershipCardModal = ({ isOpen, onClose }) => {
               </div>
 
               {/* Card Body */}
-              <div
-                style={{
-                  position: "relative",
-                  marginTop: "20px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: "16px",
-                }}
-              >
-                {/* Member Details */}
-                <div style={{ display: "flex", alignItems: "flex-start", gap: "16px", flex: 1 }}>
+              <div className="relative mt-4 sm:mt-5 flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4 sm:gap-4">
+                {/* Member Details & Photo */}
+                <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-3.5 sm:gap-4 flex-1 min-w-0 w-full sm:w-auto">
                   {/* Member Photo */}
-                  <div style={{ position: "relative", flexShrink: 0 }}>
+                  <div className="relative shrink-0">
                     <img
                       src={
                         cardData.photo ||
@@ -507,82 +490,38 @@ const MembershipCardModal = ({ isOpen, onClose }) => {
                       }
                       alt={cardData.name}
                       crossOrigin="anonymous"
-                      style={{
-                        width: "90px",
-                        height: "90px",
-                        borderRadius: "14px",
-                        objectFit: "cover",
-                        border: "2px solid #00DFA5",
-                        boxShadow: "0 8px 20px rgba(0,0,0,0.4)",
-                      }}
+                      className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover border-2 border-[#00DFA5] shadow-lg"
                     />
-                    <div
-                      style={{
-                        position: "absolute",
-                        bottom: "-6px",
-                        right: "-6px",
-                        width: "22px",
-                        height: "22px",
-                        borderRadius: "50%",
-                        backgroundColor: "#00DFA5",
-                        color: "#000000",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        border: "1.5px solid #07140e",
-                      }}
-                    >
+                    <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#00DFA5] text-black flex items-center justify-center border-2 border-[#07140e]">
                       <FiUserCheck size={12} />
                     </div>
                   </div>
 
-                  <div style={{ textAlign: "left", display: "flex", flexDirection: "col", gap: "4px" }}>
-                    <h4 style={{ fontSize: "17px", fontWeight: "900", color: "#ffffff", lineHeight: 1.2 }}>
+                  <div className="flex flex-col gap-1 min-w-0">
+                    <h4 className="text-base sm:text-lg font-black text-white leading-tight truncate">
                       {cardData.name}
                     </h4>
-                    <p
-                      style={{
-                        fontFamily: "monospace",
-                        fontSize: "12px",
-                        fontWeight: "700",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.05em",
-                        color: "#00DFA5",
-                        marginTop: "2px",
-                      }}
-                    >
+                    <p className="font-mono text-xs font-bold uppercase tracking-wider text-[#00DFA5]">
                       {formattedMemberId}
                     </p>
 
                     {cardData.family?.familyName && (
-                      <p style={{ fontSize: "11px", color: "#d1d5db", marginTop: "4px" }}>
-                        Family: <strong style={{ color: "#ffffff", fontWeight: "700" }}>{cardData.family.familyName}</strong>
+                      <p className="text-[11px] text-gray-300">
+                        Family: <strong className="text-white font-bold">{cardData.family.familyName}</strong>
                       </p>
                     )}
 
-                    <div style={{ display: "flex", gap: "8px", fontSize: "10px", color: "#9ca3af", marginTop: "6px" }}>
+                    <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 text-[10px] text-gray-400 mt-1">
                       <span>Issued: {cardData.issuedAt ? new Date(cardData.issuedAt).toLocaleDateString("en-IN") : "Active"}</span>
                       <span>•</span>
-                      <span style={{ color: "#6ee7b7", fontWeight: "600" }}>Lifetime Validity</span>
+                      <span className="text-emerald-300 font-semibold">Lifetime Validity</span>
                     </div>
                   </div>
                 </div>
 
                 {/* QR Code Container */}
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    borderRadius: "12px",
-                    padding: "8px",
-                    backgroundColor: "#ffffff",
-                    border: "1px solid rgba(0, 223, 165, 0.5)",
-                    boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
-                    flexShrink: 0,
-                  }}
-                >
-                  <div style={{ width: "76px", height: "76px" }}>
+                <div className="flex flex-col items-center rounded-xl p-2 bg-white border border-[#00DFA5]/50 shadow-md shrink-0 self-center sm:self-auto">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20">
                     <QRCode
                       value={verificationUrl}
                       size={76}
@@ -590,46 +529,18 @@ const MembershipCardModal = ({ isOpen, onClose }) => {
                       viewBox={`0 0 76 76`}
                     />
                   </div>
-                  <span
-                    style={{
-                      fontSize: "8px",
-                      fontWeight: "900",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.05em",
-                      color: "#000000",
-                      marginTop: "4px",
-                    }}
-                  >
+                  <span className="text-[8px] font-black uppercase tracking-wider text-black mt-1">
                     Scan To Verify
                   </span>
                 </div>
               </div>
 
               {/* Card Footer */}
-              <div
-                style={{
-                  position: "relative",
-                  marginTop: "20px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  paddingTop: "10px",
-                  borderTop: "1px solid rgba(0, 223, 165, 0.25)",
-                  fontSize: "9px",
-                  color: "#9ca3af",
-                }}
-              >
-                <span style={{ display: "flex", alignItems: "center", gap: "4px", color: "#00DFA5" }}>
+              <div className="relative mt-4 sm:mt-5 flex items-center justify-between pt-2.5 border-t border-[#00DFA5]/25 text-[9px] text-gray-400">
+                <span className="flex items-center gap-1 text-[#00DFA5] font-semibold">
                   <FiShield size={10} /> Digital Credential Standard
                 </span>
-                <span
-                  style={{
-                    fontFamily: "monospace",
-                    fontWeight: "700",
-                    letterSpacing: "0.08em",
-                    color: "#00DFA5",
-                  }}
-                >
+                <span className="font-mono font-bold tracking-wider text-[#00DFA5]">
                   SMJ-SECURITY-AUTHENTICATED
                 </span>
               </div>

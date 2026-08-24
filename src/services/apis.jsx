@@ -124,6 +124,7 @@ export const communityEndpoints = {
   UPDATE_POLL_STATUS_API: (pollId) => BASE_URL + `/community/polls/${pollId}/status`,
   POLL_RESULTS_API: (pollId) => BASE_URL + `/community/polls/${pollId}/results`,
   CAST_VOTE_API: (pollId) => BASE_URL + `/community/polls/${pollId}/votes`,
+  VOTE_API: (pollId) => BASE_URL + `/community/polls/${pollId}/votes`,
   POSTS_API: BASE_URL + "/community/posts",
   POST_COMMENTS_API: (postId) => BASE_URL + `/community/posts/${postId}/comments`,
   REPORT_POST_API: (postId) => BASE_URL + `/community/posts/${postId}/reports`,

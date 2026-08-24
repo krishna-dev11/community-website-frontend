@@ -435,14 +435,16 @@ const MatrimonialPage = () => {
                     <article key={profile._id} className="ka-card p-5 flex flex-col justify-between">
                       <div>
                         {profile.photos?.[0]?.url ? (
-                          <img
-                            src={profile.photos[0].url}
-                            alt={profile.displayName}
-                            className="mb-4 aspect-video w-full rounded-2xl object-cover border border-[var(--border-subtle)] shadow-sm"
-                          />
+                          <div className="mb-4 aspect-[9/16] max-h-80 w-full rounded-2xl overflow-hidden border border-[var(--border-subtle)] bg-[var(--surface-elevated)] shadow-sm">
+                            <img
+                              src={profile.photos[0].url}
+                              alt={profile.displayName}
+                              className="h-full w-full object-cover"
+                            />
+                          </div>
                         ) : (
-                          <div className="mb-4 flex aspect-video w-full items-center justify-center rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-muted)]">
-                            <FiUser size={36} />
+                          <div className="mb-4 flex aspect-[9/16] max-h-80 w-full items-center justify-center rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-muted)]">
+                            <FiUser size={48} />
                           </div>
                         )}
                         <div className="flex items-start justify-between gap-3">
@@ -586,7 +588,12 @@ const MatrimonialPage = () => {
 
                   <div className="border-t border-[var(--border-subtle)] pt-4">
                     <Field label="Profile Photo">
-                      <FileUploadWithPreview onFileSelect={setMatrimonialPhotoFile} existingUrl={form.photoUrl} label="Upload Matrimonial Photo" />
+                      <FileUploadWithPreview
+                        file={matrimonialPhotoFile}
+                        onFileSelect={setMatrimonialPhotoFile}
+                        existingUrl={form.photoUrl}
+                        label="Upload Matrimonial Photo (9:16 Portrait Recommended)"
+                      />
                     </Field>
                   </div>
 
@@ -719,6 +726,15 @@ const MatrimonialPage = () => {
                           <div>
                             <h3 className="font-bold text-sm text-[var(--text-primary)]">{request.requesterProfile?.displayName || "Member"}</h3>
                             <p className="mt-1 text-xs text-[var(--text-secondary)]">Requested phone and email access</p>
+                            {request.status === "APPROVED" && request.requesterProfile?.protectedContact ? (
+                              <div className="mt-2 text-xs font-mono text-[var(--accent-primary)] space-y-1">
+                                <p>📞 {request.requesterProfile.protectedContact.phone || "No phone"}</p>
+                                <p>✉️ {request.requesterProfile.protectedContact.email || "No email"}</p>
+                                {request.requesterProfile.protectedContact.address && (
+                                  <p>📍 {request.requesterProfile.protectedContact.address}</p>
+                                )}
+                              </div>
+                            ) : null}
                           </div>
                           <Status value={request.status} />
                         </div>
@@ -738,8 +754,12 @@ const MatrimonialPage = () => {
                             <h3 className="font-bold text-sm text-[var(--text-primary)]">{request.targetProfile?.displayName || "Profile"}</h3>
                             <p className="mt-1 text-xs text-[var(--text-secondary)]">Contact Request: {request.status}</p>
                             {request.status === "APPROVED" && request.targetProfile?.protectedContact ? (
-                              <div className="mt-2 text-xs font-mono text-[var(--accent-primary)]">
-                                📞 {request.targetProfile.protectedContact.phone || "No phone"} | ✉️ {request.targetProfile.protectedContact.email || "No email"}
+                              <div className="mt-2 text-xs font-mono text-[var(--accent-primary)] space-y-1">
+                                <p>📞 {request.targetProfile.protectedContact.phone || "No phone"}</p>
+                                <p>✉️ {request.targetProfile.protectedContact.email || "No email"}</p>
+                                {request.targetProfile.protectedContact.address && (
+                                  <p>📍 {request.targetProfile.protectedContact.address}</p>
+                                )}
                               </div>
                             ) : null}
                           </div>

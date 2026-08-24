@@ -31,6 +31,7 @@ const HomePage = () => {
   const [campaigns, setCampaigns] = useState([]);
   const [notices, setNotices] = useState([]);
   const [achievements, setAchievements] = useState([]);
+  const [managementMembers, setManagementMembers] = useState([]);
 
   useEffect(() => {
     // Fetch live campaigns for the donation section
@@ -46,6 +47,15 @@ const HomePage = () => {
     // Fetch achievements
     apiConnector("GET", communityEndpoints.ACHIEVEMENTS_API, null, null, { limit: 3 })
       .then((res) => setAchievements(res?.data?.data?.achievements || []))
+      .catch(() => {});
+
+    // Fetch Management Committee members
+    apiConnector("GET", contentEndpoints.MANAGEMENT_API, null, null, { limit: 12, status: "active" })
+      .then((res) => {
+        const data = res?.data?.data;
+        const members = Array.isArray(data) ? data : data?.members || data?.committee || [];
+        setManagementMembers(members);
+      })
       .catch(() => {});
   }, []);
 
@@ -458,18 +468,20 @@ const HomePage = () => {
                 <div key={ach._id} className="ka-card p-5 flex flex-col justify-between">
                   <div>
                     {ach.recipientPhoto?.url || ach.image?.url ? (
-                      <img
-                        src={ach.recipientPhoto?.url || ach.image?.url}
-                        alt={ach.title}
-                        className="w-full h-44 rounded-2xl object-cover mb-4 border border-[var(--border-subtle)] shadow-md"
-                      />
+                      <div className="mb-4 w-full aspect-[9/16] max-h-72 rounded-2xl overflow-hidden border border-[var(--border-subtle)] shadow-md">
+                        <img
+                          src={ach.recipientPhoto?.url || ach.image?.url}
+                          alt={ach.title}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
                     ) : (
                       <ImageSkeleton
-                        aspectRatio="aspect-[16/9]"
+                        aspectRatio="aspect-[9/16]"
                         label="Achievement Photo"
                         subLabel="Honoree certificate/photo"
                         rounded="rounded-2xl"
-                        className="mb-4"
+                        className="mb-4 max-h-72"
                       />
                     )}
                     <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--accent-primary)]">
@@ -496,11 +508,11 @@ const HomePage = () => {
                   <div key={idx} className="ka-card p-5 flex flex-col justify-between">
                     <div>
                       <ImageSkeleton
-                        aspectRatio="aspect-[16/9]"
+                        aspectRatio="aspect-[9/16]"
                         label="Member Milestone Placeholder"
                         subLabel="Achievement photo will be added here"
                         rounded="rounded-2xl"
-                        className="mb-4"
+                        className="mb-4 max-h-72"
                       />
                       <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--accent-primary)]">
                         Samaj Gaurav
@@ -882,7 +894,89 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* ================= 11. DIRECT CONTACT CTA ================= */}
+      {/* ================= 11. MANAGEMENT COMMITTEE ================= */}
+      <section className="py-20 bg-[var(--surface-elevated)] border-y border-[var(--border-subtle)]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
+            <div>
+              <div className="eyebrow-badge mb-3">
+                <FiUsers size={13} />
+                <span>Our Leadership</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-black text-[var(--text-primary)]">
+                Samaj Management Committee
+              </h2>
+              <p className="text-sm text-[var(--text-secondary)] mt-2 max-w-xl">
+                Our elected committee members dedicate their time and expertise to serve the community and uphold our shared values.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6">
+            {(managementMembers.length > 0 ? managementMembers : [
+              { name: "Smt. Priya Sharma", designation: "President", tenure: "2024–2026" },
+              { name: "Shri Ramesh Gupta", designation: "Vice President", tenure: "2024–2026" },
+              { name: "Smt. Kavita Joshi", designation: "Secretary", tenure: "2024–2026" },
+              { name: "Shri Mahesh Verma", designation: "Joint Secretary", tenure: "2024–2026" },
+              { name: "Smt. Sunita Agarwal", designation: "Treasurer", tenure: "2024–2026" },
+              { name: "Shri Anil Gothwal", designation: "Executive Member", tenure: "2024–2026" },
+            ]).map((member, idx) => (
+              <div
+                key={member._id || idx}
+                className="group flex flex-col items-center text-center gap-3 ka-card p-4 rounded-2xl hover:border-[var(--accent-primary)]/40 transition-all duration-300"
+              >
+                {/* Portrait Image */}
+                <div className="w-full aspect-[9/16] max-h-44 sm:max-h-52 rounded-xl overflow-hidden border border-[var(--border-subtle)] bg-[var(--surface-elevated)] shadow-md group-hover:shadow-emerald-500/10 transition-shadow">
+                  {member.photo?.url ? (
+                    <img
+                      src={member.photo.url}
+                      alt={member.name}
+                      className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-[var(--text-muted)] bg-gradient-to-b from-[var(--surface-elevated)] to-[var(--surface)]">
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="w-12 h-12 rounded-full bg-[var(--accent-primary)]/15 flex items-center justify-center">
+                          <FiUsers size={20} className="text-[var(--accent-primary)]" />
+                        </div>
+                        <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--text-muted)] px-2">
+                          {member.name?.split(" ")[1]?.[0] || ""}{member.name?.split(" ")[2]?.[0] || ""}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Info */}
+                <div className="w-full min-w-0">
+                  <p className="text-[11px] sm:text-xs font-black text-[var(--text-primary)] truncate leading-snug">
+                    {member.name}
+                  </p>
+                  <p className="text-[10px] font-bold text-[var(--accent-primary)] mt-0.5 truncate">
+                    {member.designation}
+                  </p>
+                  {member.tenure && (
+                    <p className="text-[9px] text-[var(--text-muted)] mt-0.5 truncate">
+                      {member.tenure}
+                    </p>
+                  )}
+                  {member.contact?.phone && (
+                    <a
+                      href={`tel:${member.contact.phone}`}
+                      className="mt-1.5 inline-flex items-center gap-1 text-[9px] font-bold text-[var(--text-secondary)] hover:text-[var(--accent-primary)] transition-colors"
+                    >
+                      <FiPhone size={9} />
+                      <span className="truncate">{member.contact.phone}</span>
+                    </a>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ================= 12. DIRECT CONTACT CTA ================= */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="ka-card p-8 sm:p-12 text-center relative overflow-hidden bg-gradient-to-br from-[var(--surface-raised)] via-[var(--surface)] to-[var(--surface-elevated)]">
           <h2 className="text-2xl sm:text-3xl font-black text-[var(--text-primary)] mb-3">

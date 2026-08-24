@@ -266,12 +266,14 @@ const DharamshalaPage = () => {
   });
 
   return (
-    <div className="relative min-h-screen w-full bg-[var(--bg)] text-[var(--text-primary)] transition-colors duration-300 pb-20">
-      {/* Background Decor */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[350px] bg-[var(--accent-primary)]/10 blur-[140px] rounded-full pointer-events-none" />
+    <div className="relative min-h-screen w-full max-w-full overflow-x-hidden bg-[var(--bg)] text-[var(--text-primary)] transition-colors duration-300 pb-20">
+      {/* Background Decor Contained */}
+      <div className="overflow-hidden pointer-events-none absolute inset-0 z-0">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] max-w-[100vw] h-[350px] bg-[var(--accent-primary)]/10 blur-[140px] rounded-full" />
+      </div>
 
       {/* Hero Section */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 pt-10 pb-8 sm:px-6 lg:px-8">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 pt-20 pb-8 sm:px-6 lg:px-8">
         <div className="flex flex-col items-center text-center max-w-3xl mx-auto mb-10">
           <div className="eyebrow-badge mb-3">
             <FiHome size={13} />
@@ -637,531 +639,540 @@ const DharamshalaPage = () => {
       {/* ========================================================================= */}
       {/* 1. DHARAMSHALA DETAILS MODAL */}
       {/* ========================================================================= */}
-      {detailsModalItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm overflow-y-auto">
-          <div className="ka-card max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6 md:p-8 relative">
-            <button
-              onClick={() => setDetailsModalItem(null)}
-              className="absolute top-5 right-5 h-8 w-8 rounded-full bg-[var(--surface-elevated)] border border-[var(--border-subtle)] flex items-center justify-center text-[var(--text-secondary)] hover:text-white"
-            >
-              <FiX size={16} />
-            </button>
+{detailsModalItem && (
+  <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md overflow-hidden">
+    <div className="ka-card w-full max-w-4xl h-[92dvh] sm:h-auto sm:max-h-[85vh] flex flex-col rounded-t-3xl sm:rounded-3xl border-t sm:border border-[var(--border-strong)] bg-[var(--surface-card)] shadow-2xl overflow-hidden">
+      
+      {/* Mobile Visual Drag Handle */}
+      <div className="w-12 h-1 bg-[var(--border-subtle)] rounded-full mx-auto mt-2 sm:hidden shrink-0" />
 
-            {/* Header */}
-            <div className="mb-6">
-              <div className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-400 uppercase tracking-wider mb-1">
-                <FiMapPin size={12} />
-                <span>{detailsModalItem.location?.address}, {detailsModalItem.location?.city}</span>
-              </div>
-              <h2 className="text-2xl md:text-3xl font-black text-[var(--text-primary)]">
-                {detailsModalItem.name}
-              </h2>
-              {detailsModalItem.tagline && (
-                <p className="text-xs text-[var(--accent-primary)] font-medium mt-0.5">
-                  {detailsModalItem.tagline}
-                </p>
-              )}
+      {/* Fixed Header */}
+      <div className="relative flex items-start justify-between p-4 sm:p-6 border-b border-[var(--border-subtle)] bg-[var(--surface-elevated)]/50 shrink-0">
+        <div className="pr-10 max-w-full">
+          <div className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-bold text-emerald-400 uppercase tracking-wider mb-1 max-w-full">
+            <FiMapPin size={12} className="shrink-0" />
+            <span className="truncate">{detailsModalItem.location?.address}, {detailsModalItem.location?.city}</span>
+          </div>
+          <h2 className="text-lg sm:text-2xl md:text-3xl font-black text-[var(--text-primary)] leading-snug break-words">
+            {detailsModalItem.name}
+          </h2>
+          {detailsModalItem.tagline && (
+            <p className="text-xs text-[var(--accent-primary)] font-medium mt-0.5 line-clamp-1">
+              {detailsModalItem.tagline}
+            </p>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={() => setDetailsModalItem(null)}
+          className="h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-[var(--surface-elevated)] border border-[var(--border-subtle)] flex items-center justify-center text-[var(--text-secondary)] hover:text-white transition-colors shrink-0"
+        >
+          <FiX size={16} />
+        </button>
+      </div>
+
+      {/* Main Scrollable Body */}
+      <div className="overflow-y-auto p-4 sm:p-6 space-y-5 flex-1 custom-scrollbar">
+        
+        {/* Responsive Grid: Image + Info */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-5 items-start">
+          <div className="md:col-span-5 h-40 sm:h-56 md:h-full min-h-[160px] w-full rounded-xl sm:rounded-2xl bg-[var(--surface-elevated)] overflow-hidden shrink-0">
+            {detailsModalItem.mainImage ? (
+              <img src={detailsModalItem.mainImage} alt={detailsModalItem.name} className="h-full w-full object-cover" />
+            ) : (
+              <ImageSkeleton aspectRatio="landscape" className="h-full w-full rounded-xl sm:rounded-2xl" caption={detailsModalItem.name} />
+            )}
+          </div>
+          
+          <div className="md:col-span-7 flex flex-col justify-between space-y-3 sm:space-y-4">
+            <div>
+              <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1">
+                About This Dharamshala
+              </h3>
+              <p className="text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed">
+                {detailsModalItem.description}
+              </p>
             </div>
 
-            {/* Overview Image */}
-            <div className="h-64 w-full rounded-2xl bg-[var(--surface-elevated)] overflow-hidden mb-6">
-              {detailsModalItem.mainImage ? (
-                <img src={detailsModalItem.mainImage} alt={detailsModalItem.name} className="h-full w-full object-cover" />
-              ) : (
-                <ImageSkeleton aspectRatio="landscape" className="h-full w-full rounded-2xl" caption={detailsModalItem.name} />
-              )}
-            </div>
-
-            <div className="space-y-6">
-              {/* Description */}
+            {/* Timings & Rules */}
+            <div className="grid grid-cols-2 gap-2 sm:gap-3 rounded-xl bg-[var(--surface-elevated)] p-2.5 sm:p-3 border border-[var(--border-subtle)]">
               <div>
-                <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2">
-                  About This Dharamshala
-                </h3>
-                <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
-                  {detailsModalItem.description}
-                </p>
+                <h4 className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[var(--text-primary)] mb-1 flex items-center gap-1">
+                  <FiClock size={11} className="text-[var(--accent-primary)] shrink-0" />
+                  Timings
+                </h4>
+                <p className="text-[11px] sm:text-xs text-[var(--text-secondary)]"><strong>In:</strong> {detailsModalItem.checkInTime || "12:00 PM"}</p>
+                <p className="text-[11px] sm:text-xs text-[var(--text-secondary)]"><strong>Out:</strong> {detailsModalItem.checkOutTime || "10:00 AM"}</p>
               </div>
 
-              {/* Room Types & Pricing */}
               <div>
-                <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--text-muted)] mb-3">
-                  Room Options & Tariffs
-                </h3>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {detailsModalItem.roomTypes?.map((room, idx) => (
-                    <div
-                      key={idx}
-                      className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-4 flex flex-col justify-between gap-3"
-                    >
-                      <div>
-                        <div className="flex justify-between items-start">
-                          <h4 className="font-bold text-sm text-[var(--text-primary)]">{room.name}</h4>
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[var(--accent-primary)]/10 text-[var(--accent-primary)]">
-                            Capacity: {room.capacity} Guests
-                          </span>
-                        </div>
-                        <p className="text-xs text-[var(--text-secondary)] mt-1">{room.description}</p>
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {room.amenities?.map((amenity, aIdx) => (
-                            <span key={aIdx} className="text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-[var(--text-muted)]">
-                              ✓ {amenity}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="pt-2 border-t border-[var(--border-subtle)] flex items-center justify-between">
-                        <div>
-                          <div className="text-xs font-bold text-emerald-400">
-                            ₹{room.memberPricePerNight} <span className="text-[10px] text-[var(--text-muted)] font-normal">/ Member</span>
-                          </div>
-                          <div className="text-[11px] text-[var(--text-secondary)]">
-                            ₹{room.nonMemberPricePerNight} <span className="text-[9px] text-[var(--text-muted)] font-normal">/ Guest</span>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setDetailsModalItem(null);
-                            openBookingModal(detailsModalItem, room);
-                          }}
-                          className="btn-primary !py-1.5 !px-3 !text-xs"
-                        >
-                          Book Room
-                        </button>
-                      </div>
-                    </div>
+                <h4 className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[var(--text-primary)] mb-1 flex items-center gap-1">
+                  <FiShield size={11} className="text-emerald-400 shrink-0" />
+                  Rules
+                </h4>
+                <ul className="space-y-0.5 text-[11px] sm:text-xs text-[var(--text-secondary)]">
+                  {detailsModalItem.rules?.slice(0, 2).map((rule, rIdx) => (
+                    <li key={rIdx} className="truncate">• {rule}</li>
                   ))}
-                </div>
-              </div>
-
-              {/* Facilities */}
-              <div>
-                <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--text-muted)] mb-3">
-                  Facilities & Amenities
-                </h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {detailsModalItem.facilities?.map((facility, idx) => (
-                    <div key={idx} className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
-                      <FiCheck className="text-emerald-400 shrink-0" size={13} />
-                      <span>{facility}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Rules & Check-in info */}
-              <div className="grid sm:grid-cols-2 gap-4 rounded-2xl bg-[var(--surface-elevated)] p-4 border border-[var(--border-subtle)]">
-                <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--text-primary)] mb-2 flex items-center gap-1.5">
-                    <FiClock size={13} className="text-[var(--accent-primary)]" />
-                    Timing & Schedule
-                  </h4>
-                  <p className="text-xs text-[var(--text-secondary)]">
-                    <strong>Check-in:</strong> {detailsModalItem.checkInTime || "12:00 PM"}
-                  </p>
-                  <p className="text-xs text-[var(--text-secondary)] mt-1">
-                    <strong>Check-out:</strong> {detailsModalItem.checkOutTime || "10:00 AM"}
-                  </p>
-                  <p className="text-[11px] text-[var(--text-muted)] mt-2">
-                    {detailsModalItem.cancellationPolicy}
-                  </p>
-                </div>
-
-                <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--text-primary)] mb-2 flex items-center gap-1.5">
-                    <FiShield size={13} className="text-emerald-400" />
-                    Premises Rules
-                  </h4>
-                  <ul className="space-y-1 text-xs text-[var(--text-secondary)]">
-                    {detailsModalItem.rules?.map((rule, rIdx) => (
-                      <li key={rIdx} className="flex items-start gap-1.5">
-                        <span className="text-emerald-400">•</span>
-                        <span>{rule}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex justify-end gap-3 pt-4 border-t border-[var(--border-subtle)]">
-                <button
-                  type="button"
-                  onClick={() => setDetailsModalItem(null)}
-                  className="btn-secondary !py-2.5 !px-5 !text-xs"
-                >
-                  Close
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const item = detailsModalItem;
-                    setDetailsModalItem(null);
-                    openBookingModal(item);
-                  }}
-                  className="btn-primary !py-2.5 !px-7 !text-xs"
-                >
-                  Proceed to Book
-                </button>
+                </ul>
               </div>
             </div>
           </div>
         </div>
-      )}
+
+        {/* Room Types & Pricing Section */}
+        <div>
+          <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2.5">
+            Room Options & Tariffs
+          </h3>
+          <div className="grid gap-3 grid-cols-1 md:grid-cols-2">
+            {detailsModalItem.roomTypes?.map((room, idx) => (
+              <div
+                key={idx}
+                className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-3 sm:p-3.5 flex flex-col justify-between gap-2.5"
+              >
+                <div>
+                  <div className="flex justify-between items-start gap-2">
+                    <h4 className="font-bold text-xs sm:text-sm text-[var(--text-primary)]">{room.name}</h4>
+                    <span className="text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] shrink-0">
+                      Cap: {room.capacity}
+                    </span>
+                  </div>
+                  <p className="text-xs text-[var(--text-secondary)] mt-1 line-clamp-2">{room.description}</p>
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {room.amenities?.map((amenity, aIdx) => (
+                      <span key={aIdx} className="text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-[var(--text-muted)]">
+                        ✓ {amenity}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-[var(--border-subtle)] flex items-center justify-between gap-2">
+                  <div>
+                    <div className="text-xs font-bold text-emerald-400">
+                      ₹{room.memberPricePerNight} <span className="text-[9px] text-[var(--text-muted)] font-normal">/ Member</span>
+                    </div>
+                    <div className="text-[10px] sm:text-[11px] text-[var(--text-secondary)]">
+                      ₹{room.nonMemberPricePerNight} <span className="text-[9px] text-[var(--text-muted)] font-normal">/ Guest</span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDetailsModalItem(null);
+                      openBookingModal(detailsModalItem, room);
+                    }}
+                    className="btn-primary !py-1.5 !px-3 !text-xs shrink-0"
+                  >
+                    Book Room
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Facilities Section */}
+        <div>
+          <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2">
+            Facilities & Amenities
+          </h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+            {detailsModalItem.facilities?.map((facility, idx) => (
+              <div key={idx} className="flex items-center gap-1.5 text-[11px] sm:text-xs text-[var(--text-secondary)] bg-[var(--surface-elevated)]/40 p-1.5 sm:p-2 rounded-lg border border-[var(--border-subtle)]">
+                <FiCheck className="text-emerald-400 shrink-0" size={12} />
+                <span className="truncate">{facility}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+      </div>
+
+      {/* Fixed Sticky Footer */}
+      <div className="p-3 sm:p-4 border-t border-[var(--border-subtle)] bg-[var(--surface-elevated)] flex items-center justify-end gap-2.5 shrink-0">
+        <button
+          type="button"
+          onClick={() => setDetailsModalItem(null)}
+          className="btn-secondary !py-2.5 sm:!py-2 !px-4 !text-xs flex-1 sm:flex-none"
+        >
+          Close
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            const item = detailsModalItem;
+            setDetailsModalItem(null);
+            openBookingModal(item);
+          }}
+          className="btn-primary !py-2.5 sm:!py-2 !px-6 !text-xs flex-1 sm:flex-none"
+        >
+          Proceed to Book
+        </button>
+      </div>
+
+    </div>
+  </div>
+)}
 
       {/* ========================================================================= */}
       {/* 2. BOOKING MODAL (MEMBERS & GUESTS) */}
       {/* ========================================================================= */}
       {bookingModalItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm overflow-y-auto">
-          <div className="ka-card max-w-2xl w-full max-h-[92vh] overflow-y-auto p-6 md:p-8 relative">
+<div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/80 backdrop-blur-sm overflow-hidden">
+  <div className="ka-card max-w-2xl w-full h-[90dvh] sm:h-auto sm:max-h-[90vh] flex flex-col rounded-t-2xl sm:rounded-2xl border-t sm:border border-[var(--border-strong)] bg-[var(--surface-card)] shadow-2xl overflow-hidden">
+    
+    {/* Fixed Header with Close Button */}
+    <div className="relative flex items-center justify-between p-4 sm:p-6 border-b border-[var(--border-subtle)] bg-[var(--surface-elevated)]/50 shrink-0">
+      <div>
+        <div className="eyebrow-badge mb-1 flex items-center gap-1.5 text-xs">
+          <FiCalendar size={12} />
+          <span>Reservation Request</span>
+        </div>
+        <h2 className="text-lg sm:text-2xl font-black text-[var(--text-primary)] leading-tight">
+          Book Room at {bookingModalItem?.name}
+        </h2>
+        <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+          {bookingModalItem?.location?.city}, {bookingModalItem?.location?.state}
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={() => setBookingModalItem(null)}
+        className="h-8 w-8 rounded-full bg-[var(--surface-elevated)] border border-[var(--border-subtle)] flex items-center justify-center text-[var(--text-secondary)] hover:text-white transition-colors shrink-0"
+      >
+        <FiX size={16} />
+      </button>
+    </div>
+
+    {/* Scrollable Form Body */}
+    <div className="overflow-y-auto p-4 sm:p-6 flex-1 custom-scrollbar">
+      {bookingSuccessData ? (
+        <div className="text-center py-6 space-y-4">
+          <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center mx-auto">
+            <FiCheckCircle size={32} />
+          </div>
+          <h3 className="text-2xl font-black text-[var(--text-primary)]">
+            Booking Request Submitted!
+          </h3>
+          <p className="text-xs text-[var(--text-secondary)] max-w-md mx-auto">
+            Your reservation request has been created and sent to the Samaj Dharamshala Administration for confirmation.
+          </p>
+
+          <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-4 text-left space-y-2 max-w-md mx-auto text-xs">
+            <div className="flex justify-between">
+              <span className="text-[var(--text-muted)]">Booking Reference:</span>
+              <strong className="text-[var(--text-primary)]">
+                {bookingSuccessData.booking?._id?.slice(-8).toUpperCase()}
+              </strong>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[var(--text-muted)]">Dharamshala:</span>
+              <span className="font-semibold text-[var(--text-primary)]">
+                {bookingSuccessData.booking?.dharamshalaName}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[var(--text-muted)]">Room Type:</span>
+              <span className="font-semibold text-[var(--text-primary)]">
+                {bookingSuccessData.booking?.roomType}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[var(--text-muted)]">Check-in:</span>
+              <span>
+                {new Date(bookingSuccessData.booking?.startDate).toLocaleDateString("en-IN")}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[var(--text-muted)]">Check-out:</span>
+              <span>
+                {new Date(bookingSuccessData.booking?.endDate).toLocaleDateString("en-IN")}
+              </span>
+            </div>
+            <div className="flex justify-between pt-2 border-t border-[var(--border-subtle)]">
+              <span className="font-bold text-[var(--text-primary)]">Total Amount:</span>
+              <strong className="text-emerald-400 font-bold text-sm">
+                ₹{bookingSuccessData.booking?.totalAmount}
+              </strong>
+            </div>
+          </div>
+
+          <div className="flex justify-center gap-3 pt-4">
             <button
-              onClick={() => setBookingModalItem(null)}
-              className="absolute top-5 right-5 h-8 w-8 rounded-full bg-[var(--surface-elevated)] border border-[var(--border-subtle)] flex items-center justify-center text-[var(--text-secondary)] hover:text-white"
+              type="button"
+              onClick={() => {
+                setBookingModalItem(null);
+                if (token) setActiveTab("my-bookings");
+              }}
+              className="btn-primary !py-2.5 !px-6 !text-xs"
             >
-              <FiX size={16} />
+              {token ? "View in My Bookings" : "Done"}
             </button>
-
-            {/* If Booking Was Successfully Created */}
-            {bookingSuccessData ? (
-              <div className="text-center py-6 space-y-4">
-                <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center mx-auto">
-                  <FiCheckCircle size={32} />
-                </div>
-                <h3 className="text-2xl font-black text-[var(--text-primary)]">
-                  Booking Request Submitted!
-                </h3>
-                <p className="text-xs text-[var(--text-secondary)] max-w-md mx-auto">
-                  Your reservation request has been created and sent to the Samaj Dharamshala Administration for confirmation.
-                </p>
-
-                <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-4 text-left space-y-2 max-w-md mx-auto text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-[var(--text-muted)]">Booking Reference:</span>
-                    <strong className="text-[var(--text-primary)]">
-                      {bookingSuccessData.booking?._id?.slice(-8).toUpperCase()}
-                    </strong>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-[var(--text-muted)]">Dharamshala:</span>
-                    <span className="font-semibold text-[var(--text-primary)]">
-                      {bookingSuccessData.booking?.dharamshalaName}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-[var(--text-muted)]">Room Type:</span>
-                    <span className="font-semibold text-[var(--text-primary)]">
-                      {bookingSuccessData.booking?.roomType}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-[var(--text-muted)]">Check-in:</span>
-                    <span>
-                      {new Date(bookingSuccessData.booking?.startDate).toLocaleDateString("en-IN")}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-[var(--text-muted)]">Check-out:</span>
-                    <span>
-                      {new Date(bookingSuccessData.booking?.endDate).toLocaleDateString("en-IN")}
-                    </span>
-                  </div>
-                  <div className="flex justify-between pt-2 border-t border-[var(--border-subtle)]">
-                    <span className="font-bold text-[var(--text-primary)]">Total Amount:</span>
-                    <strong className="text-emerald-400 font-bold text-sm">
-                      ₹{bookingSuccessData.booking?.totalAmount}
-                    </strong>
-                  </div>
-                </div>
-
-                <div className="flex justify-center gap-3 pt-4">
-                  <button
-                    onClick={() => {
-                      setBookingModalItem(null);
-                      if (token) setActiveTab("my-bookings");
-                    }}
-                    className="btn-primary !py-2.5 !px-6 !text-xs"
-                  >
-                    {token ? "View in My Bookings" : "Done"}
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <form onSubmit={handleBookingSubmit} className="space-y-6">
-                {/* Modal Title */}
-                <div>
-                  <div className="eyebrow-badge mb-1">
-                    <FiCalendar size={12} />
-                    <span>Reservation Request</span>
-                  </div>
-                  <h2 className="text-xl md:text-2xl font-black text-[var(--text-primary)]">
-                    Book Room at {bookingModalItem.name}
-                  </h2>
-                  <p className="text-xs text-[var(--text-secondary)] mt-0.5">
-                    {bookingModalItem.location?.city}, {bookingModalItem.location?.state}
-                  </p>
-                </div>
-
-                {/* Membership Detection Callout */}
-                <div
-                  className={`rounded-xl p-3.5 border text-xs flex items-center justify-between ${
-                    isMember
-                      ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-                      : "border-amber-500/30 bg-amber-500/10 text-amber-200"
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <FiShield size={16} />
-                    <div>
-                      <p className="font-bold">
-                        {isMember ? "Verified Samaj Member" : "Guest / Non-Member Booking"}
-                      </p>
-                      <p className="text-[11px] opacity-80">
-                        {isMember
-                          ? "Your member discount is automatically applied by the backend."
-                          : "Non-members are welcome to book at standard guest rates."}
-                      </p>
-                    </div>
-                  </div>
-                  {!user && (
-                    <Link
-                      to="/login"
-                      className="text-[11px] font-bold underline hover:opacity-80 shrink-0 ml-2"
-                    >
-                      Member Login
-                    </Link>
-                  )}
-                </div>
-
-                {/* Room Selection */}
-                <div>
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1.5 block">
-                    Select Room Type *
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    {bookingModalItem.roomTypes?.map((room, rIdx) => {
-                      const isSelected = selectedRoomType?.name === room.name;
-                      const price = isMember ? room.memberPricePerNight : room.nonMemberPricePerNight;
-
-                      return (
-                        <div
-                          key={rIdx}
-                          onClick={() => setSelectedRoomType(room)}
-                          className={`cursor-pointer rounded-xl border p-3 transition-all ${
-                            isSelected
-                              ? "border-[var(--accent-primary)] bg-[var(--accent-primary)]/10 shadow-sm"
-                              : "border-[var(--border-subtle)] bg-[var(--surface-elevated)] hover:border-white/20"
-                          }`}
-                        >
-                          <div className="flex justify-between items-center">
-                            <span className="font-bold text-xs text-[var(--text-primary)]">
-                              {room.name}
-                            </span>
-                            <span className="font-bold text-xs text-emerald-400">
-                              ₹{price}/night
-                            </span>
-                          </div>
-                          <p className="text-[10px] text-[var(--text-muted)] mt-1">
-                            Up to {room.capacity} Guests · {room.totalRooms} Total Rooms
-                          </p>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Dates & Rooms */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1.5 block">
-                      Check-in Date *
-                    </label>
-                    <input
-                      type="date"
-                      required
-                      min={new Date().toISOString().split("T")[0]}
-                      value={bookingForm.startDate}
-                      onChange={(e) => {
-                        setBookingForm({ ...bookingForm, startDate: e.target.value });
-                        setAvailabilityStatus(null);
-                      }}
-                      className="ka-input !text-xs !py-2"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1.5 block">
-                      Check-out Date *
-                    </label>
-                    <input
-                      type="date"
-                      required
-                      min={bookingForm.startDate || new Date().toISOString().split("T")[0]}
-                      value={bookingForm.endDate}
-                      onChange={(e) => {
-                        setBookingForm({ ...bookingForm, endDate: e.target.value });
-                        setAvailabilityStatus(null);
-                      }}
-                      className="ka-input !text-xs !py-2"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1.5 block">
-                      No. of Rooms
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      max={selectedRoomType?.totalRooms || 5}
-                      value={bookingForm.roomsRequested}
-                      onChange={(e) =>
-                        setBookingForm({ ...bookingForm, roomsRequested: e.target.value })
-                      }
-                      className="ka-input !text-xs !py-2"
-                    />
-                  </div>
-                </div>
-
-                {/* Guest Contact Details */}
-                <div className="space-y-3 pt-2 border-t border-[var(--border-subtle)]">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--text-primary)]">
-                    Guest & Contact Details
-                  </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1 block">
-                        Full Name *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="Guest Name"
-                        value={bookingForm.guestName}
-                        onChange={(e) =>
-                          setBookingForm({ ...bookingForm, guestName: e.target.value })
-                        }
-                        className="ka-input !text-xs !py-2"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1 block">
-                        Mobile Number *
-                      </label>
-                      <input
-                        type="tel"
-                        required
-                        placeholder="10-digit mobile"
-                        value={bookingForm.guestPhone}
-                        onChange={(e) =>
-                          setBookingForm({ ...bookingForm, guestPhone: e.target.value })
-                        }
-                        className="ka-input !text-xs !py-2"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1 block">
-                        Email Address
-                      </label>
-                      <input
-                        type="email"
-                        placeholder="guest@example.com"
-                        value={bookingForm.guestEmail}
-                        onChange={(e) =>
-                          setBookingForm({ ...bookingForm, guestEmail: e.target.value })
-                        }
-                        className="ka-input !text-xs !py-2"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1 block">
-                        Number of Total Guests
-                      </label>
-                      <input
-                        type="number"
-                        min="1"
-                        value={bookingForm.numberOfGuests}
-                        onChange={(e) =>
-                          setBookingForm({ ...bookingForm, numberOfGuests: e.target.value })
-                        }
-                        className="ka-input !text-xs !py-2"
-                      />
-                    </div>
-
-                    <div className="sm:col-span-2">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1 block">
-                        Purpose of Visit / Yatra *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="e.g. Pilgrimage, Family Function, Medical Visit"
-                        value={bookingForm.purpose}
-                        onChange={(e) =>
-                          setBookingForm({ ...bookingForm, purpose: e.target.value })
-                        }
-                        className="ka-input !text-xs !py-2"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Price Breakdown & Availability Check */}
-                <div className="rounded-2xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)] p-4 space-y-2">
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-[var(--text-muted)]">
-                      Rate Per Night ({isMember ? "Member Tariff" : "Guest Tariff"}):
-                    </span>
-                    <span className="font-semibold text-[var(--text-primary)]">
-                      ₹
-                      {isMember
-                        ? selectedRoomType?.memberPricePerNight
-                        : selectedRoomType?.nonMemberPricePerNight}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-[var(--text-muted)]">Duration & Rooms:</span>
-                    <span className="font-semibold text-[var(--text-primary)]">
-                      {getNumberOfNights()} Nights × {bookingForm.roomsRequested} Room(s)
-                    </span>
-                  </div>
-                  <div className="pt-2 border-t border-[var(--border-subtle)] flex justify-between items-center">
-                    <span className="font-bold text-sm text-[var(--text-primary)]">
-                      Total Estimated Amount:
-                    </span>
-                    <strong className="text-emerald-400 font-bold text-base">
-                      ₹{calculateTotal()}
-                    </strong>
-                  </div>
-                </div>
-
-                {/* Submit Actions */}
-                <div className="flex flex-col sm:flex-row justify-end gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={handleCheckAvailability}
-                    disabled={checkingAvailability}
-                    className="btn-secondary !py-2.5 !px-4 !text-xs"
-                  >
-                    {checkingAvailability ? "Checking..." : "Verify Availability"}
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={submittingBooking}
-                    className="btn-primary !py-2.5 !px-8 !text-xs disabled:opacity-50"
-                  >
-                    <span>{submittingBooking ? "Submitting..." : "Confirm & Submit Booking"}</span>
-                  </button>
-                </div>
-              </form>
-            )}
           </div>
         </div>
+      ) : (
+        <form onSubmit={handleBookingSubmit} className="space-y-6">
+          {/* Membership Detection Callout */}
+          <div
+            className={`rounded-xl p-3.5 border text-xs flex items-center justify-between ${
+              isMember
+                ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                : "border-amber-500/30 bg-amber-500/10 text-amber-200"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <FiShield size={16} />
+              <div>
+                <p className="font-bold">
+                  {isMember ? "Verified Samaj Member" : "Guest / Non-Member Booking"}
+                </p>
+                <p className="text-[11px] opacity-80">
+                  {isMember
+                    ? "Your member discount is automatically applied by the backend."
+                    : "Non-members are welcome to book at standard guest rates."}
+                </p>
+              </div>
+            </div>
+            {!user && (
+              <Link
+                to="/login"
+                className="text-[11px] font-bold underline hover:opacity-80 shrink-0 ml-2"
+              >
+                Member Login
+              </Link>
+            )}
+          </div>
+
+          {/* Room Selection */}
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1.5 block">
+              Select Room Type *
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {bookingModalItem?.roomTypes?.map((room, rIdx) => {
+                const isSelected = selectedRoomType?.name === room.name;
+                const price = isMember ? room.memberPricePerNight : room.nonMemberPricePerNight;
+
+                return (
+                  <div
+                    key={rIdx}
+                    onClick={() => setSelectedRoomType(room)}
+                    className={`cursor-pointer rounded-xl border p-3 transition-all ${
+                      isSelected
+                        ? "border-[var(--accent-primary)] bg-[var(--accent-primary)]/10 shadow-sm"
+                        : "border-[var(--border-subtle)] bg-[var(--surface-elevated)] hover:border-white/20"
+                    }`}
+                  >
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-xs text-[var(--text-primary)]">
+                        {room.name}
+                      </span>
+                      <span className="font-bold text-xs text-emerald-400">
+                        ₹{price}/night
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-[var(--text-muted)] mt-1">
+                      Up to {room.capacity} Guests · {room.totalRooms} Total Rooms
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Dates & Rooms */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1.5 block">
+                Check-in Date *
+              </label>
+              <input
+                type="date"
+                required
+                min={new Date().toISOString().split("T")[0]}
+                value={bookingForm.startDate}
+                onChange={(e) => {
+                  setBookingForm({ ...bookingForm, startDate: e.target.value });
+                  setAvailabilityStatus(null);
+                }}
+                className="ka-input !text-xs !py-2"
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1.5 block">
+                Check-out Date *
+              </label>
+              <input
+                type="date"
+                required
+                min={bookingForm.startDate || new Date().toISOString().split("T")[0]}
+                value={bookingForm.endDate}
+                onChange={(e) => {
+                  setBookingForm({ ...bookingForm, endDate: e.target.value });
+                  setAvailabilityStatus(null);
+                }}
+                className="ka-input !text-xs !py-2"
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1.5 block">
+                No. of Rooms
+              </label>
+              <input
+                type="number"
+                min="1"
+                max={selectedRoomType?.totalRooms || 5}
+                value={bookingForm.roomsRequested}
+                onChange={(e) =>
+                  setBookingForm({ ...bookingForm, roomsRequested: e.target.value })
+                }
+                className="ka-input !text-xs !py-2"
+              />
+            </div>
+          </div>
+
+          {/* Guest Contact Details */}
+          <div className="space-y-3 pt-2 border-t border-[var(--border-subtle)]">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--text-primary)]">
+              Guest & Contact Details
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1 block">
+                  Full Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Guest Name"
+                  value={bookingForm.guestName}
+                  onChange={(e) =>
+                    setBookingForm({ ...bookingForm, guestName: e.target.value })
+                  }
+                  className="ka-input !text-xs !py-2"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1 block">
+                  Mobile Number *
+                </label>
+                <input
+                  type="tel"
+                  required
+                  placeholder="10-digit mobile"
+                  value={bookingForm.guestPhone}
+                  onChange={(e) =>
+                    setBookingForm({ ...bookingForm, guestPhone: e.target.value })
+                  }
+                  className="ka-input !text-xs !py-2"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1 block">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  placeholder="guest@example.com"
+                  value={bookingForm.guestEmail}
+                  onChange={(e) =>
+                    setBookingForm({ ...bookingForm, guestEmail: e.target.value })
+                  }
+                  className="ka-input !text-xs !py-2"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1 block">
+                  Number of Total Guests
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={bookingForm.numberOfGuests}
+                  onChange={(e) =>
+                    setBookingForm({ ...bookingForm, numberOfGuests: e.target.value })
+                  }
+                  className="ka-input !text-xs !py-2"
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1 block">
+                  Purpose of Visit / Yatra *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Pilgrimage, Family Function, Medical Visit"
+                  value={bookingForm.purpose}
+                  onChange={(e) =>
+                    setBookingForm({ ...bookingForm, purpose: e.target.value })
+                  }
+                  className="ka-input !text-xs !py-2"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Price Breakdown */}
+          <div className="rounded-2xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)] p-4 space-y-2">
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-[var(--text-muted)]">
+                Rate Per Night ({isMember ? "Member Tariff" : "Guest Tariff"}):
+              </span>
+              <span className="font-semibold text-[var(--text-primary)]">
+                ₹
+                {isMember
+                  ? selectedRoomType?.memberPricePerNight
+                  : selectedRoomType?.nonMemberPricePerNight}
+              </span>
+            </div>
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-[var(--text-muted)]">Duration & Rooms:</span>
+              <span className="font-semibold text-[var(--text-primary)]">
+                {getNumberOfNights()} Nights × {bookingForm.roomsRequested} Room(s)
+              </span>
+            </div>
+            <div className="pt-2 border-t border-[var(--border-subtle)] flex justify-between items-center">
+              <span className="font-bold text-sm text-[var(--text-primary)]">
+                Total Estimated Amount:
+              </span>
+              <strong className="text-emerald-400 font-bold text-base">
+                ₹{calculateTotal()}
+              </strong>
+            </div>
+          </div>
+
+          {/* Submit Actions */}
+          <div className="flex flex-col sm:flex-row justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={handleCheckAvailability}
+              disabled={checkingAvailability}
+              className="btn-secondary !py-2.5 !px-4 !text-xs"
+            >
+              {checkingAvailability ? "Checking..." : "Verify Availability"}
+            </button>
+            <button
+              type="submit"
+              disabled={submittingBooking}
+              className="btn-primary !py-2.5 !px-8 !text-xs disabled:opacity-50"
+            >
+              <span>{submittingBooking ? "Submitting..." : "Confirm & Submit Booking"}</span>
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
+  </div>
+</div>
       )}
     </div>
   );

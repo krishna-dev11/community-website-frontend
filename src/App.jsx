@@ -43,7 +43,7 @@ initTheme();
 function App() {
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--bg)", color: "var(--text)" }}>
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden" style={{ background: "var(--bg)", color: "var(--text)" }}>
 
       <NavBar />
       <div><AIGeminiChat /></div>
