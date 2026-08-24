@@ -50,60 +50,62 @@ const HomePage = () => {
   }, []);
 
   return (
-    <div className="w-full min-h-screen overflow-x-hidden bg-[var(--bg)] text-[var(--text-primary)] transition-colors duration-300">
-      {/* Background ambient glows */}
-      <div className="page-gradient-glow left-[-140px] top-[-44px] opacity-40" />
-      <div className="page-gradient-glow right-[-160px] top-[620px] opacity-30" />
+    <div className="relative w-full min-h-screen overflow-x-hidden bg-[var(--bg)] text-[var(--text-primary)] transition-colors duration-300">
+      {/* Background ambient glows strictly contained to prevent layout expansion */}
+      <div className="overflow-hidden pointer-events-none absolute inset-0 z-0">
+        <div className="page-gradient-glow -left-20 top-0 opacity-40" />
+        <div className="page-gradient-glow -right-20 top-[620px] opacity-30" />
+      </div>
 
       {/* ================= 1. HERO SECTION ================= */}
-      <section className="relative pt-32 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        <div className="grid lg:grid-cols-12 gap-12 items-center">
+      <section className="relative pt-24 sm:pt-32 pb-14 sm:pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto overflow-hidden">
+        <div className="grid lg:grid-cols-12 gap-8 lg:gap-12 items-center">
           <div className="lg:col-span-7 flex flex-col items-start text-left">
             <div className="eyebrow-badge mb-4">
               <FiShield size={13} />
               <span>Official Samaj Community Portal</span>
             </div>
 
-            <h1 className="heading-hero text-[var(--text-primary)] mb-5">
+            <h1 className="heading-hero text-[var(--text-primary)] mb-4 sm:mb-5">
               Uniting Families, <br />
               <span className="text-gradient">Empowering Our Samaj</span>
             </h1>
 
-            <p className="text-base sm:text-lg text-[var(--text-secondary)] font-normal leading-relaxed max-w-2xl mb-8">
+            <p className="text-sm sm:text-lg text-[var(--text-secondary)] font-normal leading-relaxed max-w-2xl mb-6 sm:mb-8">
               Welcome to the official digital platform of our Samaj. Connect with verified families across India, discover matrimonial alliances, support student scholarships, access Dharamshala bookings, and preserve our cultural heritage together.
             </p>
 
-            <div className="flex flex-wrap items-center gap-4 w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 w-full sm:w-auto">
               {!token ? (
-                <Link to="/signup" className="btn-primary">
+                <Link to="/signup" className="btn-primary w-full sm:w-auto">
                   <span>Join Samaj & Register</span>
                   <FiArrowRight size={16} />
                 </Link>
               ) : (
-                <Link to="/dashboard/my-profile" className="btn-primary">
+                <Link to="/dashboard/my-profile" className="btn-primary w-full sm:w-auto">
                   <span>Open Member Dashboard</span>
                   <FiArrowRight size={16} />
                 </Link>
               )}
 
-              <Link to="/about" className="btn-secondary">
+              <Link to="/about" className="btn-secondary w-full sm:w-auto">
                 <span>Explore Samaj History</span>
               </Link>
             </div>
 
             {/* Quick Trust Badges */}
-            <div className="grid grid-cols-3 gap-6 pt-10 mt-10 border-t border-[var(--border-subtle)] w-full">
+            <div className="grid grid-cols-3 gap-2 sm:gap-6 pt-6 sm:pt-10 mt-6 sm:mt-10 border-t border-[var(--border-subtle)] w-full text-center sm:text-left">
               <div>
-                <p className="text-xl sm:text-2xl font-black text-[var(--text-primary)]">100%</p>
-                <p className="text-xs text-[var(--text-muted)] mt-0.5">Verified Members</p>
+                <p className="text-base sm:text-2xl font-black text-[var(--text-primary)]">100%</p>
+                <p className="text-[10px] sm:text-xs text-[var(--text-muted)] mt-0.5">Verified Members</p>
               </div>
               <div>
-                <p className="text-xl sm:text-2xl font-black text-[var(--accent-primary)]">Digital ID</p>
-                <p className="text-xs text-[var(--text-muted)] mt-0.5">Membership Cards</p>
+                <p className="text-base sm:text-2xl font-black text-[var(--accent-primary)]">Digital ID</p>
+                <p className="text-[10px] sm:text-xs text-[var(--text-muted)] mt-0.5">Membership Cards</p>
               </div>
               <div>
-                <p className="text-xl sm:text-2xl font-black text-[var(--text-primary)]">Direct Aid</p>
-                <p className="text-xs text-[var(--text-muted)] mt-0.5">Education & Seva</p>
+                <p className="text-base sm:text-2xl font-black text-[var(--text-primary)]">Direct Aid</p>
+                <p className="text-[10px] sm:text-xs text-[var(--text-muted)] mt-0.5">Education & Seva</p>
               </div>
             </div>
           </div>
@@ -455,13 +457,21 @@ const HomePage = () => {
               achievements.map((ach) => (
                 <div key={ach._id} className="ka-card p-5 flex flex-col justify-between">
                   <div>
-                    <ImageSkeleton
-                      aspectRatio="aspect-[16/9]"
-                      label="Achievement Photo"
-                      subLabel="Honoree certificate/photo"
-                      rounded="rounded-2xl"
-                      className="mb-4"
-                    />
+                    {ach.recipientPhoto?.url || ach.image?.url ? (
+                      <img
+                        src={ach.recipientPhoto?.url || ach.image?.url}
+                        alt={ach.title}
+                        className="w-full h-44 rounded-2xl object-cover mb-4 border border-[var(--border-subtle)] shadow-md"
+                      />
+                    ) : (
+                      <ImageSkeleton
+                        aspectRatio="aspect-[16/9]"
+                        label="Achievement Photo"
+                        subLabel="Honoree certificate/photo"
+                        rounded="rounded-2xl"
+                        className="mb-4"
+                      />
+                    )}
                     <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--accent-primary)]">
                       {ach.category || "Honour"}
                     </span>
@@ -470,8 +480,9 @@ const HomePage = () => {
                       {ach.description}
                     </p>
                   </div>
-                  <div className="mt-4 pt-3 border-t border-[var(--border-subtle)] text-[11px] text-[var(--text-muted)]">
-                    Honoree: <strong className="text-[var(--text-primary)]">{ach.member?.firstName || "Community Member"}</strong>
+                  <div className="mt-4 pt-3 border-t border-[var(--border-subtle)] text-[11px] text-[var(--text-muted)] flex items-center justify-between">
+                    <span>Honoree: <strong className="text-[var(--text-primary)]">{ach.achieverName || ach.member?.firstName || "Community Member"}</strong></span>
+                    {ach.year && <span className="font-mono text-[var(--accent-primary)] font-bold">{ach.year}</span>}
                   </div>
                 </div>
               ))
@@ -650,7 +661,7 @@ const HomePage = () => {
 
                 <div className="mt-5 pt-3 border-t border-[var(--border-subtle)] flex items-center justify-between">
                   <span className="text-[11px] text-[var(--text-muted)]">Subsidized Member Rates</span>
-                  <Link to="/dashboard/community" className="text-xs font-bold text-[var(--accent-primary)] hover:underline">
+                  <Link to="/dharamshala" className="text-xs font-bold text-[var(--accent-primary)] hover:underline">
                     Check Dates →
                   </Link>
                 </div>
@@ -658,6 +669,115 @@ const HomePage = () => {
             ))}
           </div>
         </div>
+      </section>
+
+      {/* ================= SAMAJ PRIDE / OUR ACHIEVERS CAROUSEL ================= */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
+          <div>
+            <div className="eyebrow-badge mb-3">
+              <FiAward size={13} />
+              <span>Community Pride</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-black text-[var(--text-primary)]">
+              Samaj Pride & Achievers
+            </h2>
+            <p className="mt-2 text-xs sm:text-sm text-[var(--text-secondary)]">
+              Celebrating verified community stars in academics, public service, sports, and entrepreneurship.
+            </p>
+          </div>
+          <Link to="/achievements" className="btn-secondary text-xs">
+            <span>View All Achievers</span>
+            <FiArrowRight size={14} />
+          </Link>
+        </div>
+
+        {achievements.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {achievements.map((item) => (
+              <div key={item._id} className="ka-card p-5 flex flex-col justify-between group hover:border-[var(--accent-primary)]/40 transition-all">
+                <div>
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="relative shrink-0">
+                      <img
+                        src={item.image?.url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(item.achieverName || "Achiever")}`}
+                        alt={item.achieverName}
+                        className="h-16 w-16 rounded-2xl object-cover border-2 border-[var(--accent-primary)]/40 shadow-md group-hover:scale-105 transition-transform"
+                      />
+                      <div className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-[var(--accent-primary)] text-black font-bold text-[10px]" title="Verified Achiever">
+                        ✓
+                      </div>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <span className="rounded-md bg-[var(--accent-primary)]/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[var(--accent-primary)] border border-[var(--accent-primary)]/20">
+                        {item.category || "Honor"}
+                      </span>
+                      <h3 className="mt-1 text-base font-bold text-[var(--text-primary)] truncate">
+                        {item.achieverName}
+                      </h3>
+                      {item.year && (
+                        <p className="text-[11px] text-[var(--text-muted)]">Year: {item.year}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <h4 className="text-sm font-bold text-[var(--text-primary)] mb-1">
+                    {item.title}
+                  </h4>
+                  <p className="text-xs text-[var(--text-secondary)] line-clamp-3 leading-relaxed">
+                    {item.description}
+                  </p>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-[var(--border-subtle)] flex items-center justify-between text-xs text-[var(--text-muted)]">
+                  <span>{item.organization || "Samaj Certified"}</span>
+                  <Link to="/achievements" className="text-xs font-bold text-[var(--accent-primary)] hover:underline">
+                    Read Story →
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              { name: "Aarav Gothwal", title: "IAS Rank 42 - UPSC CSE", cat: "Civil Services", yr: "2025", desc: "Secured All India Rank 42 in the Civil Services Examination, serving as Assistant Collector." },
+              { name: "Priya Sharma", title: "Gold Medalist - IIT Bombay", cat: "Academics", yr: "2025", desc: "Awarded President's Gold Medal for academic excellence in Computer Science and Engineering." },
+              { name: "Rohan Verma", title: "National Badminton Champion", cat: "Sports", yr: "2024", desc: "Won gold in the National U-21 Men's Singles championship representing state." },
+            ].map((mock, idx) => (
+              <div key={idx} className="ka-card p-5 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="h-16 w-16 rounded-2xl bg-[var(--accent-primary)]/10 border-2 border-[var(--accent-primary)]/30 flex items-center justify-center text-[var(--accent-primary)] font-black text-xl">
+                      {mock.name[0]}
+                    </div>
+                    <div>
+                      <span className="rounded-md bg-[var(--accent-primary)]/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[var(--accent-primary)]">
+                        {mock.cat}
+                      </span>
+                      <h3 className="mt-1 text-base font-bold text-[var(--text-primary)]">
+                        {mock.name}
+                      </h3>
+                      <p className="text-[11px] text-[var(--text-muted)]">Year: {mock.yr}</p>
+                    </div>
+                  </div>
+                  <h4 className="text-sm font-bold text-[var(--text-primary)] mb-1">
+                    {mock.title}
+                  </h4>
+                  <p className="text-xs text-[var(--text-secondary)] line-clamp-3 leading-relaxed">
+                    {mock.desc}
+                  </p>
+                </div>
+                <div className="mt-4 pt-3 border-t border-[var(--border-subtle)] flex items-center justify-between text-xs text-[var(--text-muted)]">
+                  <span>Samaj Pride Verified</span>
+                  <Link to="/achievements" className="text-xs font-bold text-[var(--accent-primary)] hover:underline">
+                    View Story →
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* ================= 9. COMMUNITY GALLERY PREVIEW ================= */}

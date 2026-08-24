@@ -377,25 +377,55 @@ const OpportunityAdmin = () => {
                   <option value="">Select job</option>
                   {jobs.map((job) => <option key={job._id} value={job._id}>{job.title}</option>)}
                 </select>
-                {jobApplications.map((application) => (
-                  <article key={application._id} className="border border-white/10 bg-white/[0.02] p-4">
-                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                      <div>
-                        <h3 className="font-bold">{application.applicant?.firstName} {application.applicant?.lastName}</h3>
-                        <p className="mt-1 text-sm text-gray-500">{application.coverLetter || "No cover letter"}</p>
-                        {application.resume?.url ? <a href={application.resume.url} target="_blank" rel="noreferrer" className="mt-2 inline-block text-xs font-bold text-emerald-300">Open resume</a> : null}
+                {jobApplications.map((application) => {
+                  const snap = application.applicantSnapshot || {};
+                  const name = snap.fullName || `${application.applicant?.firstName || ""} ${application.applicant?.lastName || ""}`.trim() || "Applicant";
+                  return (
+                    <article key={application._id} className="border border-white/10 bg-white/[0.02] p-4 rounded-xl">
+                      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="font-bold text-[var(--text-primary)]">{name}</h3>
+                            <Status value={application.status} />
+                          </div>
+                          {snap.profession && (
+                            <p className="mt-1 text-sm text-[var(--accent-primary)] font-medium">{snap.profession}{snap.organization ? ` @ ${snap.organization}` : ""}</p>
+                          )}
+                          <div className="mt-2 grid gap-1.5 text-xs text-[var(--text-secondary)]">
+                            {snap.phone && <span>📞 {snap.phone}</span>}
+                            {snap.city && <span>📍 {snap.city}</span>}
+                            {snap.email && <span>✉️ {snap.email}</span>}
+                            {snap.education && <span>🎓 {snap.education}</span>}
+                            {snap.experienceYears != null && <span>💼 {snap.experienceYears} year(s) experience</span>}
+                            {snap.expectedSalary && <span>💰 Expected: {snap.expectedSalary}</span>}
+                          </div>
+                          {snap.skills?.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-1.5">
+                              {snap.skills.map((skill) => (
+                                <span key={skill} className="rounded-full bg-[var(--surface-elevated)] border border-[var(--border-subtle)] px-2.5 py-0.5 text-[11px] text-[var(--text-secondary)]">{skill}</span>
+                              ))}
+                            </div>
+                          )}
+                          {application.coverLetter && (
+                            <p className="mt-3 text-xs text-[var(--text-muted)] italic border-l-2 border-[var(--border-subtle)] pl-3 line-clamp-3">"{application.coverLetter}"</p>
+                          )}
+                          <div className="mt-3 flex flex-wrap gap-3">
+                            {snap.linkedIn && <a href={snap.linkedIn} target="_blank" rel="noreferrer" className="text-xs font-bold text-sky-400 hover:underline">LinkedIn ↗</a>}
+                            {snap.portfolioUrl && <a href={snap.portfolioUrl} target="_blank" rel="noreferrer" className="text-xs font-bold text-emerald-400 hover:underline">Portfolio ↗</a>}
+                            {application.resume?.url && <a href={application.resume.url} target="_blank" rel="noreferrer" className="text-xs font-bold text-amber-400 hover:underline">Resume ↗</a>}
+                          </div>
+                        </div>
                       </div>
-                      <Status value={application.status} />
-                    </div>
-                    <div className="mt-4 grid gap-2 border-t border-white/10 pt-4 lg:grid-cols-[1fr_auto_auto_auto_auto]">
-                      {draftInput(application._id, "Review note")}
-                      <Button tone="success" onClick={() => updateJobApplication(application._id, "SHORTLISTED")} disabled={busyId === application._id}>Shortlist</Button>
-                      <Button onClick={() => updateJobApplication(application._id, "INTERVIEW")} disabled={busyId === application._id}>Interview</Button>
-                      <Button tone="success" onClick={() => updateJobApplication(application._id, "SELECTED")} disabled={busyId === application._id}>Select</Button>
-                      <Button tone="danger" onClick={() => updateJobApplication(application._id, "REJECTED")} disabled={busyId === application._id}>Reject</Button>
-                    </div>
-                  </article>
-                ))}
+                      <div className="mt-4 grid gap-2 border-t border-white/10 pt-4 lg:grid-cols-[1fr_auto_auto_auto_auto]">
+                        {draftInput(application._id, "Review note")}
+                        <Button tone="success" onClick={() => updateJobApplication(application._id, "SHORTLISTED")} disabled={busyId === application._id}>Shortlist</Button>
+                        <Button onClick={() => updateJobApplication(application._id, "INTERVIEW")} disabled={busyId === application._id}>Interview</Button>
+                        <Button tone="success" onClick={() => updateJobApplication(application._id, "SELECTED")} disabled={busyId === application._id}>Select</Button>
+                        <Button tone="danger" onClick={() => updateJobApplication(application._id, "REJECTED")} disabled={busyId === application._id}>Reject</Button>
+                      </div>
+                    </article>
+                  );
+                })}
                 {jobApplications.length === 0 && <Empty text="No job applications found." />}
               </section>
             )}

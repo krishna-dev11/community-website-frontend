@@ -20,10 +20,12 @@ const AboutPage = () => {
   const { token } = useSelector((state) => state.auth);
 
   return (
-    <div className="w-full min-h-screen bg-[var(--bg)] text-[var(--text-primary)] overflow-x-hidden font-sans transition-colors duration-300">
+    <div className="relative w-full min-h-screen bg-[var(--bg)] text-[var(--text-primary)] overflow-x-hidden font-sans transition-colors duration-300">
       {/* Background Glows */}
-      <div className="page-gradient-glow left-[-100px] top-0 opacity-40" />
-      <div className="page-gradient-glow right-[-100px] top-[700px] opacity-30" />
+      <div className="overflow-hidden pointer-events-none absolute inset-0 z-0">
+        <div className="page-gradient-glow -left-20 top-0 opacity-40" />
+        <div className="page-gradient-glow -right-20 top-[700px] opacity-30" />
+      </div>
 
       {/* ================= 1. HERO SECTION ================= */}
       <section className="relative pt-32 pb-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">

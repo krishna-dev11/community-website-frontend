@@ -44,9 +44,11 @@ const ContactUsPage = () => {
   };
 
   return (
-    <div className="w-full min-h-screen bg-[var(--bg)] text-[var(--text-primary)] transition-colors duration-300 font-sans">
+    <div className="relative w-full min-h-screen bg-[var(--bg)] text-[var(--text-primary)] transition-colors duration-300 font-sans overflow-x-hidden">
       {/* Background glow */}
-      <div className="page-gradient-glow left-[-100px] top-0 opacity-40" />
+      <div className="overflow-hidden pointer-events-none absolute inset-0 z-0">
+        <div className="page-gradient-glow -left-20 top-0 opacity-40" />
+      </div>
 
       {/* Hero */}
       <section className="pt-32 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center">

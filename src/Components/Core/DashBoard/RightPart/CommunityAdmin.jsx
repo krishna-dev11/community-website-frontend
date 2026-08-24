@@ -14,7 +14,9 @@ import {
   FaPoll,
   FaSyncAlt,
   FaTimes,
+  FaGlobe,
 } from "react-icons/fa";
+import { FiX } from "react-icons/fi";
 import { useSelector } from "react-redux";
 import { apiConnector } from "../../../../services/apiConnector";
 import { communityEndpoints } from "../../../../services/apis";
@@ -91,8 +93,20 @@ const CommunityAdmin = () => {
   const [blockDrafts, setBlockDrafts] = useState({});
   const [reportDrafts, setReportDrafts] = useState({});
   const [reviewDrafts, setReviewDrafts] = useState({});
-  const [pollForm, setPollForm] = useState({ title: "", description: "", options: "Yes\nNo", endsAt: "", status: "DRAFT" });
+  const [pollForm, setPollForm] = useState({
+    title: "",
+    description: "",
+    options: "Yes\nNo",
+    endsAt: "",
+    status: "DRAFT",
+    isMultipleChoice: false,
+    maxSelections: 1,
+    allowChangeVote: false,
+  });
   const [blockForm, setBlockForm] = useState({ startDate: "", endDate: "", reason: "" });
+  const [solutionModal, setSolutionModal] = useState(null); // { issueId, title, description }
+  const [solutionForm, setSolutionForm] = useState({ solutionTitle: "", solutionSummary: "", solutionDetails: "", solutionCategory: "INFRASTRUCTURE" });
+  const [publishingSolution, setPublishingSolution] = useState(false);
 
   const authConfig = useMemo(
     () => ({
@@ -297,7 +311,11 @@ const CommunityAdmin = () => {
       await apiConnector(
         "POST",
         communityEndpoints.POLLS_API,
-        { ...pollForm, options },
+        {
+          ...pollForm,
+          options,
+          maxSelections: pollForm.isMultipleChoice ? Number(pollForm.maxSelections) || 2 : 1,
+        },
         authConfig
       );
       toast.success("Poll created");
@@ -346,6 +364,28 @@ const CommunityAdmin = () => {
     }
   };
 
+  const publishSolution = async (event) => {
+    event.preventDefault();
+    if (!solutionModal?.issueId) return;
+    setPublishingSolution(true);
+    try {
+      await apiConnector(
+        "POST",
+        communityEndpoints.PUBLISH_ISSUE_SOLUTION_API(solutionModal.issueId),
+        solutionForm,
+        authConfig
+      );
+      toast.success("Published as community solution");
+      setSolutionModal(null);
+      setSolutionForm({ solutionTitle: "", solutionSummary: "", solutionDetails: "", solutionCategory: "INFRASTRUCTURE" });
+      await loadIssues();
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Unable to publish solution");
+    } finally {
+      setPublishingSolution(false);
+    }
+  };
+
   const reviewStory = async (type, itemId, status) => {
     const draft = reviewDrafts[itemId] || {};
     setBusyId(itemId);
@@ -365,7 +405,8 @@ const CommunityAdmin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg)] px-3 py-6 text-[var(--text-primary)] md:px-6 transition-colors duration-300">
+    <>
+      <div className="min-h-screen bg-[var(--bg)] px-3 py-6 text-[var(--text-primary)] md:px-6 transition-colors duration-300">
       <div className="mx-auto flex max-w-6xl flex-col gap-6">
         <div className="flex flex-col gap-4 border-b border-[var(--border-subtle)] pb-6">
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
@@ -465,6 +506,25 @@ const CommunityAdmin = () => {
                           Reject
                         </Button>
                       </div>
+                      {issue.status === "RESOLVED" && !issue.isPublicSolution && (
+                        <Button
+                          icon={FaGlobe}
+                          tone="warning"
+                          className="mt-2 w-full"
+                          onClick={() => {
+                            setSolutionModal({ issueId: issue._id, title: issue.title, description: issue.description });
+                            setSolutionForm({ solutionTitle: issue.title, solutionSummary: issue.adminStatusNote || "", solutionDetails: "", solutionCategory: "INFRASTRUCTURE" });
+                          }}
+                          disabled={busyId === issue._id}
+                        >
+                          Publish as Community Solution
+                        </Button>
+                      )}
+                      {issue.isPublicSolution && (
+                        <span className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-[11px] font-bold text-emerald-300">
+                          <FaGlobe size={10} /> Published as Community Solution
+                        </span>
+                      )}
                     </div>
                   </article>
                 ))}
@@ -636,6 +696,32 @@ const CommunityAdmin = () => {
                         <option value="ACTIVE">Active</option>
                       </select>
                     </Field>
+                  </div>
+                  <div className="rounded-xl border border-white/10 bg-black/20 p-3 grid gap-3">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--text-muted)]">Voting Options</p>
+                    <label className="flex items-center gap-2.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={pollForm.isMultipleChoice}
+                        onChange={(event) => setPollForm((current) => ({ ...current, isMultipleChoice: event.target.checked }))}
+                        className="h-4 w-4 rounded accent-[var(--accent-primary)]"
+                      />
+                      <span className="text-sm text-[var(--text-secondary)]">Allow multiple choice voting</span>
+                    </label>
+                    {pollForm.isMultipleChoice && (
+                      <Field label="Max Selections">
+                        <input type="number" min="2" max="10" className={inputClass} value={pollForm.maxSelections} onChange={(event) => setPollForm((current) => ({ ...current, maxSelections: event.target.value }))} />
+                      </Field>
+                    )}
+                    <label className="flex items-center gap-2.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={pollForm.allowChangeVote}
+                        onChange={(event) => setPollForm((current) => ({ ...current, allowChangeVote: event.target.checked }))}
+                        className="h-4 w-4 rounded accent-[var(--accent-primary)]"
+                      />
+                      <span className="text-sm text-[var(--text-secondary)]">Allow members to change their vote</span>
+                    </label>
                   </div>
                   <Button icon={FaPaperPlane} tone="success" disabled={busyId === "poll-create"}>
                     Create Poll
@@ -814,6 +900,94 @@ const CommunityAdmin = () => {
         )}
       </div>
     </div>
+
+    {/* Publish as Community Solution Modal */}
+    {solutionModal && (
+      <div className="fixed inset-0 z-[1300] flex items-center justify-center bg-black/75 px-4 py-8 backdrop-blur-md">
+        <form
+          onSubmit={publishSolution}
+          className="max-h-[90vh] w-full max-w-xl overflow-y-auto ka-card p-6 shadow-2xl border border-[var(--border-strong)]"
+        >
+          <div className="mb-5 flex items-start justify-between gap-4 border-b border-[var(--border-subtle)] pb-4">
+            <div>
+              <span className="eyebrow-badge mb-2"><FaGlobe size={10} /><span>Publish Solution</span></span>
+              <h2 className="mt-2 text-xl font-bold text-[var(--text-primary)]">{solutionModal.title}</h2>
+              <p className="mt-1 text-xs text-[var(--text-muted)] line-clamp-2">{solutionModal.description}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSolutionModal(null)}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer"
+            >
+              <FiX size={18} />
+            </button>
+          </div>
+
+          <div className="grid gap-4">
+            <Field label="Solution Title *">
+              <input
+                className={inputClass}
+                value={solutionForm.solutionTitle}
+                onChange={(event) => setSolutionForm((current) => ({ ...current, solutionTitle: event.target.value }))}
+                placeholder="Clear, descriptive title for the public solution"
+                required
+              />
+            </Field>
+            <Field label="Category">
+              <select
+                className={inputClass}
+                value={solutionForm.solutionCategory}
+                onChange={(event) => setSolutionForm((current) => ({ ...current, solutionCategory: event.target.value }))}
+              >
+                <option value="INFRASTRUCTURE">Infrastructure</option>
+                <option value="WATER">Water / Utilities</option>
+                <option value="SAFETY">Safety</option>
+                <option value="ENVIRONMENT">Environment</option>
+                <option value="COMMUNITY_SERVICE">Community Service</option>
+                <option value="HEALTH">Health</option>
+                <option value="EDUCATION">Education</option>
+                <option value="OTHER">Other</option>
+              </select>
+            </Field>
+            <Field label="Short Summary">
+              <input
+                className={inputClass}
+                value={solutionForm.solutionSummary}
+                onChange={(event) => setSolutionForm((current) => ({ ...current, solutionSummary: event.target.value }))}
+                placeholder="One-line summary of how the issue was resolved"
+              />
+            </Field>
+            <Field label="Detailed Solution">
+              <textarea
+                className={textareaClass}
+                value={solutionForm.solutionDetails}
+                onChange={(event) => setSolutionForm((current) => ({ ...current, solutionDetails: event.target.value }))}
+                placeholder="Step-by-step resolution details, resources used, timeline, and outcome"
+              />
+            </Field>
+          </div>
+
+          <div className="mt-6 grid gap-3 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={() => setSolutionModal(null)}
+              className="btn-secondary w-full"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={publishingSolution}
+              className="btn-primary w-full"
+            >
+              <FaGlobe size={14} />
+              <span>{publishingSolution ? "Publishing..." : "Publish Solution"}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    )}
+    </>
   );
 };
 

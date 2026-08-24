@@ -10,16 +10,16 @@ const Dashboard = () => {
     <div className='relative flex w-full h-screen bg-[var(--bg)] text-[var(--text-primary)] overflow-hidden transition-colors duration-300'>
       <button 
         onClick={() => setIsSidebarOpen(true)}
-        className='md:hidden translate-y-10 -translate-x-3 fixed top-5 left-5 z-40 p-2.5 bg-[var(--surface-elevated)] border border-[var(--border-subtle)] rounded-2xl text-[var(--accent-primary)] active:scale-95 transition-all shadow-lg cursor-pointer'
+        className='md:hidden fixed top-20 left-4 z-40 p-2.5 bg-[var(--surface-elevated)] border border-[var(--border-subtle)] rounded-2xl text-[var(--accent-primary)] active:scale-95 transition-all shadow-lg cursor-pointer'
         aria-label="Open sidebar"
       >
-        <HiMenuAlt2 size={22} />
+        <HiMenuAlt2 size={20} />
       </button>
 
       <SideBar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
 
       <div className='flex-1 h-full border-l border-[var(--border-subtle)] bg-[var(--bg)] overflow-auto custom-scrollbar'>
-        <div className='mx-auto px-4 md:px-10 py-[50px] max-w-7xl'>
+        <div className='mx-auto px-3 sm:px-6 md:px-10 pt-24 md:pt-12 pb-16 max-w-7xl'>
           <Outlet/>
         </div>
       </div>

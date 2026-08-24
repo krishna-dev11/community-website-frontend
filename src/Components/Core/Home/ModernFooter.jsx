@@ -110,7 +110,7 @@ const ModernFooter = () => {
               <FooterLink to="/matrimonial">Matrimonial Portal</FooterLink>
               <FooterLink to="/scholarships">Scholarship Aid</FooterLink>
               <FooterLink to="/jobs">Jobs & Employment</FooterLink>
-              <FooterLink to="/dashboard/community">Dharamshala Booking</FooterLink>
+              <FooterLink to="/dharamshala">Dharamshala Booking</FooterLink>
               <FooterLink to="/donate">Donations & Seva</FooterLink>
               <FooterLink to="/achievements">Member Achievements</FooterLink>
             </ul>

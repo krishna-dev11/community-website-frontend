@@ -96,22 +96,9 @@ const ThemeToggle = ({ isDark, toggleTheme, compact = false }) => (
     onClick={toggleTheme}
     title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
     aria-label="Toggle theme"
-    style={{
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      width: compact ? 36 : 38,
-      height: compact ? 36 : 38,
-      borderRadius: 10,
-      border: "1px solid var(--line-strong)",
-      background: "var(--surface-raised)",
-      color: "var(--text-soft)",
-      transition: "all 200ms ease",
-      cursor: "pointer",
-      flexShrink: 0,
-    }}
+    className="theme-toggle-btn nav-icon-btn"
   >
-    {isDark ? <FiSun size={compact ? 15 : 16} /> : <FiMoon size={compact ? 15 : 16} />}
+    {isDark ? <FiSun size={15} /> : <FiMoon size={15} />}
   </button>
 );
 
@@ -433,21 +420,21 @@ const NavBar = () => {
           </div>
 
           {/* RIGHT SIDE ACTIONS */}
-          <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-            {/* Theme Toggle - always visible & compact */}
+          <div className="nav-actions-container">
+            {/* Theme Toggle [☼] - always visible */}
             <ThemeToggle isDark={isDark} toggleTheme={toggleTheme} compact={true} />
 
-            {/* Donate Button */}
+            {/* Desktop Only Donate Button */}
             <Link
               to="/donate"
-              className="navbar-donate-btn"
+              className="desktop-donate-btn"
               style={{
-                display: "inline-flex",
+                display: "none",
                 alignItems: "center",
                 gap: 5,
                 borderRadius: 10,
                 background: "linear-gradient(135deg, var(--brand), var(--brand-deep))",
-                padding: "6px 10px",
+                padding: "6px 12px",
                 fontSize: 10.5,
                 fontWeight: 800,
                 letterSpacing: "0.08em",
@@ -458,10 +445,22 @@ const NavBar = () => {
                 transition: "all 220ms ease",
                 whiteSpace: "nowrap",
                 flexShrink: 0,
+                height: 36,
+                boxSizing: "border-box",
               }}
             >
               <FiHeart size={12} />
               <span>Donate</span>
+            </Link>
+
+            {/* Mobile Only Heart (Donate) Icon Button [♥] */}
+            <Link
+              to="/donate"
+              title="Donate"
+              aria-label="Donate"
+              className="mobile-donate-icon-btn nav-icon-btn"
+            >
+              <FiHeart size={15} />
             </Link>
 
             {/* Desktop Only: Logged-in Avatar & Notifications */}
@@ -661,28 +660,24 @@ const NavBar = () => {
               </div>
             )}
 
-            {/* Mobile Hamburger Button */}
+            {/* Mobile Notification Bell Icon Button [🔔] */}
+            <Link
+              to="/notifications"
+              title="Notifications"
+              aria-label="Notifications"
+              className="mobile-notification-icon-btn nav-icon-btn"
+            >
+              <FiBell size={15} />
+            </Link>
+
+            {/* Mobile Hamburger Button [☰] */}
             <button
               type="button"
               onClick={() => setIsMenuOpen((prev) => !prev)}
-              style={{
-                display: "none",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 38,
-                height: 38,
-                borderRadius: 10,
-                border: "1px solid var(--line-strong)",
-                background: "var(--surface-raised)",
-                color: "var(--text-soft)",
-                cursor: "pointer",
-                transition: "all 200ms ease",
-                flexShrink: 0,
-              }}
-              className="mobile-hamburger"
+              className="mobile-hamburger-btn nav-icon-btn"
               aria-label="Toggle navigation menu"
             >
-              {isMenuOpen ? <FiX size={18} /> : <FiMenu size={18} />}
+              {isMenuOpen ? <FiX size={17} /> : <FiMenu size={17} />}
             </button>
           </div>
         </div>
@@ -887,20 +882,90 @@ const NavBar = () => {
 
       {/* Responsive Styles */}
       <style>{`
+        .nav-actions-container {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          flex-shrink: 0;
+        }
+
+        .nav-icon-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 36px;
+          height: 36px;
+          border-radius: 10px;
+          border: 1px solid var(--line-strong);
+          background: var(--surface-raised);
+          color: var(--text-soft);
+          text-decoration: none;
+          cursor: pointer;
+          transition: all 200ms ease;
+          flex-shrink: 0;
+          box-sizing: border-box;
+          padding: 0;
+        }
+
+        .nav-icon-btn:hover {
+          color: var(--text);
+          border-color: var(--brand);
+        }
+
+        .mobile-donate-icon-btn {
+          background: linear-gradient(135deg, var(--brand), var(--brand-deep)) !important;
+          color: #fff !important;
+          border-color: transparent !important;
+          box-shadow: 0 0 14px var(--brand-shadow);
+        }
+
         @media (min-width: 960px) {
           .desktop-nav { display: flex !important; }
+          .desktop-donate-btn { display: inline-flex !important; }
           .desktop-auth-actions { display: flex !important; }
-          .mobile-hamburger { display: none !important; }
+          .mobile-donate-icon-btn { display: none !important; }
+          .mobile-notification-icon-btn { display: none !important; }
+          .mobile-hamburger-btn { display: none !important; }
         }
+
         @media (max-width: 959px) {
           .desktop-nav { display: none !important; }
+          .desktop-donate-btn { display: none !important; }
           .desktop-auth-actions { display: none !important; }
-          .mobile-hamburger { display: flex !important; }
+          .mobile-donate-icon-btn { display: flex !important; }
+          .mobile-notification-icon-btn { display: flex !important; }
+          .mobile-hamburger-btn { display: flex !important; }
+          .nav-actions-container { 
+            display: flex !important; 
+            margin-left: auto !important; 
+            gap: 6px !important; 
+          }
         }
-        @media (max-width: 360px) {
+
+        @media (max-width: 480px) {
           .logo-subtitle { display: none !important; }
-          .navbar-donate-btn span { display: none !important; }
-          .navbar-donate-btn { padding: 6px !important; }
+          .nav-actions-container { gap: 5px !important; }
+        }
+
+        @media (max-width: 375px) {
+          .nav-icon-btn {
+            width: 32px !important;
+            height: 32px !important;
+            border-radius: 8px !important;
+          }
+          .nav-actions-container {
+            gap: 4px !important;
+          }
+        }
+
+        @media (max-width: 330px) {
+          .nav-icon-btn {
+            width: 29px !important;
+            height: 29px !important;
+          }
+          .nav-actions-container {
+            gap: 3px !important;
+          }
         }
       `}</style>
     </>

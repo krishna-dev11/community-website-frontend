@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
+import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
   FaCalendarCheck,
@@ -21,6 +22,9 @@ import {
   FiAward,
   FiMapPin,
   FiCalendar,
+  FiExternalLink,
+  FiClock,
+  FiFileText,
 } from "react-icons/fi";
 import QRCode from "react-qr-code";
 import { jsPDF } from "jspdf";
@@ -32,11 +36,11 @@ import { generateCardImage } from "../../../Common/MembershipCardModal";
 
 const tabs = [
   { key: "card", label: "Membership Card", icon: FaIdCard },
-  { key: "issues", label: "Issues", icon: FaExclamationCircle },
-  { key: "bookings", label: "Bookings", icon: FaCalendarCheck },
-  { key: "polls", label: "Polls", icon: FaPoll },
-  { key: "posts", label: "Posts", icon: FaComments },
-  { key: "achievements", label: "Achievements", icon: FaAward },
+  { key: "issues", label: "Issues & Solutions", icon: FaExclamationCircle },
+  { key: "dharamshala", label: "Dharamshala Booking", icon: FaCalendarCheck, isExternalLink: true, link: "/dharamshala" },
+  { key: "polls", label: "Polls & Voting", icon: FaPoll },
+  { key: "posts", label: "Discussion Feed", icon: FaComments },
+  { key: "achievements", label: "Samaj Pride", icon: FaAward },
   { key: "shradhanjali", label: "Tribute / Shradhanjali", icon: FaHeart },
 ];
 
@@ -61,7 +65,6 @@ const Button = ({ children, icon: Icon, tone = "neutral", className = "", ...pro
   );
 };
 
-
 const Field = ({ label, children }) => (
   <label className="grid gap-1.5">
     <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{label}</span>
@@ -74,9 +77,12 @@ const Status = ({ value }) => {
     PUBLISHED: "border-emerald-400/30 bg-emerald-400/10 text-emerald-200",
     ACTIVE: "border-emerald-400/30 bg-emerald-400/10 text-emerald-200",
     APPROVED: "border-emerald-400/30 bg-emerald-400/10 text-emerald-200",
+    RESOLVED: "border-emerald-400/30 bg-emerald-400/10 text-emerald-200",
+    IN_PROGRESS: "border-blue-400/30 bg-blue-400/10 text-blue-200",
     PENDING: "border-amber-400/30 bg-amber-400/10 text-amber-200",
     UNDER_REVIEW: "border-sky-400/30 bg-sky-400/10 text-sky-200",
     REJECTED: "border-red-400/30 bg-red-400/10 text-red-200",
+    CLOSED: "border-gray-400/30 bg-gray-400/10 text-gray-200",
     ARCHIVED: "border-gray-400/30 bg-gray-400/10 text-gray-200",
   };
 
@@ -108,7 +114,14 @@ const formatDate = (value) => {
 
 const CommunityHub = () => {
   const { token } = useSelector((state) => state.auth);
-  const [activeTab, setActiveTab] = useState("card");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  
+  const queryTab = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState(
+    queryTab && tabs.some((t) => t.key === queryTab && !t.isExternalLink) ? queryTab : "card"
+  );
+  
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
   const [card, setCard] = useState(null);
@@ -116,8 +129,8 @@ const CommunityHub = () => {
   const cardRef = useRef(null);
 
   const [issues, setIssues] = useState([]);
-  const [bookings, setBookings] = useState([]);
   const [polls, setPolls] = useState([]);
+  const [selectedPollOptions, setSelectedPollOptions] = useState({});
   const [posts, setPosts] = useState([]);
   const [achievements, setAchievements] = useState([]);
   const [shradhanjalis, setShradhanjalis] = useState([]);
@@ -131,13 +144,6 @@ const CommunityHub = () => {
     location: "",
     priority: "MEDIUM",
   });
-  const [bookingForm, setBookingForm] = useState({
-    startDate: "",
-    endDate: "",
-    purpose: "",
-    roomsRequested: 1,
-  });
-  const [availability, setAvailability] = useState(null);
   const [postForm, setPostForm] = useState({ title: "", body: "", category: "" });
 
   // Achievements & Shradhanjali with actual file uploads
@@ -145,25 +151,48 @@ const CommunityHub = () => {
     title: "",
     achieverName: "",
     category: "",
+    organization: "",
+    year: new Date().getFullYear().toString(),
     description: "",
   });
   const [achievementImageFile, setAchievementImageFile] = useState(null);
+  const [achievementDocFile, setAchievementDocFile] = useState(null);
 
   const [shradhanjaliForm, setShradhanjaliForm] = useState({
     personName: "",
-    message: "",
     dateOfBirth: "",
     dateOfPassing: "",
+    familyInfo: "",
+    biography: "",
+    message: "",
   });
   const [shradhanjaliPhotoFile, setShradhanjaliPhotoFile] = useState(null);
+  const [shradhanjaliDocFile, setShradhanjaliDocFile] = useState(null);
 
   const authConfig = useMemo(
     () => ({
-      headers: { Authorization: `Bearer ${token}` },
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
       withCredentials: true,
     }),
     [token]
   );
+
+  // Sync tab with URL search parameter
+  useEffect(() => {
+    if (queryTab && tabs.some((t) => t.key === queryTab && !t.isExternalLink) && queryTab !== activeTab) {
+      setActiveTab(queryTab);
+    }
+  }, [queryTab]);
+
+  const handleTabChange = (key) => {
+    const target = tabs.find((t) => t.key === key);
+    if (target?.isExternalLink) {
+      navigate(target.link);
+      return;
+    }
+    setActiveTab(key);
+    setSearchParams({ tab: key });
+  };
 
   const loadCard = async () => {
     try {
@@ -176,22 +205,23 @@ const CommunityHub = () => {
 
   const loadIssues = async () => {
     const response = await apiConnector("GET", communityEndpoints.ISSUES_API, null, authConfig, {
-      mine: "true",
       limit: 20,
     });
     setIssues(response.data?.data?.issues || []);
   };
 
-  const loadBookings = async () => {
-    const response = await apiConnector("GET", communityEndpoints.MY_DHARAMSHALA_BOOKINGS_API, null, authConfig, {
-      limit: 20,
-    });
-    setBookings(response.data?.data?.bookings || []);
-  };
-
   const loadPolls = async () => {
     const response = await apiConnector("GET", communityEndpoints.POLLS_API, null, authConfig, { limit: 20 });
-    setPolls(response.data?.data?.polls || []);
+    const pollList = response.data?.data?.polls || [];
+    setPolls(pollList);
+    // Initialize selected options map
+    const initialSelected = {};
+    pollList.forEach((poll) => {
+      if (poll.userSelectedOptions && poll.userSelectedOptions.length > 0) {
+        initialSelected[poll._id] = poll.userSelectedOptions;
+      }
+    });
+    setSelectedPollOptions(initialSelected);
   };
 
   const loadPosts = async () => {
@@ -214,7 +244,6 @@ const CommunityHub = () => {
     try {
       if (activeTab === "card") await loadCard();
       if (activeTab === "issues") await loadIssues();
-      if (activeTab === "bookings") await loadBookings();
       if (activeTab === "polls") await loadPolls();
       if (activeTab === "posts") await loadPosts();
       if (activeTab === "achievements") await loadAchievements();
@@ -231,7 +260,6 @@ const CommunityHub = () => {
   }, [activeTab]);
 
   const updateIssue = (key, value) => setIssueForm((current) => ({ ...current, [key]: value }));
-  const updateBooking = (key, value) => setBookingForm((current) => ({ ...current, [key]: value }));
   const updatePost = (key, value) => setPostForm((current) => ({ ...current, [key]: value }));
   const updateAchievement = (key, value) => setAchievementForm((current) => ({ ...current, [key]: value }));
   const updateShradhanjali = (key, value) => setShradhanjaliForm((current) => ({ ...current, [key]: value }));
@@ -273,7 +301,7 @@ const CommunityHub = () => {
     setBusyId("issue");
     try {
       await apiConnector("POST", communityEndpoints.ISSUES_API, issueForm, authConfig);
-      toast.success("Issue submitted");
+      toast.success("Issue submitted successfully");
       setIssueForm({ title: "", description: "", category: "", location: "", priority: "MEDIUM" });
       await loadIssues();
     } catch (error) {
@@ -283,46 +311,40 @@ const CommunityHub = () => {
     }
   };
 
-  const checkAvailability = async () => {
-    if (!bookingForm.startDate || !bookingForm.endDate) {
-      toast.error("Select start and end dates first");
+  const togglePollOption = (poll, optionId) => {
+    const pollId = poll._id;
+    const current = selectedPollOptions[pollId] || [];
+    if (poll.isMultipleChoice) {
+      if (current.includes(optionId)) {
+        setSelectedPollOptions({ ...selectedPollOptions, [pollId]: current.filter((id) => id !== optionId) });
+      } else {
+        if (current.length >= (poll.maxSelections || 2)) {
+          toast.error(`You can select at most ${poll.maxSelections || 2} options`);
+          return;
+        }
+        setSelectedPollOptions({ ...selectedPollOptions, [pollId]: [...current, optionId] });
+      }
+    } else {
+      setSelectedPollOptions({ ...selectedPollOptions, [pollId]: [optionId] });
+    }
+  };
+
+  const submitVote = async (poll) => {
+    const pollId = poll._id;
+    const selected = selectedPollOptions[pollId] || [];
+    if (!selected.length) {
+      toast.error("Please select an option before voting");
       return;
     }
-    setBusyId("availability");
-    try {
-      const response = await apiConnector("GET", communityEndpoints.DHARAMSHALA_AVAILABILITY_API, null, authConfig, {
-        startDate: bookingForm.startDate,
-        endDate: bookingForm.endDate,
-      });
-      setAvailability(response.data?.data || null);
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Unable to check availability");
-    } finally {
-      setBusyId(null);
-    }
-  };
-
-  const submitBooking = async (event) => {
-    event.preventDefault();
-    setBusyId("booking");
-    try {
-      await apiConnector("POST", communityEndpoints.DHARAMSHALA_BOOKINGS_API, bookingForm, authConfig);
-      toast.success("Dharamshala booking request submitted");
-      setBookingForm({ startDate: "", endDate: "", purpose: "", roomsRequested: 1 });
-      setAvailability(null);
-      await loadBookings();
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Unable to submit booking");
-    } finally {
-      setBusyId(null);
-    }
-  };
-
-  const submitVote = async (pollId, optionId) => {
     setBusyId(`vote-${pollId}`);
     try {
-      await apiConnector("POST", communityEndpoints.VOTE_API(pollId), { optionId }, authConfig);
-      toast.success("Vote recorded");
+      await apiConnector(
+        "POST",
+        communityEndpoints.VOTE_API(pollId),
+        { optionIds: selected, optionId: selected[0] },
+        authConfig
+      );
+      toast.success("Vote recorded successfully");
       await loadPolls();
     } catch (error) {
       toast.error(error.response?.data?.message || "Unable to submit vote");
@@ -376,7 +398,7 @@ const CommunityHub = () => {
     }
   };
 
-  // Submit Achievement with actual Image File
+  // Submit Achievement with actual Photo & Document
   const submitAchievement = async (event) => {
     event.preventDefault();
     setBusyId("achievement");
@@ -385,16 +407,29 @@ const CommunityHub = () => {
       formData.append("title", achievementForm.title);
       formData.append("achieverName", achievementForm.achieverName);
       formData.append("category", achievementForm.category || "General");
+      formData.append("organization", achievementForm.organization || "");
+      formData.append("year", achievementForm.year || "");
       formData.append("description", achievementForm.description);
 
       if (achievementImageFile instanceof File) {
-        formData.append("image", achievementImageFile);
+        formData.append("recipientPhoto", achievementImageFile);
+      }
+      if (achievementDocFile instanceof File) {
+        formData.append("supportingDocument", achievementDocFile);
       }
 
       await apiConnector("POST", communityEndpoints.ACHIEVEMENTS_API, formData, authConfig);
       toast.success("Achievement submitted for review");
-      setAchievementForm({ title: "", achieverName: "", category: "", description: "" });
+      setAchievementForm({
+        title: "",
+        achieverName: "",
+        category: "",
+        organization: "",
+        year: new Date().getFullYear().toString(),
+        description: "",
+      });
       setAchievementImageFile(null);
+      setAchievementDocFile(null);
       await loadAchievements();
     } catch (error) {
       toast.error(error.response?.data?.message || "Unable to submit achievement");
@@ -403,7 +438,7 @@ const CommunityHub = () => {
     }
   };
 
-  // Submit Shradhanjali with actual Photo File
+  // Submit Shradhanjali with actual Photo & Document
   const submitShradhanjali = async (event) => {
     event.preventDefault();
     setBusyId("shradhanjali");
@@ -413,15 +448,28 @@ const CommunityHub = () => {
       formData.append("message", shradhanjaliForm.message);
       if (shradhanjaliForm.dateOfBirth) formData.append("dateOfBirth", shradhanjaliForm.dateOfBirth);
       formData.append("dateOfPassing", shradhanjaliForm.dateOfPassing);
+      formData.append("familyInfo", shradhanjaliForm.familyInfo || "");
+      formData.append("biography", shradhanjaliForm.biography || "");
 
       if (shradhanjaliPhotoFile instanceof File) {
         formData.append("photo", shradhanjaliPhotoFile);
       }
+      if (shradhanjaliDocFile instanceof File) {
+        formData.append("supportingDocument", shradhanjaliDocFile);
+      }
 
       await apiConnector("POST", communityEndpoints.SHRADHANJALIS_API, formData, authConfig);
       toast.success("Shradhanjali tribute submitted for review");
-      setShradhanjaliForm({ personName: "", message: "", dateOfBirth: "", dateOfPassing: "" });
+      setShradhanjaliForm({
+        personName: "",
+        message: "",
+        dateOfBirth: "",
+        dateOfPassing: "",
+        familyInfo: "",
+        biography: "",
+      });
       setShradhanjaliPhotoFile(null);
+      setShradhanjaliDocFile(null);
       await loadShradhanjalis();
     } catch (error) {
       toast.error(error.response?.data?.message || "Unable to submit tribute");
@@ -448,179 +496,179 @@ const CommunityHub = () => {
               </p>
             </div>
             <Button icon={FaSyncAlt} onClick={refreshActive} disabled={loading}>
-              Refresh
+              Refresh Hub
             </Button>
           </div>
 
           {/* Navigation Tabs */}
-          <div className="flex flex-wrap gap-2">
+          <div className="no-scrollbar flex gap-2 overflow-x-auto pt-2">
             {tabs.map((tab) => {
               const Icon = tab.icon;
-              const active = activeTab === tab.key;
+              const isActive = activeTab === tab.key;
               return (
                 <button
                   key={tab.key}
-                  onClick={() => setActiveTab(tab.key)}
-                  className={`flex h-10 items-center justify-center gap-2 rounded-full px-4 text-xs font-bold uppercase tracking-wider transition cursor-pointer ${
-                    active
-                      ? "bg-[var(--accent-primary)] text-[#070707] shadow-md"
-                      : "border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                  onClick={() => handleTabChange(tab.key)}
+                  className={`flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition cursor-pointer ${
+                    isActive
+                      ? "bg-[var(--brand)] text-white shadow-lg shadow-[var(--brand)]/20"
+                      : "border border-[var(--border-subtle)] bg-[var(--surface-raised)] text-[var(--text-secondary)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text-primary)]"
                   }`}
                 >
-                  <Icon size={12} />
+                  <Icon size={14} />
                   <span>{tab.label}</span>
+                  {tab.isExternalLink && <FiExternalLink size={11} className="opacity-70" />}
                 </button>
               );
             })}
           </div>
         </div>
 
-        {/* Tab Contents */}
+        {/* Content Area */}
         {loading ? (
-          <div className="flex h-56 items-center justify-center">
-            <div className="h-10 w-10 animate-spin rounded-full border-4 border-[var(--accent-primary)] border-t-transparent" />
+          <div className="flex items-center justify-center py-20">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--brand)] border-t-transparent" />
           </div>
         ) : (
-
           <>
             {/* TAB 1: MEMBERSHIP CARD */}
             {activeTab === "card" && (
-              <section className="rounded-3xl border border-white/10 bg-white/[0.02] p-6 backdrop-blur-xl sm:p-8">
+              <section className="flex flex-col items-center">
                 {card ? (
-                  <div className="flex flex-col items-center gap-8">
-                    {/* Rendered Digital Card Container */}
-                    <div
-                      ref={cardRef}
-                      className="relative w-full max-w-xl overflow-hidden rounded-3xl border-2 border-emerald-500/40 bg-gradient-to-br from-[#0c1c16] via-[#06120d] to-[#040806] p-7 text-white shadow-2xl"
-                    >
-                      {/* Decorative background effects */}
-                      <div className="pointer-events-none absolute -right-16 -top-16 h-52 w-52 rounded-full bg-emerald-500/20 blur-3xl" />
-                      <div className="pointer-events-none absolute -bottom-16 -left-16 h-52 w-52 rounded-full bg-teal-500/15 blur-3xl" />
-                      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:16px_16px] opacity-10" />
+                  <div className="w-full max-w-xl flex flex-col items-center">
+                    {/* Proportional Card Container */}
+                    <div className="w-full overflow-hidden flex justify-center py-2">
+                      <div
+                        ref={cardRef}
+                        data-membership-card="true"
+                        className="w-full relative rounded-2xl border-2 border-[#00DFA5] p-5 sm:p-6 text-white shadow-2xl overflow-hidden"
+                        style={{
+                          background: "linear-gradient(135deg, #0d221a 0%, #06140e 60%, #030a07 100%)",
+                          maxWidth: "540px",
+                        }}
+                      >
+                        {/* Glows */}
+                        <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-[#00DFA5] opacity-20 blur-3xl" />
+                        <div className="pointer-events-none absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-[#19C9C0] opacity-15 blur-3xl" />
 
-                      {/* Header */}
-                      <div className="relative flex items-center justify-between border-b border-emerald-500/30 pb-3.5">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-amber-400/40 bg-gradient-to-tr from-amber-500/20 to-emerald-500/30 shadow-md">
-                            <span className="text-lg font-black text-amber-300">ॐ</span>
-                          </div>
-                          <div>
-                            <h3 className="text-xs font-black uppercase tracking-widest text-amber-300">
-                              SHRI SAMAJ COMMUNITY TRUST
-                            </h3>
-                            <p className="text-[9px] font-bold uppercase tracking-wider text-emerald-400">
-                              Official Verified Identity Card
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-400/15 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-emerald-300">
-                          <FiCheckCircle size={11} /> Active
-                        </div>
-                      </div>
-
-                      {/* Body */}
-                      <div className="relative mt-5 grid grid-cols-[1fr_auto] items-center gap-5">
-                        <div className="flex items-start gap-4">
-                          {/* Photo */}
-                          <div className="relative shrink-0">
-                            <img
-                              src={
-                                card.photo ||
-                                `https://api.dicebear.com/7.x/initials/svg?seed=${card.name || "Member"}`
-                              }
-                              alt={card.name}
-                              crossOrigin="anonymous"
-                              className="h-24 w-24 rounded-2xl border-2 border-emerald-400/60 object-cover shadow-xl"
-                            />
-                            <div className="absolute -bottom-1.5 -right-1.5 flex h-6 w-6 items-center justify-center rounded-full border border-black bg-emerald-400 text-black">
-                              <FiUserCheck size={12} />
+                        {/* Top Header */}
+                        <div className="relative flex items-center justify-between border-b border-[#00DFA5]/30 pb-3">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-xl border border-amber-400/70 bg-gradient-to-br from-amber-500/30 to-[#00DFA5]/20 shadow-md">
+                              <span className="text-lg font-black text-amber-400">ॐ</span>
                             </div>
-                          </div>
-
-                          <div className="space-y-1.5 text-left">
                             <div>
-                              <h4 className="text-xl font-black tracking-tight text-white">{card.name}</h4>
-                              <p className="font-mono text-xs font-bold uppercase tracking-wider text-emerald-400">
-                                {card.memberId
-                                  ? `SMJ-${String(card.memberId).slice(-8).toUpperCase()}`
-                                  : "SMJ-MEMBER"}
+                              <h3 className="text-xs font-black uppercase tracking-wider text-amber-400 leading-tight">
+                                SHRI SAMAJ COMMUNITY TRUST
+                              </h3>
+                              <p className="text-[9px] font-bold uppercase tracking-wider text-[#00DFA5]">
+                                Official Verified Identity Card
                               </p>
                             </div>
+                          </div>
+                          <span className="inline-flex items-center gap-1 rounded-full border border-[#00DFA5]/40 bg-[#00DFA5]/15 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-emerald-300">
+                            <FiCheckCircle size={10} /> Active
+                          </span>
+                        </div>
 
-                            {card.family?.familyName && (
-                              <p className="text-xs text-gray-300">
-                                Family: <span className="font-bold text-white">{card.family.familyName}</span>
-                              </p>
-                            )}
-
-                            <div className="flex flex-wrap gap-x-3 text-[10px] text-gray-400">
-                              <span>Issued: {card.issuedAt ? new Date(card.issuedAt).toLocaleDateString("en-IN") : "Active"}</span>
-                              <span>·</span>
-                              <span className="font-semibold text-emerald-300">Lifetime Verified</span>
+                        {/* Card Body */}
+                        <div className="relative mt-4 flex items-center justify-between gap-3 sm:gap-4">
+                          <div className="flex items-start gap-3 sm:gap-4 min-w-0 flex-1">
+                            <div className="relative shrink-0">
+                              <img
+                                src={
+                                  card.photo ||
+                                  `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(card.name || "Member")}`
+                                }
+                                alt={card.name}
+                                crossOrigin="anonymous"
+                                className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl border-2 border-[#00DFA5] object-cover shadow-lg"
+                              />
+                              <div className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border border-gray-900 bg-[#00DFA5] text-black">
+                                <FiUserCheck size={11} />
+                              </div>
                             </div>
+                            <div className="min-w-0 flex-1 text-left">
+                              <h4 className="text-sm sm:text-base font-black text-white truncate">{card.name}</h4>
+                              <p className="font-mono text-xs font-bold uppercase tracking-wider text-[#00DFA5]">
+                                {card?.memberId ? `SMJ-${String(card.memberId).slice(-8).toUpperCase()}` : "SMJ-MEMBER"}
+                              </p>
+                              {card.family?.familyName && (
+                                <p className="text-[11px] text-gray-300 mt-1 truncate">
+                                  Family: <strong className="text-white">{card.family.familyName}</strong>
+                                </p>
+                              )}
+                              <p className="text-[10px] text-gray-400 mt-1">
+                                Issued: {card.issuedAt ? formatDate(card.issuedAt) : "Active"} · Lifetime
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* QR Code */}
+                          <div className="flex shrink-0 flex-col items-center rounded-xl border border-[#00DFA5]/40 bg-white p-2 shadow-lg">
+                            <div className="h-14 w-14 sm:h-16 sm:w-16">
+                              <QRCode
+                                value={verificationUrl}
+                                size={64}
+                                style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                                viewBox={`0 0 64 64`}
+                              />
+                            </div>
+                            <span className="mt-1 text-[7px] font-black uppercase tracking-wider text-black">
+                              SCAN TO VERIFY
+                            </span>
                           </div>
                         </div>
 
-                        {/* QR Code */}
-                        <div className="flex flex-col items-center rounded-2xl border border-emerald-500/30 bg-white p-2.5 shadow-xl">
-                          <div className="h-20 w-20">
-                            <QRCode
-                              value={verificationUrl}
-                              size={80}
-                              style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-                              viewBox={`0 0 80 80`}
-                            />
-                          </div>
-                          <span className="mt-1 text-[8px] font-black uppercase tracking-wider text-black">
-                            Scan To Verify
+                        {/* Card Footer */}
+                        <div className="relative mt-4 flex items-center justify-between border-t border-[#00DFA5]/25 pt-2 text-[9px] text-gray-400">
+                          <span className="flex items-center gap-1 text-[#00DFA5]">
+                            <FiShield size={10} /> Digital Credential Standard
+                          </span>
+                          <span className="font-mono font-bold tracking-wider text-[#00DFA5]">
+                            SMJ-SECURITY-AUTHENTICATED
                           </span>
                         </div>
                       </div>
-
-                      {/* Footer */}
-                      <div className="relative mt-5 flex items-center justify-between border-t border-emerald-500/20 pt-2.5 text-[9px] text-gray-400">
-                        <span className="flex items-center gap-1">
-                          <FiShield size={10} className="text-emerald-400" /> Digital Credential Standard
-                        </span>
-                        <span className="font-mono font-bold tracking-widest text-emerald-400">
-                          SMJ-SECURITY-AUTHENTICATED
-                        </span>
-                      </div>
                     </div>
 
-                    {/* Action Bar */}
-                    <div className="flex flex-wrap items-center justify-center gap-4">
+                    {/* Download PDF Action */}
+                    <div className="mt-5 flex justify-center">
                       <button
                         onClick={handleDownloadCard}
                         disabled={downloadingCard}
-                        className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 px-6 py-3.5 text-xs font-black uppercase tracking-wider text-black shadow-xl shadow-emerald-500/25 transition-all hover:from-emerald-400 hover:to-teal-300 disabled:opacity-50"
+                        className="btn-primary flex items-center gap-2 !py-2.5 !px-6 !text-xs cursor-pointer shadow-lg"
                       >
-                        <FiDownload size={15} />
-                        {downloadingCard ? "Generating High-Res Card..." : "Download Digital Membership Card"}
+                        <FiDownload size={14} />
+                        <span>{downloadingCard ? "Generating PDF..." : "Download Official PDF Card"}</span>
                       </button>
                     </div>
                   </div>
                 ) : (
-                  <Empty text="Membership card will be generated automatically once your application is approved by the Super Admin." />
+                  <Empty text="Membership card will be available automatically once your member application is approved by the Super Admin." />
                 )}
               </section>
             )}
 
-            {/* TAB 2: ISSUES */}
+            {/* TAB 2: ISSUES & PUBLIC SOLUTIONS */}
             {activeTab === "issues" && (
               <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
-                <form onSubmit={submitIssue} className="grid gap-4 rounded-2xl border border-white/10 bg-white/[0.02] p-5">
-                  <h2 className="text-lg font-bold text-white">Submit Community Issue</h2>
-                  <Field label="Title">
-                    <input className={inputClass} value={issueForm.title} onChange={(event) => updateIssue("title", event.target.value)} required />
+                <form onSubmit={submitIssue} className="grid gap-4 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-5">
+                  <div>
+                    <h2 className="text-lg font-bold text-[var(--text-primary)]">Submit Community Issue</h2>
+                    <p className="mt-1 text-xs text-[var(--text-secondary)]">
+                      Report community issues or civic concerns for management committee review.
+                    </p>
+                  </div>
+                  <Field label="Title *">
+                    <input className={inputClass} value={issueForm.title} onChange={(event) => updateIssue("title", event.target.value)} placeholder="Summary of the issue" required />
                   </Field>
-                  <Field label="Description">
-                    <textarea className={textareaClass} value={issueForm.description} onChange={(event) => updateIssue("description", event.target.value)} required />
+                  <Field label="Description *">
+                    <textarea className={textareaClass} value={issueForm.description} onChange={(event) => updateIssue("description", event.target.value)} placeholder="Detailed explanation..." required />
                   </Field>
                   <div className="grid gap-4 md:grid-cols-2">
                     <Field label="Category">
-                      <input className={inputClass} value={issueForm.category} onChange={(event) => updateIssue("category", event.target.value)} placeholder="Water, road, event" />
+                      <input className={inputClass} value={issueForm.category} onChange={(event) => updateIssue("category", event.target.value)} placeholder="e.g. Water, Civic, Education" />
                     </Field>
                     <Field label="Priority">
                       <select className={inputClass} value={issueForm.priority} onChange={(event) => updateIssue("priority", event.target.value)}>
@@ -632,26 +680,48 @@ const CommunityHub = () => {
                     </Field>
                   </div>
                   <Field label="Location / Area">
-                    <input className={inputClass} value={issueForm.location} onChange={(event) => updateIssue("location", event.target.value)} />
+                    <input className={inputClass} value={issueForm.location} onChange={(event) => updateIssue("location", event.target.value)} placeholder="City, ward, or community center" />
                   </Field>
                   <Button icon={FaPaperPlane} tone="success" disabled={busyId === "issue"}>
                     Submit Issue
                   </Button>
                 </form>
 
-                <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
-                  <h2 className="text-lg font-bold text-white">Your Submitted Issues</h2>
-                  <div className="mt-4 divide-y divide-white/10">
+                <section className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-5">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-lg font-bold text-[var(--text-primary)]">Your Submitted Issues</h2>
+                    <Link to="/solutions" className="text-xs font-bold text-[var(--brand)] hover:underline flex items-center gap-1">
+                      <span>Public Solutions Hub</span>
+                      <FiExternalLink size={11} />
+                    </Link>
+                  </div>
+                  <div className="mt-4 divide-y divide-[var(--border-subtle)]">
                     {issues.map((issue) => (
                       <article key={issue._id} className="py-4">
                         <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
                           <div>
-                            <h3 className="font-bold text-white">{issue.title}</h3>
-                            <p className="mt-1 text-xs text-gray-500">{issue.category || "General"} · {formatDate(issue.createdAt)}</p>
+                            <h3 className="font-bold text-[var(--text-primary)]">{issue.title}</h3>
+                            <p className="mt-1 text-xs text-[var(--text-secondary)]">
+                              {issue.category || "General"} · {formatDate(issue.createdAt)} {issue.location ? `· ${issue.location}` : ""}
+                            </p>
                           </div>
                           <Status value={issue.status} />
                         </div>
-                        <p className="mt-2 text-xs text-gray-400">{issue.description}</p>
+                        <p className="mt-2 text-xs text-[var(--text-secondary)]">{issue.description}</p>
+                        
+                        {/* Admin Status Note Callout */}
+                        {issue.adminStatusNote && (
+                          <div className="mt-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-300">
+                            <strong className="block font-bold text-emerald-200 mb-0.5">Admin Response & Resolution Note:</strong>
+                            {issue.adminStatusNote}
+                          </div>
+                        )}
+                        {issue.moderationReason && !issue.adminStatusNote && (
+                          <div className="mt-3 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-300">
+                            <strong className="block font-bold text-red-200 mb-0.5">Committee Review Note:</strong>
+                            {issue.moderationReason}
+                          </div>
+                        )}
                       </article>
                     ))}
                     {issues.length === 0 && <Empty text="No community issues submitted yet." />}
@@ -660,151 +730,176 @@ const CommunityHub = () => {
               </div>
             )}
 
-            {/* TAB 3: DHARAMSHALA BOOKINGS */}
-            {activeTab === "bookings" && (
-              <div className="grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
-                <form onSubmit={submitBooking} className="grid gap-4 rounded-2xl border border-white/10 bg-white/[0.02] p-5">
-                  <h2 className="text-lg font-bold text-white">Request Dharamshala Booking</h2>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <Field label="Check-in Date">
-                      <input type="date" className={inputClass} value={bookingForm.startDate} onChange={(event) => updateBooking("startDate", event.target.value)} required />
-                    </Field>
-                    <Field label="Check-out Date">
-                      <input type="date" className={inputClass} value={bookingForm.endDate} onChange={(event) => updateBooking("endDate", event.target.value)} required />
-                    </Field>
-                  </div>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <Field label="Rooms Requested">
-                      <input type="number" min="1" max="10" className={inputClass} value={bookingForm.roomsRequested} onChange={(event) => updateBooking("roomsRequested", event.target.value)} />
-                    </Field>
-                    <div className="flex items-end">
-                      <Button type="button" onClick={checkAvailability} disabled={busyId === "availability"} className="w-full">
-                        Check Availability
-                      </Button>
-                    </div>
-                  </div>
-
-                  {availability && (
-                    <div className="rounded-xl border border-emerald-400/30 bg-emerald-400/10 p-3 text-xs text-emerald-200">
-                      {availability.isAvailable
-                        ? `Dates are available. Estimated price: ₹${availability.estimatedPrice || 0}`
-                        : "Selected dates overlap with an existing booking or blocked date."}
-                    </div>
-                  )}
-
-                  <Field label="Purpose of Stay">
-                    <textarea className={textareaClass} value={bookingForm.purpose} onChange={(event) => updateBooking("purpose", event.target.value)} required />
-                  </Field>
-                  <Button icon={FaPaperPlane} tone="success" disabled={busyId === "booking"}>
-                    Submit Booking Request
-                  </Button>
-                </form>
-
-                <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
-                  <h2 className="text-lg font-bold text-white">Your Bookings</h2>
-                  <div className="mt-4 divide-y divide-white/10">
-                    {bookings.map((booking) => (
-                      <article key={booking._id} className="py-4">
-                        <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-                          <div>
-                            <h3 className="font-bold text-white">{formatDate(booking.startDate)} - {formatDate(booking.endDate)}</h3>
-                            <p className="mt-1 text-xs text-gray-500">{booking.roomsRequested || 1} room(s) · {booking.purpose}</p>
-                          </div>
-                          <Status value={booking.status} />
-                        </div>
-                      </article>
-                    ))}
-                    {bookings.length === 0 && <Empty text="No Dharamshala bookings recorded." />}
-                  </div>
-                </section>
-              </div>
-            )}
-
-            {/* TAB 4: POLLS */}
+            {/* TAB 3: POLLS & VOTING */}
             {activeTab === "polls" && (
-              <div className="grid gap-4 md:grid-cols-2">
-                {polls.map((poll) => (
-                  <article key={poll._id} className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <h3 className="font-bold text-white">{poll.question}</h3>
-                        <p className="mt-1 text-xs text-gray-500">Closes on {formatDate(poll.endDate)}</p>
-                      </div>
-                      <Status value={poll.status} />
-                    </div>
+              <div className="grid gap-5 md:grid-cols-2">
+                {polls.map((poll) => {
+                  const hasVoted = poll.hasVoted;
+                  const isClosed = poll.status === "CLOSED" || new Date(poll.endsAt) <= new Date();
+                  const currentSelected = selectedPollOptions[poll._id] || [];
 
-                    <div className="mt-4 grid gap-2">
-                      {poll.options?.map((option) => (
-                        <button
-                          key={option._id}
-                          onClick={() => submitVote(poll._id, option._id)}
-                          disabled={busyId === `vote-${poll._id}` || poll.status !== "ACTIVE"}
-                          className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-3 text-xs text-white transition hover:bg-white/[0.07] disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          <span>{option.text}</span>
-                          <span className="font-mono text-gray-400">{option.votes || 0} votes</span>
-                        </button>
-                      ))}
-                    </div>
-                  </article>
-                ))}
+                  return (
+                    <article key={poll._id} className="flex flex-col justify-between rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-5">
+                      <div>
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--brand)]">
+                              {poll.isMultipleChoice ? `Multi-Choice (Up to ${poll.maxSelections || 2})` : "Single Choice"}
+                            </span>
+                            <h3 className="text-base font-bold text-[var(--text-primary)] mt-1">{poll.title}</h3>
+                            {poll.description && (
+                              <p className="mt-1 text-xs text-[var(--text-secondary)]">{poll.description}</p>
+                            )}
+                          </div>
+                          <Status value={isClosed ? "CLOSED" : poll.status} />
+                        </div>
+
+                        <div className="mt-2 flex items-center gap-3 text-[11px] text-[var(--text-muted)]">
+                          <span className="flex items-center gap-1">
+                            <FiClock size={11} />
+                            {isClosed ? "Voting Closed" : `Closes on ${formatDate(poll.endsAt)}`}
+                          </span>
+                          <span>·</span>
+                          <span>{poll.totalVotes || 0} votes recorded</span>
+                        </div>
+
+                        {/* Options List */}
+                        <div className="mt-4 grid gap-2.5">
+                          {poll.options?.map((option) => {
+                            const isSelected = currentSelected.includes(option._id);
+                            const percent = poll.totalVotes > 0 ? Math.round(((option.voteCount || 0) / poll.totalVotes) * 100) : 0;
+
+                            return (
+                              <div
+                                key={option._id}
+                                onClick={() => {
+                                  if (!hasVoted && !isClosed) togglePollOption(poll, option._id);
+                                }}
+                                className={`relative overflow-hidden rounded-xl border p-3 text-xs transition cursor-pointer ${
+                                  isSelected
+                                    ? "border-[var(--brand)] bg-[var(--brand)]/10 text-white font-bold"
+                                    : "border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-[var(--text-secondary)] hover:border-white/20"
+                                } ${hasVoted || isClosed ? "cursor-default" : ""}`}
+                              >
+                                {/* Percentage bar background */}
+                                {(hasVoted || isClosed) && (
+                                  <div
+                                    className="absolute inset-y-0 left-0 bg-[var(--brand)]/15 transition-all duration-500 pointer-events-none"
+                                    style={{ width: `${percent}%` }}
+                                  />
+                                )}
+                                <div className="relative flex items-center justify-between gap-2 z-10">
+                                  <div className="flex items-center gap-2">
+                                    <div
+                                      className={`flex h-4 w-4 shrink-0 items-center justify-center border text-[10px] ${
+                                        poll.isMultipleChoice ? "rounded" : "rounded-full"
+                                      } ${
+                                        isSelected
+                                          ? "border-[var(--brand)] bg-[var(--brand)] text-white"
+                                          : "border-gray-500 bg-transparent"
+                                      }`}
+                                    >
+                                      {isSelected && <FaCheck size={8} />}
+                                    </div>
+                                    <span className="text-[var(--text-primary)]">{option.label}</span>
+                                  </div>
+                                  {(hasVoted || isClosed) && (
+                                    <span className="font-mono font-bold text-[var(--brand)]">
+                                      {percent}% ({option.voteCount || 0})
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Vote Action Footer */}
+                      <div className="mt-5 border-t border-[var(--border-subtle)] pt-3 flex items-center justify-between">
+                        {hasVoted ? (
+                          <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-400">
+                            <FiCheckCircle size={13} /> Vote Recorded
+                          </span>
+                        ) : isClosed ? (
+                          <span className="text-xs text-[var(--text-muted)]">Voting is now closed</span>
+                        ) : (
+                          <button
+                            onClick={() => submitVote(poll)}
+                            disabled={busyId === `vote-${poll._id}` || currentSelected.length === 0}
+                            className="btn-primary !py-2 !px-5 !text-xs cursor-pointer shadow-md disabled:opacity-50"
+                          >
+                            {busyId === `vote-${poll._id}` ? "Submitting Vote..." : "Cast Your Vote"}
+                          </button>
+                        )}
+                        <span className="text-[10px] text-[var(--text-muted)]">
+                          {poll.isAnonymous ? "Anonymous Ballot" : "Verified Vote"}
+                        </span>
+                      </div>
+                    </article>
+                  );
+                })}
                 {polls.length === 0 && <Empty text="No active polls right now." />}
               </div>
             )}
 
-            {/* TAB 5: POSTS */}
+            {/* TAB 4: DISCUSSION FEED */}
             {activeTab === "posts" && (
               <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
-                <form onSubmit={submitPost} className="grid gap-4 rounded-2xl border border-white/10 bg-white/[0.02] p-5">
-                  <h2 className="text-lg font-bold text-white">Create Discussion Post</h2>
-                  <Field label="Title">
-                    <input className={inputClass} value={postForm.title} onChange={(event) => updatePost("title", event.target.value)} required />
+                <form onSubmit={submitPost} className="grid gap-4 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-5">
+                  <h2 className="text-lg font-bold text-[var(--text-primary)]">Create Discussion Post</h2>
+                  <Field label="Title *">
+                    <input className={inputClass} value={postForm.title} onChange={(event) => updatePost("title", event.target.value)} placeholder="Topic headline" required />
                   </Field>
                   <Field label="Category">
-                    <input className={inputClass} value={postForm.category} onChange={(event) => updatePost("category", event.target.value)} placeholder="Youth, seniors, business, general" />
+                    <input className={inputClass} value={postForm.category} onChange={(event) => updatePost("category", event.target.value)} placeholder="e.g. Youth, Culture, Business" />
                   </Field>
-                  <Field label="Content">
-                    <textarea className={textareaClass} value={postForm.body} onChange={(event) => updatePost("body", event.target.value)} required />
+                  <Field label="Content *">
+                    <textarea className={textareaClass} value={postForm.body} onChange={(event) => updatePost("body", event.target.value)} placeholder="Share your message or idea with the community..." required />
                   </Field>
                   <Button icon={FaPaperPlane} tone="success" disabled={busyId === "post"}>
                     Publish Post
                   </Button>
                 </form>
 
-                <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
-                  <h2 className="text-lg font-bold text-white">Community Discussion Feed</h2>
-                  <div className="mt-4 divide-y divide-white/10">
+                <section className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-5">
+                  <h2 className="text-lg font-bold text-[var(--text-primary)]">Community Discussion Feed</h2>
+                  <div className="mt-4 divide-y divide-[var(--border-subtle)]">
                     {posts.map((post) => (
                       <article key={post._id} className="py-4">
                         <div className="flex items-start justify-between gap-3">
                           <div>
-                            <h3 className="font-bold text-white">{post.title}</h3>
-                            <p className="mt-1 text-xs text-gray-500">
-                              By {post.author?.firstName || "Member"} · {post.category || "General"}
+                            <h3 className="font-bold text-[var(--text-primary)]">{post.title}</h3>
+                            <p className="mt-1 text-xs text-[var(--text-secondary)]">
+                              By {post.author?.firstName || "Member"} · {post.category || "General"} · {formatDate(post.createdAt)}
                             </p>
                           </div>
                           <Status value={post.status || "PUBLISHED"} />
                         </div>
-                        <p className="mt-2 text-xs text-gray-300">{post.body}</p>
+                        <p className="mt-2 text-xs text-[var(--text-secondary)]">{post.body}</p>
 
                         <div className="mt-3 flex items-center gap-3">
                           <button
                             type="button"
                             onClick={() => loadComments(post._id)}
-                            className="text-xs font-semibold text-emerald-400 hover:underline"
+                            className="text-xs font-semibold text-[var(--brand)] hover:underline flex items-center gap-1"
                           >
-                            View Comments
+                            <FaComments size={12} />
+                            <span>View Comments</span>
                           </button>
                         </div>
 
                         {commentsByPost[post._id] && (
-                          <div className="mt-3 rounded-xl border border-white/10 bg-black/40 p-3">
+                          <div className="mt-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] p-3">
                             <div className="space-y-2">
                               {commentsByPost[post._id].map((comment) => (
-                                <p key={comment._id} className="text-xs text-gray-300">
-                                  <span className="font-bold text-white">{comment.author?.firstName || "Member"}:</span> {comment.body}
+                                <p key={comment._id} className="text-xs text-[var(--text-secondary)]">
+                                  <span className="font-bold text-[var(--text-primary)]">{comment.author?.firstName || "Member"}:</span> {comment.body}
                                 </p>
                               ))}
+                              {commentsByPost[post._id].length === 0 && (
+                                <p className="text-[11px] text-[var(--text-muted)] italic">No comments yet. Be the first to reply!</p>
+                              )}
                             </div>
                             <div className="mt-3 flex gap-2">
                               <input
@@ -813,12 +908,12 @@ const CommunityHub = () => {
                                   setCommentDrafts((current) => ({ ...current, [post._id]: event.target.value }))
                                 }
                                 placeholder="Add a reply..."
-                                className="h-8 flex-1 rounded-lg border border-white/10 bg-white/[0.03] px-2.5 text-xs text-white outline-none"
+                                className="h-8 flex-1 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-2.5 text-xs text-[var(--text-primary)] outline-none"
                               />
                               <button
                                 type="button"
                                 onClick={() => addComment(post._id)}
-                                className="rounded-lg bg-emerald-400 px-3 text-xs font-bold text-black hover:bg-emerald-300"
+                                className="rounded-lg bg-[var(--brand)] px-3 text-xs font-bold text-white hover:bg-[var(--brand-deep)] cursor-pointer"
                               >
                                 Reply
                               </button>
@@ -833,14 +928,14 @@ const CommunityHub = () => {
               </div>
             )}
 
-            {/* TAB 6: ACHIEVEMENTS (ACTUAL IMAGE UPLOAD) */}
+            {/* TAB 5: SAMAJ PRIDE / ACHIEVEMENTS */}
             {activeTab === "achievements" && (
               <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
-                <form onSubmit={submitAchievement} className="grid gap-4 rounded-2xl border border-white/10 bg-white/[0.02] p-6">
+                <form onSubmit={submitAchievement} className="grid gap-4 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-6">
                   <div>
-                    <h2 className="text-lg font-black text-white">Submit Community Achievement</h2>
-                    <p className="mt-1 text-xs text-gray-400">
-                      Share community achievements, awards, or educational milestones with an actual photo.
+                    <h2 className="text-lg font-black text-[var(--text-primary)]">Submit Samaj Achievement</h2>
+                    <p className="mt-1 text-xs text-[var(--text-secondary)]">
+                      Share community achievements, academic honors, or national awards with photo & document verification.
                     </p>
                   </div>
 
@@ -849,7 +944,7 @@ const CommunityHub = () => {
                       className={inputClass}
                       value={achievementForm.title}
                       onChange={(event) => updateAchievement("title", event.target.value)}
-                      placeholder="e.g. UPSC Examination Cleared / National Sports Gold"
+                      placeholder="e.g. UPSC Cleared / National Sports Gold"
                       required
                     />
                   </Field>
@@ -869,7 +964,26 @@ const CommunityHub = () => {
                         className={inputClass}
                         value={achievementForm.category}
                         onChange={(event) => updateAchievement("category", event.target.value)}
-                        placeholder="Education, Business, Sports, Civil"
+                        placeholder="Civil, Sports, Education, Business"
+                      />
+                    </Field>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Field label="Institution / Organization">
+                      <input
+                        className={inputClass}
+                        value={achievementForm.organization}
+                        onChange={(event) => updateAchievement("organization", event.target.value)}
+                        placeholder="e.g. IIT Delhi, Government of India"
+                      />
+                    </Field>
+                    <Field label="Year / Date">
+                      <input
+                        className={inputClass}
+                        value={achievementForm.year}
+                        onChange={(event) => updateAchievement("year", event.target.value)}
+                        placeholder="2026"
                       />
                     </Field>
                   </div>
@@ -879,21 +993,34 @@ const CommunityHub = () => {
                       className={textareaClass}
                       value={achievementForm.description}
                       onChange={(event) => updateAchievement("description", event.target.value)}
-                      placeholder="Describe the milestone, rank, institution, or achievement details..."
+                      placeholder="Describe the achievement, rank, or notable details..."
                       required
                     />
                   </Field>
 
-                  {/* Actual File Upload for Achievement */}
-                  <div className="rounded-2xl border border-white/10 bg-black/30 p-3.5">
+                  {/* Recipient Photo Upload */}
+                  <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] p-3.5">
                     <FileUploadWithPreview
-                      label="Achievement / Award Image"
+                      label="Recipient / Medal Photo"
                       required={false}
                       accept="image/jpeg,image/jpg,image/png,image/webp"
                       maxSizeMB={10}
-                      helperText="Certificate, medal or award photo"
+                      helperText="Clear photo of the achiever or award ceremony"
                       file={achievementImageFile}
                       onFileSelect={(file) => setAchievementImageFile(file)}
+                    />
+                  </div>
+
+                  {/* Supporting Document Upload */}
+                  <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] p-3.5">
+                    <FileUploadWithPreview
+                      label="Supporting Certificate / Document (PDF or Image)"
+                      required={false}
+                      accept="image/jpeg,image/png,application/pdf"
+                      maxSizeMB={10}
+                      helperText="Official certificate, mark sheet, or news clipping"
+                      file={achievementDocFile}
+                      onFileSelect={(file) => setAchievementDocFile(file)}
                     />
                   </div>
 
@@ -902,34 +1029,44 @@ const CommunityHub = () => {
                   </Button>
                 </form>
 
-                <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-6">
-                  <h2 className="text-lg font-black text-white">Community Achievements</h2>
-                  <div className="mt-4 divide-y divide-white/10">
+                <section className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-6">
+                  <h2 className="text-lg font-black text-[var(--text-primary)]">Community Pride & Achievements</h2>
+                  <div className="mt-4 divide-y divide-[var(--border-subtle)]">
                     {achievements.map((achievement) => (
                       <article key={achievement._id} className="py-4">
                         <div className="flex gap-3.5">
-                          {achievement.image?.url ? (
+                          {achievement.recipientPhoto?.url || achievement.image?.url ? (
                             <img
-                              src={achievement.image.url}
+                              src={achievement.recipientPhoto?.url || achievement.image?.url}
                               alt={achievement.title}
-                              className="h-20 w-24 shrink-0 rounded-xl border border-white/10 object-cover shadow-md"
+                              className="h-20 w-24 shrink-0 rounded-xl border border-[var(--border-subtle)] object-cover shadow-md"
                             />
                           ) : (
-                            <div className="flex h-20 w-24 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-amber-300">
+                            <div className="flex h-20 w-24 shrink-0 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-amber-300">
                               <FiAward size={28} />
                             </div>
                           )}
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-col gap-1.5 md:flex-row md:items-start md:justify-between">
                               <div>
-                                <h3 className="font-bold text-white">{achievement.title}</h3>
-                                <p className="text-xs text-emerald-400">
-                                  {achievement.achieverName} · {achievement.category || "General"}
+                                <h3 className="font-bold text-[var(--text-primary)]">{achievement.title}</h3>
+                                <p className="text-xs text-[var(--brand)]">
+                                  {achievement.achieverName} {achievement.organization ? `· ${achievement.organization}` : ""} · {achievement.year || ""}
                                 </p>
                               </div>
                               <Status value={achievement.status} />
                             </div>
-                            <p className="mt-2 line-clamp-2 text-xs text-gray-400">{achievement.description}</p>
+                            <p className="mt-2 line-clamp-2 text-xs text-[var(--text-secondary)]">{achievement.description}</p>
+                            {achievement.supportingDocument?.url && (
+                              <a
+                                href={achievement.supportingDocument.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="mt-2 inline-flex items-center gap-1 text-[11px] font-bold text-[var(--brand)] hover:underline"
+                              >
+                                <FiFileText size={12} /> View Attached Certificate
+                              </a>
+                            )}
                           </div>
                         </div>
                       </article>
@@ -940,14 +1077,14 @@ const CommunityHub = () => {
               </div>
             )}
 
-            {/* TAB 7: SHRADHANJALI (ACTUAL PHOTO UPLOAD) */}
+            {/* TAB 6: SHRADHANJALI / MEMORIAL TRIBUTE */}
             {activeTab === "shradhanjali" && (
               <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
-                <form onSubmit={submitShradhanjali} className="grid gap-4 rounded-2xl border border-white/10 bg-white/[0.02] p-6">
+                <form onSubmit={submitShradhanjali} className="grid gap-4 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-6">
                   <div>
-                    <h2 className="text-lg font-black text-white">Submit Shradhanjali Tribute</h2>
-                    <p className="mt-1 text-xs text-gray-400">
-                      Submit condolence tribute with an actual memorial photograph for verified publication.
+                    <h2 className="text-lg font-black text-[var(--text-primary)]">Submit Shradhanjali Tribute</h2>
+                    <p className="mt-1 text-xs text-[var(--text-secondary)]">
+                      Submit respectful condolence tributes and memorial details with portrait photograph.
                     </p>
                   </div>
 
@@ -981,26 +1118,57 @@ const CommunityHub = () => {
                     </Field>
                   </div>
 
+                  <Field label="Family Information / Roots">
+                    <input
+                      className={inputClass}
+                      value={shradhanjaliForm.familyInfo}
+                      onChange={(event) => updateShradhanjali("familyInfo", event.target.value)}
+                      placeholder="e.g. S/o Late Shri..., Native of..."
+                    />
+                  </Field>
+
+                  <Field label="Short Biography / Life Legacy">
+                    <textarea
+                      className={textareaClass}
+                      value={shradhanjaliForm.biography}
+                      onChange={(event) => updateShradhanjali("biography", event.target.value)}
+                      placeholder="Brief life journey, noble contributions to Samaj..."
+                    />
+                  </Field>
+
                   <Field label="Condolence Message / Tribute *">
                     <textarea
                       className={textareaClass}
                       value={shradhanjaliForm.message}
                       onChange={(event) => updateShradhanjali("message", event.target.value)}
-                      placeholder="Condolence message, memories, or funeral service details..."
+                      placeholder="Heartfelt tribute or prayer for the departed soul..."
                       required
                     />
                   </Field>
 
-                  {/* Actual File Upload for Shradhanjali */}
-                  <div className="rounded-2xl border border-white/10 bg-black/30 p-3.5">
+                  {/* Memorial Photo Upload */}
+                  <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] p-3.5">
                     <FileUploadWithPreview
                       label="Memorial Photo"
                       required={false}
                       accept="image/jpeg,image/jpg,image/png,image/webp"
                       maxSizeMB={10}
-                      helperText="Clear portrait photo of departed soul"
+                      helperText="Clear portrait photo of the departed soul"
                       file={shradhanjaliPhotoFile}
                       onFileSelect={(file) => setShradhanjaliPhotoFile(file)}
+                    />
+                  </div>
+
+                  {/* Supporting Document Upload */}
+                  <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] p-3.5">
+                    <FileUploadWithPreview
+                      label="Supporting Document / Memorial Notice"
+                      required={false}
+                      accept="image/jpeg,image/png,application/pdf"
+                      maxSizeMB={10}
+                      helperText="Memorial card or news notice"
+                      file={shradhanjaliDocFile}
+                      onFileSelect={(file) => setShradhanjaliDocFile(file)}
                     />
                   </div>
 
@@ -1009,9 +1177,9 @@ const CommunityHub = () => {
                   </Button>
                 </form>
 
-                <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-6">
-                  <h2 className="text-lg font-black text-white">Recent Tributes & Condolences</h2>
-                  <div className="mt-4 divide-y divide-white/10">
+                <section className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-6">
+                  <h2 className="text-lg font-black text-[var(--text-primary)]">Recent Tributes & Condolences</h2>
+                  <div className="mt-4 divide-y divide-[var(--border-subtle)]">
                     {shradhanjalis.map((item) => (
                       <article key={item._id} className="py-4">
                         <div className="flex gap-3.5">
@@ -1019,24 +1187,28 @@ const CommunityHub = () => {
                             <img
                               src={item.photo.url}
                               alt={item.personName}
-                              className="h-20 w-20 shrink-0 rounded-xl border border-white/10 object-cover shadow-md"
+                              className="h-20 w-20 shrink-0 rounded-xl border border-[var(--border-subtle)] object-cover shadow-md"
                             />
                           ) : (
-                            <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-gray-500">
+                            <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-gray-500">
                               <FaHeart size={24} />
                             </div>
                           )}
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-col gap-1.5 md:flex-row md:items-start md:justify-between">
                               <div>
-                                <h3 className="font-bold text-white">{item.personName}</h3>
-                                <p className="text-xs text-gray-500">
+                                <h3 className="font-bold text-[var(--text-primary)]">{item.personName}</h3>
+                                <p className="text-xs text-[var(--text-secondary)]">
+                                  {item.dateOfBirth ? `${formatDate(item.dateOfBirth)} - ` : ""}
                                   Demise: {formatDate(item.dateOfPassing)}
                                 </p>
                               </div>
                               <Status value={item.status} />
                             </div>
-                            <p className="mt-2 line-clamp-2 text-xs text-gray-400">{item.message}</p>
+                            {item.familyInfo && (
+                              <p className="mt-1 text-xs text-[var(--brand)] font-medium">{item.familyInfo}</p>
+                            )}
+                            <p className="mt-2 text-xs text-[var(--text-secondary)]">{item.message}</p>
                           </div>
                         </div>
                       </article>

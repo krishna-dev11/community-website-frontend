@@ -61,6 +61,7 @@ function App() {
         <Route path="/scholarships" element={<PublicResourcePage type="scholarships" />} />
         <Route path="/achievements" element={<PublicResourcePage type="achievements" />} />
         <Route path="/condolence" element={<PublicResourcePage type="condolence" />} />
+        <Route path="/solutions" element={<PublicResourcePage type="solutions" />} />
         <Route path="/donate" element={<DonatePage />} />
         <Route path="/verify-member/:memberId" element={<VerifyMemberCardPage />} />
         <Route path="/verify-card/:memberId" element={<VerifyMemberCardPage />} />

@@ -132,6 +132,9 @@ const ContentAdmin = () => {
 
   const [albumForm, setAlbumForm] = useState(initialAlbum);
   const [albumCoverFile, setAlbumCoverFile] = useState(null);
+  const [selectedAlbumForPhotos, setSelectedAlbumForPhotos] = useState("");
+  const [photoFiles, setPhotoFiles] = useState([]);
+  const [photoFilesInput, setPhotoFilesInput] = useState(null);
 
   const [managementForm, setManagementForm] = useState(initialManagement);
   const [managementImageFile, setManagementImageFile] = useState(null);
@@ -349,6 +352,33 @@ const ContentAdmin = () => {
       await loadAlbums();
     } catch (error) {
       toast.error(error.response?.data?.message || "Unable to archive album");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const addPhotosToAlbum = async (event) => {
+    event.preventDefault();
+    if (!selectedAlbumForPhotos) {
+      toast.error("Select an album first");
+      return;
+    }
+    if (photoFiles.length === 0) {
+      toast.error("Select at least one photo");
+      return;
+    }
+    setBusyId("add-photos");
+    try {
+      const formData = new FormData();
+      photoFiles.forEach((file) => formData.append("photos", file));
+      await apiConnector("POST", contentEndpoints.GALLERY_PHOTOS_API(selectedAlbumForPhotos), formData, authConfig);
+      toast.success(`${photoFiles.length} photo(s) uploaded to album`);
+      setPhotoFiles([]);
+      setSelectedAlbumForPhotos("");
+      if (photoFilesInput) photoFilesInput.value = "";
+      await loadAlbums();
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Unable to upload photos");
     } finally {
       setBusyId(null);
     }
@@ -690,27 +720,85 @@ const ContentAdmin = () => {
                   <Button icon={FaPaperPlane} tone="success" disabled={busyId === "album"}>Save Album</Button>
                 </form>
 
-                <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-6">
-                  <h2 className="text-lg font-bold text-white">Albums Roster</h2>
-                  <div className="mt-4 grid gap-3">
-                    {albums.map((album) => (
-                      <article key={album._id} className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
-                        <div className="flex gap-3">
-                          {album.coverImage?.url ? (
-                            <img src={album.coverImage.url} alt={album.title} className="h-16 w-20 rounded-lg object-cover" />
-                          ) : null}
-                          <div className="min-w-0 flex-1">
-                            <div className="flex flex-col gap-1 md:flex-row md:items-start md:justify-between">
-                              <h3 className="font-bold text-white">{album.title}</h3>
-                              <Status value={album.status} />
+                <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 flex flex-col gap-6">
+                  <div>
+                    <h2 className="text-lg font-bold text-white">Albums Roster</h2>
+                    <div className="mt-4 grid gap-3">
+                      {albums.map((album) => (
+                        <article key={album._id} className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
+                          <div className="flex gap-3">
+                            {album.coverImage?.url ? (
+                              <img src={album.coverImage.url} alt={album.title} className="h-16 w-20 rounded-lg object-cover" />
+                            ) : null}
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-col gap-1 md:flex-row md:items-start md:justify-between">
+                                <h3 className="font-bold text-white">{album.title}</h3>
+                                <Status value={album.status} />
+                              </div>
+                              <p className="text-xs text-gray-500">{album.photoCount || 0} photos · {formatDate(album.eventDate)}</p>
+                              <Button icon={FaArchive} tone="danger" className="mt-3 w-full sm:w-auto" onClick={() => archiveAlbum(album._id)} disabled={busyId === album._id || album.status === "ARCHIVED"}>Archive</Button>
                             </div>
-                            <p className="text-xs text-gray-500">{album.photoCount || 0} photos · {formatDate(album.eventDate)}</p>
-                            <Button icon={FaArchive} tone="danger" className="mt-3 w-full sm:w-auto" onClick={() => archiveAlbum(album._id)} disabled={busyId === album._id || album.status === "ARCHIVED"}>Archive</Button>
                           </div>
+                        </article>
+                      ))}
+                      {albums.length === 0 && <Empty text="No gallery albums found." />}
+                    </div>
+                  </div>
+
+                  {/* Add Photos to Existing Album */}
+                  <div className="border-t border-white/10 pt-5">
+                    <div className="flex items-center gap-2 mb-3">
+                      <FaUpload className="text-emerald-300" size={13} />
+                      <h2 className="text-base font-bold text-white">Add Photos to Album</h2>
+                    </div>
+                    <form onSubmit={addPhotosToAlbum} className="grid gap-3">
+                      <Field label="Select Album">
+                        <select
+                          className={inputClass}
+                          value={selectedAlbumForPhotos}
+                          onChange={(event) => setSelectedAlbumForPhotos(event.target.value)}
+                          required
+                        >
+                          <option value="">Choose album...</option>
+                          {albums.filter((album) => album.status !== "ARCHIVED").map((album) => (
+                            <option key={album._id} value={album._id}>
+                              {album.title} ({album.photoCount || 0}/10 photos)
+                            </option>
+                          ))}
+                        </select>
+                      </Field>
+                      <Field label={`Select Photos (max 10, ${photoFiles.length} selected)`}>
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/jpg,image/png,image/webp"
+                          multiple
+                          ref={(el) => setPhotoFilesInput(el)}
+                          onChange={(event) => {
+                            const selected = Array.from(event.target.files || []);
+                            if (selected.length > 10) {
+                              toast.error("Maximum 10 photos per upload batch");
+                              event.target.value = "";
+                              return;
+                            }
+                            setPhotoFiles(selected);
+                          }}
+                          className="ka-input file:mr-3 file:rounded-full file:border-0 file:bg-[var(--accent-primary)] file:px-3 file:py-1 file:text-xs file:font-bold file:text-[#070707] file:cursor-pointer"
+                        />
+                      </Field>
+                      {photoFiles.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {photoFiles.map((file, index) => (
+                            <div key={index} className="relative">
+                              <img src={URL.createObjectURL(file)} alt={file.name} className="h-16 w-20 rounded-lg object-cover border border-white/10" />
+                              <span className="absolute bottom-0.5 right-0.5 rounded bg-black/70 px-1 text-[9px] text-white">{Math.round(file.size / 1024)}KB</span>
+                            </div>
+                          ))}
                         </div>
-                      </article>
-                    ))}
-                    {albums.length === 0 && <Empty text="No gallery albums found." />}
+                      )}
+                      <Button icon={FaUpload} tone="success" disabled={busyId === "add-photos" || photoFiles.length === 0 || !selectedAlbumForPhotos}>
+                        {busyId === "add-photos" ? "Uploading..." : `Upload ${photoFiles.length || 0} Photo(s)`}
+                      </Button>
+                    </form>
                   </div>
                 </section>
               </div>

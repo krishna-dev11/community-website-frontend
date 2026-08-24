@@ -239,41 +239,47 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Subtle glow circles */
+/* Subtle glow circles - responsive max bounds */
 .glow-backdrop-teal {
   position: absolute;
-  width: 500px;
-  height: 500px;
+  width: min(500px, 80vw);
+  height: min(500px, 80vw);
   background: radial-gradient(circle, rgba(0, 223, 165, 0.14) 0%, transparent 70%);
   filter: blur(60px);
   pointer-events: none;
   z-index: 0;
+  max-width: 100vw;
 }
 
 .glow-backdrop-purple {
   position: absolute;
-  width: 500px;
-  height: 500px;
+  width: min(500px, 80vw);
+  height: min(500px, 80vw);
   background: radial-gradient(circle, rgba(139, 92, 246, 0.12) 0%, transparent 70%);
   filter: blur(60px);
   pointer-events: none;
   z-index: 0;
+  max-width: 100vw;
 }
 
 /* Eyebrow Badge */
 .eyebrow-badge {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 14px;
+  gap: 6px;
+  padding: 5px 12px;
   border-radius: 999px;
   font-family: var(--font-display);
-  font-size: 11px;
+  font-size: clamp(10px, 2.5vw, 11px);
   font-weight: 700;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   background: rgba(0, 223, 165, 0.08);
   border: 1px solid rgba(0, 223, 165, 0.25);
   color: var(--accent-primary);
+  max-width: 100%;
+  box-sizing: border-box;
+  word-break: break-word;
 }
 
 [data-theme="light"] .eyebrow-badge {
@@ -291,6 +297,8 @@ h1, h2, h3, h4, h5, h6 {
   transition: all 300ms cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
   overflow: hidden;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .ka-card:hover {
@@ -305,6 +313,8 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
   transition: all 300ms cubic-bezier(0.16, 1, 0.3, 1);
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 /* Buttons */
@@ -312,20 +322,24 @@ h1, h2, h3, h4, h5, h6 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
   background: var(--accent-primary);
   color: #070707;
   font-family: var(--font-sans);
   font-weight: 700;
-  font-size: 15px;
-  padding: 14px 28px;
+  font-size: 14.5px;
+  padding: 12px 24px;
   border-radius: var(--radius-button);
   border: none;
   cursor: pointer;
   transition: all 250ms cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: 0 4px 20px rgba(0, 223, 165, 0.25);
   text-decoration: none;
-  min-height: 48px;
+  min-height: 44px;
+  max-width: 100%;
+  box-sizing: border-box;
+  white-space: normal;
+  text-align: center;
 }
 
 .btn-primary:hover {
@@ -342,19 +356,23 @@ h1, h2, h3, h4, h5, h6 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
   background: transparent;
   color: var(--text-primary);
   font-family: var(--font-sans);
   font-weight: 600;
-  font-size: 15px;
-  padding: 14px 26px;
+  font-size: 14.5px;
+  padding: 12px 22px;
   border-radius: var(--radius-button);
   border: 1px solid var(--border-strong);
   cursor: pointer;
   transition: all 250ms ease;
   text-decoration: none;
-  min-height: 48px;
+  min-height: 44px;
+  max-width: 100%;
+  box-sizing: border-box;
+  white-space: normal;
+  text-align: center;
 }
 
 .btn-secondary:hover {
@@ -371,20 +389,22 @@ h1, h2, h3, h4, h5, h6 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
   background: #25D366;
   color: #FFFFFF;
   font-family: var(--font-sans);
   font-weight: 700;
-  font-size: 15px;
-  padding: 14px 26px;
+  font-size: 14.5px;
+  padding: 12px 22px;
   border-radius: var(--radius-button);
   border: none;
   cursor: pointer;
   transition: all 250ms ease;
   box-shadow: 0 4px 20px rgba(37, 211, 102, 0.3);
   text-decoration: none;
-  min-height: 48px;
+  min-height: 44px;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .btn-whatsapp:hover {
@@ -405,23 +425,29 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Responsive Headings */
 .heading-hero {
-  font-size: clamp(38px, 6.5vw, 82px);
-  line-height: 1.06;
+  font-size: clamp(26px, 5.8vw, 76px);
+  line-height: 1.1;
   font-weight: 800;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.035em;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .heading-section {
-  font-size: clamp(28px, 4.5vw, 54px);
-  line-height: 1.12;
+  font-size: clamp(20px, 4vw, 48px);
+  line-height: 1.15;
   font-weight: 800;
-  letter-spacing: -0.035em;
+  letter-spacing: -0.03em;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .heading-card {
-  font-size: clamp(19px, 2.5vw, 24px);
+  font-size: clamp(16px, 2.5vw, 22px);
   line-height: 1.25;
   font-weight: 700;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 /* Clean Input Fields */
@@ -436,6 +462,7 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-sans);
   outline: none;
   transition: all 200ms ease;
+  box-sizing: border-box;
 }
 
 .ka-input:focus {
@@ -445,6 +472,44 @@ h1, h2, h3, h4, h5, h6 {
 
 .ka-input::placeholder {
   color: var(--text-muted);
+}
+
+/* Explicit non-overlapping icon padding utility rules */
+.ka-input.pl-10,
+.ka-input.pl-11,
+.ka-input.pl-12,
+.ka-input.pl-14,
+.ka-input-icon-left,
+.ka-input.has-icon-left {
+  padding-left: 46px !important;
+}
+
+.ka-input.pr-10,
+.ka-input.pr-11,
+.ka-input.pr-12,
+.ka-input.pr-14,
+.ka-input-icon-right,
+.ka-input.has-icon-right {
+  padding-right: 46px !important;
+}
+
+.ka-input-icons-both {
+  padding-left: 46px !important;
+  padding-right: 46px !important;
+}
+
+/* Ensure relative input wrappers with absolute icons have proper clearance */
+.relative > svg.absolute:first-child + input.ka-input,
+.relative > .absolute.left-3\.5 + input.ka-input,
+.relative > .absolute.left-4 + input.ka-input,
+.relative > .absolute.left-3 + input.ka-input {
+  padding-left: 46px !important;
+}
+
+.relative:has(button.absolute.right-3\.5) > input.ka-input,
+.relative:has(button.absolute.right-4) > input.ka-input,
+.relative:has(button.absolute.right-3) > input.ka-input {
+  padding-right: 46px !important;
 }
 
 /* Image container with rounded corners and zoom on hover */

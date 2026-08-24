@@ -12,7 +12,7 @@ import {
   FaExternalLinkAlt,
   FaDownload,
 } from "react-icons/fa";
-import { FiX, FiCheckCircle, FiAlertTriangle, FiFileText } from "react-icons/fi";
+import { FiX, FiCheckCircle, FiAlertTriangle, FiFileText, FiShield } from "react-icons/fi";
 import { useSelector } from "react-redux";
 import { apiConnector } from "../../../../services/apiConnector";
 import { adminEndpoints } from "../../../../services/apis";

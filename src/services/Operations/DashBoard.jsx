@@ -12,8 +12,8 @@ const {
 } = settingsEndpoints;
 
 export function updateDisplayPicture(token, data) {
-  return async (dispatch) => {
-    const toastId = toast.loading("Loading");
+  return async (dispatch, getState) => {
+    const toastId = toast.loading("Saving profile picture...");
     dispatch(setLoading(true));
     try {
       const response = await apiConnector("PUT", UPDATE_DISPLAY_PICTURE_API, data, {
@@ -24,11 +24,20 @@ export function updateDisplayPicture(token, data) {
         throw new Error(response.data.message);
       }
 
-      dispatch(setUser(response.data.data));
-      localStorage.setItem("user", JSON.stringify(response.data.data));
-      toast.success("Profile Image Save Successfully");
+      const raw = response.data.data;
+      const updatedUser = raw?.data || raw;
+      const currentUser = getState().profile?.user || {};
+      const mergedUser = {
+        ...currentUser,
+        ...(typeof updatedUser === "object" ? updatedUser : {}),
+        imageUrl: typeof updatedUser === "string" ? updatedUser : (updatedUser?.imageUrl || currentUser.imageUrl),
+      };
+
+      dispatch(setUser(mergedUser));
+      localStorage.setItem("user", JSON.stringify(mergedUser));
+      toast.success("Profile Image Saved Successfully");
     } catch (error) {
-      console.log(error.response?.data || error);
+      console.error(error.response?.data || error);
       toast.error(error.response?.data?.message || "Profile image update failed");
     } finally {
       dispatch(setLoading(false));
@@ -38,8 +47,8 @@ export function updateDisplayPicture(token, data) {
 }
 
 export function UpdateProfileDetails(token, data) {
-  return async (dispatch) => {
-    const toastId = toast.loading("Loading");
+  return async (dispatch, getState) => {
+    const toastId = toast.loading("Updating profile...");
     dispatch(setLoading(true));
     try {
       const response = await apiConnector("PUT", UPDATE_PROFILE_API, data, {
@@ -50,11 +59,25 @@ export function UpdateProfileDetails(token, data) {
         throw new Error(response.data.message);
       }
 
-      dispatch(setUser(response.data.data));
-      localStorage.setItem("user", JSON.stringify(response.data.data));
-      toast.success("Personal Details Updated");
+      const raw = response.data.data;
+      const updatedUser = raw?.data || raw;
+      const currentUser = getState().profile?.user || {};
+
+      const mergedUser = {
+        ...currentUser,
+        ...(typeof updatedUser === "object" ? updatedUser : {}),
+        additionalDetails: {
+          ...(currentUser.additionalDetails || {}),
+          ...(typeof updatedUser?.additionalDetails === "object" ? updatedUser.additionalDetails : {}),
+          ...(typeof updatedUser?.profile === "object" ? updatedUser.profile : {}),
+        },
+      };
+
+      dispatch(setUser(mergedUser));
+      localStorage.setItem("user", JSON.stringify(mergedUser));
+      toast.success("Personal Details Updated Successfully");
     } catch (error) {
-      console.log(error.response?.data || error);
+      console.error(error.response?.data || error);
       toast.error(error.response?.data?.message || "Profile update failed");
     } finally {
       dispatch(setLoading(false));

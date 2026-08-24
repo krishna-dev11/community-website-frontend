@@ -137,6 +137,8 @@ export const communityEndpoints = {
   REVIEW_SHRADHANJALI_API: (shradhanjaliId) => BASE_URL + `/community/shradhanjalis/${shradhanjaliId}/review`,
   MEMBERSHIP_CARD_API: BASE_URL + "/community/membership-cards/me",
   VERIFY_MEMBERSHIP_CARD_API: (memberId) => BASE_URL + `/community/membership-cards/${memberId}/verify`,
+  PUBLISH_ISSUE_SOLUTION_API: (issueId) => BASE_URL + `/community/issues/${issueId}/publish-solution`,
+  PUBLIC_SOLUTIONS_API: BASE_URL + "/community/solutions",
 }
 
 export const notificationEndpoints = {

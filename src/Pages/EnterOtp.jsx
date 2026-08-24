@@ -57,19 +57,29 @@ const EnterOtp = () => {
           </div>
         </div>
 
-        <form onSubmit={submitHandler} className="flex flex-col gap-8">
-          <OtpInput
-            value={otp}
-            onChange={setOtp}
-            numInputs={6}
-            renderSeparator={<span className="mx-1.5 text-[var(--border-strong)]">-</span>}
-            renderInput={(props) => (
-              <input
-                {...props}
-                className="!w-11 sm:!w-12 h-14 bg-[var(--surface-elevated)] border border-[var(--border-subtle)] rounded-2xl text-xl font-bold text-[var(--accent-primary)] text-center focus:border-[var(--accent-primary)] outline-none transition-all shadow-inner"
-              />
-            )}
-          />
+        <form onSubmit={submitHandler} className="flex flex-col gap-6 sm:gap-8">
+          <div className="w-full overflow-x-auto py-2">
+            <OtpInput
+              value={otp}
+              onChange={setOtp}
+              numInputs={6}
+              shouldAutoFocus={true}
+              containerStyle={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                gap: "6px",
+                width: "100%",
+              }}
+              renderSeparator={<span className="text-[var(--border-strong)] hidden sm:inline mx-0.5">-</span>}
+              renderInput={(props) => (
+                <input
+                  {...props}
+                  className="!w-10 sm:!w-12 h-12 sm:h-14 bg-[var(--surface-elevated)] border border-[var(--border-subtle)] rounded-xl sm:rounded-2xl text-lg sm:text-xl font-bold text-[var(--accent-primary)] text-center focus:border-[var(--accent-primary)] outline-none transition-all shadow-inner shrink-0"
+                />
+              )}
+            />
+          </div>
 
           <div className="flex flex-col gap-4">
             <button type="submit" className="btn-primary w-full text-sm">
