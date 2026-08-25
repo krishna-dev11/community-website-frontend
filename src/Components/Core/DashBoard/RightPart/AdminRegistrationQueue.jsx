@@ -271,7 +271,7 @@ const AdminRegistrationQueue = () => {
           <EmptyState />
         ) : activeTab === "registrations" ? (
           <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.01]">
-            <div className="hidden grid-cols-[1.4fr_1fr_1fr_1.3fr] gap-4 border-b border-white/10 bg-white/[0.03] px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-gray-400 md:grid">
+            <div className="hidden grid-cols-[1.4fr_1fr_1fr_1.3fr] gap-4 border-b border-[var(--border-subtle)] bg-white/[0.03] px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] md:grid">
               <span>Applicant</span>
               <span>Community Info</span>
               <span>Verification Document</span>
@@ -298,7 +298,7 @@ const AdminRegistrationQueue = () => {
                       <p className="truncate text-sm font-black text-white">
                         {user.firstName} {user.lastName}
                       </p>
-                      <p className="truncate text-xs text-gray-400">{user.email}</p>
+                      <p className="truncate text-xs text-[var(--text-secondary)]">{user.email}</p>
                       {user.additionalDetails?.contactNumber && (
                         <p className="text-[11px] text-emerald-400/90">{user.additionalDetails.contactNumber}</p>
                       )}
@@ -313,7 +313,7 @@ const AdminRegistrationQueue = () => {
                   </div>
 
                   {/* Column 2: Community Details */}
-                  <div className="space-y-1 text-xs text-gray-400">
+                  <div className="space-y-1 text-xs text-[var(--text-secondary)]">
                     <p>
                       <span className="font-bold text-gray-500">City:</span>{" "}
                       <span className="text-gray-200">{user.additionalDetails?.currentCity || "Not set"}</span>
@@ -507,17 +507,17 @@ const AdminRegistrationQueue = () => {
       {/* DOCUMENT INSPECTION MODAL */}
       {selectedUserForDoc && (
         <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/85 p-4 backdrop-blur-md">
-          <div className="relative flex max-h-[90vh] w-full max-w-2xl flex-col rounded-3xl border border-white/10 bg-[#0a0f0d] p-6 shadow-2xl sm:p-8">
+          <div className="relative flex max-h-[90vh] w-full max-w-2xl flex-col rounded-3xl border border-white/10 bg-[var(--surface)] p-6 shadow-2xl sm:p-8">
             {/* Modal Header */}
-            <div className="flex items-start justify-between border-b border-white/10 pb-4">
+            <div className="flex items-start justify-between border-b border-[var(--border-subtle)] pb-4">
               <div>
                 <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-emerald-300">
                   <FiShield size={12} /> Confidential Document Review
                 </div>
-                <h2 className="mt-2 text-xl font-black text-white">
+                <h2 className="mt-2 text-xl font-black text-[var(--text-primary)]">
                   {selectedUserForDoc.firstName} {selectedUserForDoc.lastName}'s Document
                 </h2>
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-[var(--text-secondary)]">
                   {selectedUserForDoc.email} · {selectedUserForDoc.additionalDetails?.currentCity || "City not set"}
                 </p>
               </div>
@@ -534,13 +534,13 @@ const AdminRegistrationQueue = () => {
               {docLoading ? (
                 <div className="flex h-64 flex-col items-center justify-center gap-3">
                   <div className="h-8 w-8 animate-spin rounded-full border-3 border-emerald-400 border-t-transparent" />
-                  <p className="text-xs text-gray-400">Generating short-lived secure document link...</p>
+                  <p className="text-xs text-[var(--text-secondary)]">Generating short-lived secure document link...</p>
                 </div>
               ) : docError || !docData?.signedUrl ? (
                 <div className="rounded-2xl border border-dashed border-red-500/30 bg-red-500/10 p-6 text-center">
                   <FiAlertTriangle size={32} className="mx-auto mb-2 text-red-400" />
                   <p className="text-sm font-bold text-red-300">{docError || "Verification document not found."}</p>
-                  <p className="mt-1 text-xs text-gray-400">
+                  <p className="mt-1 text-xs text-[var(--text-secondary)]">
                     Applicant may need to resubmit their application with an uploaded identity document.
                   </p>
                 </div>
@@ -574,7 +574,7 @@ const AdminRegistrationQueue = () => {
 
               {/* Reviewer Note Input inside modal */}
               <div className="mt-5 border-t border-white/10 pt-4">
-                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-400">
+                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
                   Reviewer Decision Note (Optional)
                 </label>
                 <input

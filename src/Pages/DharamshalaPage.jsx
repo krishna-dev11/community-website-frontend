@@ -23,6 +23,7 @@ import toast from "react-hot-toast";
 import { apiConnector } from "../services/apiConnector";
 import { communityEndpoints } from "../services/apis";
 import ImageSkeleton from "../Components/Common/ImageSkeleton";
+import { useLanguage } from "../i18n/LanguageContext";
 
 const {
   DHARAMSHALAS_API,
@@ -36,6 +37,7 @@ const {
 const DharamshalaPage = () => {
   const { user } = useSelector((state) => state.profile);
   const { token } = useSelector((state) => state.auth);
+  const { t, isHindi } = useLanguage();
 
   const [dharamshalas, setDharamshalas] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -266,7 +268,7 @@ const DharamshalaPage = () => {
   });
 
   return (
-    <div className="relative min-h-screen w-full max-w-full overflow-x-hidden bg-[var(--bg)] text-[var(--text-primary)] transition-colors duration-300 pb-20">
+    <div className="relative min-h-screen w-full max-w-full overflow-x-hidden bg-[var(--bg)] text-[var(--text-primary)] transition-colors duration-300  pb-20 ">
       {/* Background Decor Contained */}
       <div className="overflow-hidden pointer-events-none absolute inset-0 z-0">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] max-w-[100vw] h-[350px] bg-[var(--accent-primary)]/10 blur-[140px] rounded-full" />
@@ -277,13 +279,15 @@ const DharamshalaPage = () => {
         <div className="flex flex-col items-center text-center max-w-3xl mx-auto mb-10">
           <div className="eyebrow-badge mb-3">
             <FiHome size={13} />
-            <span>Samaj Atithi Griha & Yatri Niwas</span>
+            <span>{isHindi ? "समाज अतिथि गृह एवं विश्राम स्थल" : "Samaj Atithi Griha & Yatri Niwas"}</span>
           </div>
           <h1 className="heading-hero text-3xl sm:text-4xl md:text-5xl font-black text-[var(--text-primary)]">
-            Dharamshala <span className="text-gradient">Bookings</span>
+            {isHindi ? "धर्मशाला " : "Dharamshala "}<span className="text-gradient">{isHindi ? "बुकिंग सेवा" : "Bookings"}</span>
           </h1>
           <p className="mt-3 text-sm sm:text-base text-[var(--text-secondary)] leading-relaxed">
-            Comfortable, subsidized, and secure accommodations in holy pilgrimage hubs across India. Dedicated service for Samaj members and welcoming pilgrim guests.
+            {isHindi
+              ? "देशभर के प्रमुख तीर्थ स्थलों पर समाज बंधुओं एवं आगंतुक तीर्थयात्रियों हेतु स्वच्छ, सुरक्षित एवं रियायती आवास व्यवस्था।"
+              : "Comfortable, subsidized, and secure accommodations in holy pilgrimage hubs across India. Dedicated service for Samaj members and welcoming pilgrim guests."}
           </p>
 
           {/* Member Pricing Banner */}
@@ -291,8 +295,8 @@ const DharamshalaPage = () => {
             <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
             <span>
               {isMember
-                ? "✨ Active Samaj Member — Exclusive Member Rates Automatically Applied"
-                : "Open to both Samaj Members (Subsidized) and Guest Pilgrims"}
+                ? (isHindi ? "✨ सत्यापित समाज सदस्य — विशेष रियायती दरें स्वतः लागू" : "✨ Active Samaj Member — Exclusive Member Rates Automatically Applied")
+                : (isHindi ? "समाज सदस्यों (रियायती) एवं आगंतुक यात्रियों दोनों हेतु उपलब्ध" : "Open to both Samaj Members (Subsidized) and Guest Pilgrims")}
             </span>
           </div>
 
@@ -308,7 +312,7 @@ const DharamshalaPage = () => {
                 }`}
               >
                 <FiHome size={14} />
-                <span>Browse Dharamshalas</span>
+                <span>{isHindi ? "धर्मशाला सूची देखें" : "Browse Dharamshalas"}</span>
               </button>
               <button
                 onClick={() => setActiveTab("my-bookings")}
@@ -319,7 +323,7 @@ const DharamshalaPage = () => {
                 }`}
               >
                 <FiCalendar size={14} />
-                <span>My Bookings ({myBookings.length})</span>
+                <span>{isHindi ? `मेरी बुकिंग्स (${myBookings.length})` : `My Bookings (${myBookings.length})`}</span>
               </button>
             </div>
           )}
@@ -329,12 +333,14 @@ const DharamshalaPage = () => {
         {activeTab === "my-bookings" && token && (
           <div className="max-w-5xl mx-auto">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-[var(--text-primary)]">Your Booking History</h2>
+              <h2 className="text-xl font-bold text-[var(--text-primary)]">
+                {isHindi ? "आपकी पूर्व बुकिंग का विवरण" : "Your Booking History"}
+              </h2>
               <button
                 onClick={fetchMyBookings}
                 className="btn-secondary !py-1.5 !px-3 !text-xs"
               >
-                Refresh
+                {isHindi ? "ताज़ा करें" : "Refresh"}
               </button>
             </div>
 

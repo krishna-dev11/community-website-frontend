@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { apiConnector } from "../services/apiConnector";
 import { paymentEndpoints } from "../services/apis";
+import { useLanguage } from "../i18n/LanguageContext";
 
 const amountOptions = [501, 1100, 2100, 5100];
 
@@ -37,6 +38,7 @@ const DonatePage = () => {
   const navigate = useNavigate();
   const { token } = useSelector((state) => state.auth);
   const { user } = useSelector((state) => state.profile);
+  const { t, isHindi } = useLanguage();
 
   const [campaigns, setCampaigns] = useState([]);
   const [selectedCampaign, setSelectedCampaign] = useState("");
@@ -204,13 +206,15 @@ const DonatePage = () => {
           <div className="mb-8 border-b border-[var(--border-subtle)] pb-8">
             <div className="eyebrow-badge mb-4">
               <FiHeart size={14} />
-              <span>Support Samaj</span>
+              <span>{isHindi ? "समाज का सहयोग करें" : "Support Samaj"}</span>
             </div>
             <h1 className="heading-hero text-[var(--text-primary)] mb-3">
-              Donate to <span className="text-gradient">Community Campaigns</span>
+              {isHindi ? "सामाजिक अभियान में " : "Donate to "}<span className="text-gradient">{isHindi ? "सहयोग दें" : "Community Campaigns"}</span>
             </h1>
             <p className="mt-2 max-w-3xl text-xs sm:text-sm leading-6 text-[var(--text-secondary)] font-normal">
-              Choose an active campaign, enter an amount, and complete payment securely. All contributions directly fund approved community initiatives and welfare programs.
+              {isHindi
+                ? "किसी सक्रिय अभियान का चयन करें, राशि दर्ज करें और सुरक्षित भुगतान करें। सभी योगदान सीधे समाज कल्याण व शिक्षा सहायता हेतु उपयोग किए जाते हैं।"
+                : "Choose an active campaign, enter an amount, and complete payment securely. All contributions directly fund approved community initiatives and welfare programs."}
             </p>
           </div>
 
@@ -219,7 +223,7 @@ const DonatePage = () => {
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search campaigns"
+              placeholder={isHindi ? "अभियान खोजें..." : "Search campaigns"}
               className="min-w-0 flex-1 bg-transparent px-2 py-2 text-xs sm:text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] border-none shadow-none focus:ring-0"
             />
           </div>
@@ -238,7 +242,7 @@ const DonatePage = () => {
             </div>
           ) : campaigns.length === 0 ? (
             <div className="ka-card p-12 text-center text-[var(--text-muted)]">
-              No active donation campaigns are available right now.
+              {isHindi ? "अभी कोई सक्रिय दान अभियान उपलब्ध नहीं है।" : "No active donation campaigns are available right now."}
             </div>
           ) : (
             <div className="grid gap-4 md:grid-cols-2">

@@ -7,12 +7,14 @@ import {
   FiClock,
   FiSend,
   FiCheckCircle,
-  FiMessageSquare,
 } from "react-icons/fi";
-import { FaWhatsapp, FaFacebookF, FaYoutube, FaInstagram } from "react-icons/fa";
+import { FaWhatsapp } from "react-icons/fa";
 import ModernFooter from "../Components/Core/Home/ModernFooter";
+import { organizationInfo } from "../data/bairwaData";
+import { useLanguage } from "../i18n/LanguageContext";
 
 const ContactUsPage = () => {
+  const { t, isHindi } = useLanguage();
   const [form, setForm] = useState({
     fullName: "",
     email: "",
@@ -31,7 +33,11 @@ const ContactUsPage = () => {
     setSubmitting(true);
 
     setTimeout(() => {
-      toast.success("Thank you! Your message has been sent to the Samaj Secretariat.");
+      toast.success(
+        isHindi
+          ? "धन्यवाद! आपका संदेश प्रांतीय बैरवा प्रगति संस्था सचिवालय को भेज दिया गया है।"
+          : "Thank you! Your message has been sent to the Sanstha Secretariat."
+      );
       setForm({
         fullName: "",
         email: "",
@@ -45,22 +51,19 @@ const ContactUsPage = () => {
 
   return (
     <div className="relative w-full min-h-screen bg-[var(--bg)] text-[var(--text-primary)] transition-colors duration-300 font-sans overflow-x-hidden">
-      {/* Background glow */}
-      <div className="overflow-hidden pointer-events-none absolute inset-0 z-0">
-        <div className="page-gradient-glow -left-20 top-0 opacity-40" />
-      </div>
-
       {/* Hero */}
-      <section className="pt-32 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center">
-        <div className="eyebrow-badge mx-auto mb-4">
+      <section className="pt-28 sm:pt-32 pb-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center">
+        <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-1 text-xs font-bold text-emerald-400 mb-4">
           <FiMail size={13} />
-          <span>Samaj Secretariat Helpdesk</span>
+          <span>{isHindi ? organizationInfo.nameHi : organizationInfo.nameEn}</span>
         </div>
         <h1 className="heading-hero text-[var(--text-primary)] mb-3">
-          Get in Touch with <span className="text-gradient">Our Samaj</span>
+          {isHindi ? "संस्था सचिवालय से संपर्क करें" : "Get in Touch with Secretariat"}
         </h1>
         <p className="text-xs sm:text-sm text-[var(--text-secondary)] max-w-2xl mx-auto leading-relaxed font-normal">
-          Have queries about member registration, matrimonial verification, scholarship applications, or Dharamshala bookings? Reach out directly to our committee representatives.
+          {isHindi
+            ? "सदस्यता पंजीकरण, वैवाहिक सत्यापन, छात्रवृत्ति आवेदन या संस्था संबंधी किसी भी जानकारी के लिए हमारे प्रधान कार्यालय से संपर्क करें।"
+            : "For membership registration, matrimonial verification, scholarship applications, or inquiries, reach out directly to our central secretariat."}
         </p>
       </section>
 
@@ -69,216 +72,190 @@ const ContactUsPage = () => {
         <div className="grid lg:grid-cols-12 gap-8">
           {/* Left Col: Contact Information Cards */}
           <div className="lg:col-span-5 flex flex-col gap-6">
-            <div className="ka-card p-6 flex flex-col gap-6">
-              <h2 className="text-base font-bold text-[var(--text-primary)] border-b border-[var(--border-subtle)] pb-3">
-                Official Secretariat Information
+            <div className="ka-card p-6 flex flex-col gap-6 rounded-3xl border border-[var(--border-subtle)]">
+              <h2 className="text-sm sm:text-base font-bold text-[var(--text-primary)] border-b border-[var(--border-subtle)] pb-3">
+                {isHindi ? "आधिकारिक सचिवालय संपर्क" : "Official Secretariat Information"}
               </h2>
 
               <div className="space-y-4 text-xs">
                 {/* Address */}
                 <div className="flex items-start gap-3.5">
                   <div className="h-10 w-10 rounded-2xl bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] border border-[var(--accent-primary)]/20 flex items-center justify-center shrink-0">
-                    <FiMapPin size={18} />
+                    <FiMapPin size={16} />
                   </div>
                   <div>
-                    <h3 className="font-bold text-sm text-[var(--text-primary)]">Samaj Bhawan Head Office</h3>
-                    <p className="text-[var(--text-secondary)] mt-1 leading-relaxed">
-                      Community Center Road, Sector 5, New Delhi - 110001, India
+                    <h3 className="font-bold text-[var(--text-primary)] mb-0.5">
+                      {isHindi ? "प्रधान कार्यालय पता" : "Head Office Address"}
+                    </h3>
+                    <p className="text-[var(--text-secondary)] leading-relaxed">
+                      {isHindi ? organizationInfo.headOffice.addressHi : organizationInfo.headOffice.addressEn}
                     </p>
                   </div>
                 </div>
 
                 {/* Phone */}
                 <div className="flex items-start gap-3.5">
-                  <div className="h-10 w-10 rounded-2xl bg-[var(--info)]/10 text-[var(--info)] border border-[var(--info)]/20 flex items-center justify-center shrink-0">
-                    <FiPhone size={18} />
+                  <div className="h-10 w-10 rounded-2xl bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] border border-[var(--accent-primary)]/20 flex items-center justify-center shrink-0">
+                    <FiPhone size={16} />
                   </div>
                   <div>
-                    <h3 className="font-bold text-sm text-[var(--text-primary)]">Official Phone Numbers</h3>
-                    <p className="text-[var(--text-secondary)] mt-1">
-                      +91 98765 43210 / +91 11 2345 6789
-                    </p>
-                    <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
-                      Available Mon - Sat, 9:00 AM - 6:00 PM
-                    </p>
+                    <h3 className="font-bold text-[var(--text-primary)] mb-0.5">
+                      {isHindi ? "दूरभाष / मोबाइल" : "Helpline Phone"}
+                    </h3>
+                    <a href="tel:+919928260244" className="font-mono font-bold text-emerald-400 hover:underline">
+                      {organizationInfo.headOffice.phone}
+                    </a>
                   </div>
                 </div>
 
                 {/* Email */}
                 <div className="flex items-start gap-3.5">
-                  <div className="h-10 w-10 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center shrink-0">
-                    <FiMail size={18} />
+                  <div className="h-10 w-10 rounded-2xl bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] border border-[var(--accent-primary)]/20 flex items-center justify-center shrink-0">
+                    <FiMail size={16} />
                   </div>
                   <div>
-                    <h3 className="font-bold text-sm text-[var(--text-primary)]">Email Support</h3>
-                    <p className="text-[var(--text-secondary)] mt-1">
-                      helpdesk@samajportal.org
-                    </p>
-                    <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
-                      Typical response time: Within 24-48 hours
-                    </p>
+                    <h3 className="font-bold text-[var(--text-primary)] mb-0.5">
+                      {isHindi ? "ईमेल संपर्क" : "Email Address"}
+                    </h3>
+                    <a href="mailto:contact@bairwasamaaj.com" className="text-[var(--text-secondary)] hover:text-emerald-400">
+                      {organizationInfo.headOffice.email}
+                    </a>
                   </div>
                 </div>
 
-                {/* Timings */}
+                {/* Working Hours */}
                 <div className="flex items-start gap-3.5">
-                  <div className="h-10 w-10 rounded-2xl bg-purple-500/10 text-purple-400 border border-purple-500/20 flex items-center justify-center shrink-0">
-                    <FiClock size={18} />
+                  <div className="h-10 w-10 rounded-2xl bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] border border-[var(--accent-primary)]/20 flex items-center justify-center shrink-0">
+                    <FiClock size={16} />
                   </div>
                   <div>
-                    <h3 className="font-bold text-sm text-[var(--text-primary)]">Working Hours</h3>
-                    <p className="text-[var(--text-secondary)] mt-1">
-                      Monday to Saturday: 9:00 AM to 6:00 PM
-                    </p>
-                    <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
-                      Sunday: Closed (Emergency line available)
+                    <h3 className="font-bold text-[var(--text-primary)] mb-0.5">
+                      {isHindi ? "कार्यालय समय" : "Office Hours"}
+                    </h3>
+                    <p className="text-[var(--text-secondary)]">
+                      {isHindi ? organizationInfo.headOffice.hoursHi : organizationInfo.headOffice.hoursEn}
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* Direct WhatsApp Action */}
-              <div className="pt-2">
+              {/* WhatsApp Quick Helpline */}
+              <div className="pt-4 border-t border-[var(--border-subtle)]">
                 <a
-                  href="https://wa.me/919876543210"
+                  href="https://wa.me/919928260244"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-2xl bg-[#25D366] text-white text-xs font-bold uppercase tracking-wider shadow-md hover:opacity-90 transition-opacity"
+                  className="btn-whatsapp w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-bold"
                 >
                   <FaWhatsapp size={16} />
-                  <span>Chat on Official WhatsApp</span>
+                  <span>{isHindi ? "व्हाट्सएप हेल्पलाइन चैट" : "WhatsApp Helpline"}</span>
                 </a>
-              </div>
-            </div>
-
-            {/* Social Media Channels */}
-            <div className="ka-card p-5">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] mb-3">
-                Official Social Media Channels
-              </h3>
-              <div className="flex gap-2.5">
-                {[
-                  { icon: FaWhatsapp, href: "https://wa.me/919876543210", label: "WhatsApp", color: "#25D366" },
-                  { icon: FaFacebookF, href: "#", label: "Facebook", color: "#1877F2" },
-                  { icon: FaYoutube, href: "#", label: "YouTube", color: "#FF0000" },
-                  { icon: FaInstagram, href: "#", label: "Instagram", color: "#E4405F" },
-                ].map(({ icon: Icon, href, label, color }, i) => (
-                  <a
-                    key={i}
-                    href={href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={label}
-                    className="h-10 w-10 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-muted)] hover:border-[var(--accent-primary)]/40 hover:text-[var(--accent-primary)] flex items-center justify-center transition-all"
-                  >
-                    <Icon size={16} />
-                  </a>
-                ))}
               </div>
             </div>
           </div>
 
-          {/* Right Col: Contact Form */}
+          {/* Right Col: Contact Message Form */}
           <div className="lg:col-span-7">
-            <form onSubmit={handleSubmit} className="ka-card p-6 sm:p-8 flex flex-col gap-4">
-              <div className="border-b border-[var(--border-subtle)] pb-4">
-                <h2 className="text-lg font-bold text-[var(--text-primary)]">Send Us a Direct Message</h2>
-                <p className="text-xs text-[var(--text-secondary)] mt-0.5">
-                  Fill in the details below and the Secretariat team will get back to you.
-                </p>
-              </div>
+            <div className="ka-card p-6 sm:p-8 rounded-3xl border border-[var(--border-subtle)]">
+              <h2 className="text-base font-bold text-[var(--text-primary)] mb-1">
+                {isHindi ? "ऑनलाइन संदेश / सुझाव भेजें" : "Send an Inquiry Message"}
+              </h2>
+              <p className="text-xs text-[var(--text-secondary)] mb-6 font-normal">
+                {isHindi
+                  ? "कृपया अपना संदेश भरें, संस्था प्रतिनिधि यथाशीघ्र आपसे संपर्क करेंगे।"
+                  : "Fill in your details and our secretariat representative will connect with you."}
+              </p>
 
-              <div className="grid sm:grid-cols-2 gap-4">
-                <label className="grid gap-1.5">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
-                    Full Name *
-                  </span>
-                  <input
-                    type="text"
-                    required
-                    value={form.fullName}
-                    onChange={(e) => handleChange("fullName", e.target.value)}
-                    placeholder="Enter your name"
-                    className="ka-input"
-                  />
-                </label>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1.5 block">
+                      {isHindi ? "पूरा नाम *" : "Full Name *"}
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={form.fullName}
+                      onChange={(e) => handleChange("fullName", e.target.value)}
+                      placeholder={isHindi ? "आपका नाम" : "Your Name"}
+                      className="ka-input !py-2.5 !text-xs"
+                    />
+                  </div>
 
-                <label className="grid gap-1.5">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
-                    Phone Number *
-                  </span>
-                  <input
-                    type="tel"
-                    required
-                    value={form.phone}
-                    onChange={(e) => handleChange("phone", e.target.value)}
-                    placeholder="+91 98765 43210"
-                    className="ka-input"
-                  />
-                </label>
-              </div>
+                  <div>
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1.5 block">
+                      {isHindi ? "मोबाइल नंबर *" : "Mobile Number *"}
+                    </label>
+                    <input
+                      type="tel"
+                      required
+                      value={form.phone}
+                      onChange={(e) => handleChange("phone", e.target.value)}
+                      placeholder="+91 99282 60244"
+                      className="ka-input !py-2.5 !text-xs"
+                    />
+                  </div>
+                </div>
 
-              <div className="grid sm:grid-cols-2 gap-4">
-                <label className="grid gap-1.5">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
-                    Email Address *
-                  </span>
+                <div>
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1.5 block">
+                    {isHindi ? "ईमेल पता" : "Email Address"}
+                  </label>
                   <input
                     type="email"
-                    required
                     value={form.email}
                     onChange={(e) => handleChange("email", e.target.value)}
-                    placeholder="name@example.com"
-                    className="ka-input"
+                    placeholder="you@example.com"
+                    className="ka-input !py-2.5 !text-xs"
                   />
-                </label>
+                </div>
 
-                <label className="grid gap-1.5">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
-                    Query Category *
-                  </span>
+                <div>
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1.5 block">
+                    {isHindi ? "विषय" : "Subject"}
+                  </label>
                   <select
                     value={form.subject}
                     onChange={(e) => handleChange("subject", e.target.value)}
-                    className="ka-input"
+                    className="ka-input !py-2.5 !text-xs"
                   >
-                    <option value="General Inquiry">General Samaj Inquiry</option>
-                    <option value="Membership & Verification">Membership & Verification</option>
-                    <option value="Matrimonial Assistance">Matrimonial Assistance</option>
-                    <option value="Scholarship Application">Scholarship Application</option>
-                    <option value="Dharamshala Booking">Dharamshala Booking</option>
-                    <option value="Donation & Seva">Donation & Seva Inquiry</option>
+                    <option value="General Inquiry">{isHindi ? "सामान्य पूछताछ" : "General Inquiry"}</option>
+                    <option value="Membership">{isHindi ? "सदस्यता संबंधी" : "Membership Query"}</option>
+                    <option value="Matrimonial">{isHindi ? "परिचय सम्मेलन / वैवाहिक" : "Matrimonial Conference"}</option>
+                    <option value="Scholarship">{isHindi ? "छात्रवृत्ति योजना" : "Scholarship Aid"}</option>
+                    <option value="Suggestion">{isHindi ? "सुझाव एवं विचार" : "Suggestions"}</option>
                   </select>
-                </label>
-              </div>
+                </div>
 
-              <label className="grid gap-1.5">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
-                  Your Message *
-                </span>
-                <textarea
-                  required
-                  rows={4}
-                  value={form.message}
-                  onChange={(e) => handleChange("message", e.target.value)}
-                  placeholder="Describe your inquiry or issue in detail..."
-                  className="ka-input resize-none"
-                />
-              </label>
+                <div>
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1.5 block">
+                    {isHindi ? "संदेश विवरण *" : "Message Details *"}
+                  </label>
+                  <textarea
+                    rows={4}
+                    required
+                    value={form.message}
+                    onChange={(e) => handleChange("message", e.target.value)}
+                    placeholder={isHindi ? "अपना संदेश यहाँ लिखें..." : "Write your message here..."}
+                    className="ka-input !py-2.5 !text-xs resize-none"
+                  />
+                </div>
 
-              <button
-                type="submit"
-                disabled={submitting}
-                className="btn-primary w-full mt-2"
-              >
-                <FiSend size={15} />
-                <span>{submitting ? "Sending Message..." : "Submit Inquiry to Samaj"}</span>
-              </button>
-            </form>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="btn-primary w-full !py-3 flex items-center justify-center gap-2 text-xs"
+                >
+                  <FiSend size={14} />
+                  <span>{submitting ? (isHindi ? "भेजा जा रहा है..." : "Sending...") : (isHindi ? "संदेश प्रेषित करें" : "Send Message")}</span>
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       </section>
 
+      {/* Footer */}
       <ModernFooter />
     </div>
   );

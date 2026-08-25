@@ -6,10 +6,12 @@ import { sidebarLinks } from "../../../../data/dashboard-links";
 import { IoIosLogOut } from "react-icons/io";
 import ConfirmationModal from "../../../Common/ConfirmationModal";
 import { setLogOut } from "../../../../services/Operations/authAPI";
+import { useLanguage } from "../../../../i18n/LanguageContext";
 
 const SideBar = ({ isSidebarOpen, setIsSidebarOpen }) => {
   const { loading: authLoading } = useSelector((state) => state.auth);
   const { loading: profileLoading, user } = useSelector((state) => state.profile);
+  const { isHindi } = useLanguage();
   const [logOutModal, setLogOutModal] = useState(null);
 
   const dispatch = useDispatch();
@@ -55,7 +57,7 @@ const SideBar = ({ isSidebarOpen, setIsSidebarOpen }) => {
             return (
               <div key={i} className="flex flex-col gap-y-1.5">
                 <p className={`${isSidebarOpen ? "block" : "hidden"} md:block text-[var(--text-muted)] text-[10px] font-bold tracking-[0.2em] uppercase px-3 mb-1 select-none`}>
-                  {section.section}
+                  {isHindi ? section.sectionHi || section.section : section.section}
                 </p>
 
                 <div className="flex flex-col gap-1">
@@ -64,7 +66,7 @@ const SideBar = ({ isSidebarOpen, setIsSidebarOpen }) => {
                       key={index}
                       icon={link.icon}
                       path={link.path}
-                      name={link.name}
+                      name={isHindi ? link.nameHi || link.name : link.name}
                       isSidebarOpen={isSidebarOpen}
                       onClick={() => setIsSidebarOpen(false)}
                     />
@@ -80,7 +82,7 @@ const SideBar = ({ isSidebarOpen, setIsSidebarOpen }) => {
           <SlideBarButton
             icon="IoMdSettings"
             path="/dashboard/setting"
-            name="Account Settings"
+            name={isHindi ? "खाता सेटिंग्स" : "Account Settings"}
             isSidebarOpen={isSidebarOpen}
             onClick={() => setIsSidebarOpen(false)}
           />
@@ -90,17 +92,19 @@ const SideBar = ({ isSidebarOpen, setIsSidebarOpen }) => {
             onClick={() => {
               setIsSidebarOpen(false);
               setLogOutModal({
-                heading: "Confirm Logout?",
-                text1: "You will need to login again to access your dashboard.",
-                button1Text: "Logout",
-                button2Text: "Cancel",
+                heading: isHindi ? "लॉग आउट की पुष्टि करें?" : "Confirm Logout?",
+                text1: isHindi ? "डैशबोर्ड एक्सेस करने के लिए आपको दोबारा लॉग इन करना होगा।" : "You will need to login again to access your dashboard.",
+                button1Text: isHindi ? "लॉग आउट" : "Logout",
+                button2Text: isHindi ? "रद्द करें" : "Cancel",
                 button1Handler: () => dispatch(setLogOut(navigate)),
                 button2Handler: () => setLogOutModal(null),
               });
             }}
           >
-            <IoIosLogOut className="text-xl text-red-400 group-hover:scale-110 transition-transform flex-shrink-0" />
-            <span className={`${isSidebarOpen ? "block" : "hidden"} md:block`}>Logout</span>
+            <IoIosLogOut className="text-[1.3rem] md:text-[1.15rem] text-red-400/80 group-hover:text-red-400 transition-colors flex-shrink-0" />
+            <span className={`${isSidebarOpen ? "block" : "hidden md:block"} truncate`}>
+              {isHindi ? "लॉग आउट" : "Logout"}
+            </span>
           </button>
         </div>
       </div>

@@ -248,7 +248,7 @@ const AuditLogAdmin = () => {
                           </div>
                         </td>
 
-                        <td className="px-6 py-4 text-gray-400 max-w-xs truncate">
+                        <td className="px-6 py-4 text-[var(--text-muted)] max-w-xs truncate">
                           {log.reason || <span className="text-gray-700 italic">No note</span>}
                         </td>
 
@@ -269,7 +269,7 @@ const AuditLogAdmin = () => {
           )}
 
           {/* Pagination Footer */}
-          <div className="p-4 border-t border-white/10 flex items-center justify-between text-xs text-gray-400">
+          <div className="p-4 border-t border-white/10 flex items-center justify-between text-xs text-[var(--text-secondary)]">
             <span>
               Showing {(page - 1) * limit + 1} - {Math.min(page * limit, total)} of {total}
             </span>
@@ -296,10 +296,10 @@ const AuditLogAdmin = () => {
       {/* INSPECT LOG MODAL */}
       {selectedLog && (
         <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/80 p-4 backdrop-blur-md">
-          <div className="relative w-full max-w-2xl rounded-3xl border border-white/10 bg-[#0a0a0a] p-6 sm:p-8 shadow-2xl max-h-[90vh] overflow-y-auto">
+          <div className="relative w-full max-w-2xl rounded-3xl border border-white/10 bg-[var(--surface)] p-6 sm:p-8 shadow-2xl max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => setSelectedLog(null)}
-              className="absolute right-5 top-5 flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white hover:bg-white/10"
+              className="absolute right-5 top-5 flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
             >
               <FiX size={18} />
             </button>
@@ -310,7 +310,7 @@ const AuditLogAdmin = () => {
               </div>
               <div>
                 <h2 className="text-base font-bold text-white">Audit Event Inspection</h2>
-                <p className="text-xs text-gray-400 font-mono">{selectedLog._id}</p>
+                <p className="text-xs text-[var(--text-secondary)] font-mono">{selectedLog._id}</p>
               </div>
             </div>
 
@@ -337,7 +337,7 @@ const AuditLogAdmin = () => {
               {/* Old Value / New Value Comparison */}
               {selectedLog.oldValue && (
                 <div>
-                  <span className="text-gray-400 font-bold block mb-1">Previous State (oldValue):</span>
+                  <span className="text-[var(--text-muted)] font-bold block mb-1">Previous State (oldValue):</span>
                   <pre className="bg-white/5 border border-white/10 p-3 rounded-xl text-[11px] text-amber-300 overflow-x-auto">
                     {JSON.stringify(selectedLog.oldValue, null, 2)}
                   </pre>
@@ -346,7 +346,7 @@ const AuditLogAdmin = () => {
 
               {selectedLog.newValue && (
                 <div>
-                  <span className="text-gray-400 font-bold block mb-1">Updated State (newValue):</span>
+                  <span className="text-[var(--text-muted)] font-bold block mb-1">Updated State (newValue):</span>
                   <pre className="bg-white/5 border border-white/10 p-3 rounded-xl text-[11px] text-emerald-300 overflow-x-auto">
                     {JSON.stringify(selectedLog.newValue, null, 2)}
                   </pre>
@@ -355,7 +355,7 @@ const AuditLogAdmin = () => {
 
               {selectedLog.reason && (
                 <div>
-                  <span className="text-gray-400 font-bold block mb-1">Reason Stated:</span>
+                  <span className="text-[var(--text-muted)] font-bold block mb-1">Reason Stated:</span>
                   <p className="bg-white/5 border border-white/10 p-3 rounded-xl text-gray-200">
                     {selectedLog.reason}
                   </p>

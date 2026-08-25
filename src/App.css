@@ -40,14 +40,7 @@ main,
 }
 
 .page-gradient-glow {
-  position: absolute;
-  width: 620px;
-  height: 620px;
-  border-radius: 999px;
-  pointer-events: none;
-  filter: blur(110px);
-  background: var(--brand-glow);
-  opacity: 0.9;
+  display: none !important;
 }
 
 .swiper {

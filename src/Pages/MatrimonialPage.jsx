@@ -19,6 +19,7 @@ import {
 import { apiConnector } from "../services/apiConnector";
 import { matrimonialEndpoints } from "../services/apis";
 import FileUploadWithPreview from "../Components/Common/FileUploadWithPreview";
+import { useLanguage } from "../i18n/LanguageContext";
 
 const inputClass = "ka-input";
 const textareaClass = "ka-input !min-h-24 resize-none !py-3";
@@ -150,6 +151,7 @@ const formToPayload = (form) => ({
 
 const MatrimonialPage = () => {
   const { token } = useSelector((state) => state.auth);
+  const { t, isHindi } = useLanguage();
   const [activeTab, setActiveTab] = useState("browse");
   const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState(null);
@@ -355,27 +357,31 @@ const MatrimonialPage = () => {
         <div className="border-b border-[var(--border-subtle)] pb-6">
           <div className="eyebrow-badge mb-3">
             <FiHeart size={14} />
-            <span>Matrimonial</span>
+            <span>{isHindi ? "वैवाहिक मंच" : "Matrimonial"}</span>
           </div>
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
               <h1 className="heading-hero text-[var(--text-primary)] mb-2">
-                Matrimonial <span className="text-gradient">Portal</span>
+                {isHindi ? "वैवाहिक " : "Matrimonial "}<span className="text-gradient">{isHindi ? "परिचय मंच" : "Portal"}</span>
               </h1>
               <p className="mt-2 max-w-2xl text-xs sm:text-sm leading-6 text-[var(--text-secondary)] font-normal">
-                Create a reviewed profile, browse approved matches within Samaj, express mutual interest, and request verified contact details.
+                {isHindi
+                  ? "बैरवा समाज के सत्यापित युवक-युवतियों के बायोडाटा देखें, रुचि प्रेषित करें एवं अभिभावकों से संपर्क स्थापित करें।"
+                  : "Create a reviewed profile, browse approved matches within Samaj, express mutual interest, and request verified contact details."}
               </p>
             </div>
-            <Button icon={FiRefreshCw} onClick={refreshActive} disabled={loading}>Refresh</Button>
+            <Button icon={FiRefreshCw} onClick={refreshActive} disabled={loading}>
+              {isHindi ? "ताज़ा करें" : "Refresh"}
+            </Button>
           </div>
         </div>
 
         {/* Tab Navigation */}
         <div className="grid gap-2 sm:grid-cols-3">
           {[
-            { key: "browse", label: "Browse Matches" },
-            { key: "profile", label: "My Profile" },
-            { key: "interests", label: "Interests & Requests" },
+            { key: "browse", label: isHindi ? "रिश्ते देखें" : "Browse Matches" },
+            { key: "profile", label: isHindi ? "मेरी प्रोफ़ाइल" : "My Profile" },
+            { key: "interests", label: isHindi ? "रुचि व अनुरोध" : "Interests & Requests" },
           ].map((tab) => (
             <button
               key={tab.key}
@@ -408,7 +414,7 @@ const MatrimonialPage = () => {
                       className="h-10 min-w-0 flex-1 bg-transparent text-xs sm:text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] border-none shadow-none focus:ring-0"
                       value={filters.q}
                       onChange={(event) => setFilters((c) => ({ ...c, q: event.target.value }))}
-                      placeholder="Search name, profession, city"
+                      placeholder={isHindi ? "नाम, व्यवसाय, शहर खोजें..." : "Search name, profession, city"}
                     />
                   </div>
                   <select
@@ -416,10 +422,10 @@ const MatrimonialPage = () => {
                     value={filters.gender}
                     onChange={(event) => setFilters((c) => ({ ...c, gender: event.target.value }))}
                   >
-                    <option value="">All Genders</option>
-                    <option value="MALE">Groom (Male)</option>
-                    <option value="FEMALE">Bride (Female)</option>
-                    <option value="OTHER">Other</option>
+                    <option value="">{isHindi ? "सभी लिंग" : "All Genders"}</option>
+                    <option value="MALE">{isHindi ? "वर (पुरुष)" : "Groom (Male)"}</option>
+                    <option value="FEMALE">{isHindi ? "वधू (महिला)" : "Bride (Female)"}</option>
+                    <option value="OTHER">{isHindi ? "अन्य" : "Other"}</option>
                   </select>
                   <input
                     className={inputClass}

@@ -36,6 +36,10 @@ import MatrimonialPage from "./Pages/MatrimonialPage";
 import AdminInviteAcceptPage from "./Pages/AdminInviteAcceptPage";
 import VerifyMemberCardPage from "./Pages/VerifyMemberCardPage";
 import DharamshalaPage from "./Pages/DharamshalaPage";
+import ManagementCommitteePage from "./Pages/ManagementCommitteePage";
+import BalinathPage from "./Pages/BalinathPage";
+import GotraDirectoryPage from "./Pages/GotraDirectoryPage";
+import HistoryPage from "./Pages/HistoryPage";
 
 // Initialize theme from localStorage before first React paint — prevents color flash
 initTheme();
@@ -52,6 +56,10 @@ function App() {
         <Route path="*" element={<NotFound />} />
         <Route path="/" element={<HomePage />} />
         <Route path="/about" element={<AboutPage />} />
+        <Route path="/history" element={<HistoryPage />} />
+        <Route path="/management-committee" element={<ManagementCommitteePage />} />
+        <Route path="/balinath" element={<BalinathPage />} />
+        <Route path="/gotras" element={<GotraDirectoryPage />} />
         <Route path="/contact" element={<ContactUsPage />} />
         <Route path="/dharamshala" element={<DharamshalaPage />} />
         <Route path="/notices" element={<PublicResourcePage type="notices" />} />

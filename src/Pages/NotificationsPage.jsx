@@ -12,6 +12,7 @@ import {
 } from "react-icons/fi";
 import { apiConnector } from "../services/apiConnector";
 import { notificationEndpoints } from "../services/apis";
+import { useLanguage } from "../i18n/LanguageContext";
 
 const formatDateTime = (value) => {
   if (!value) return "Just now";
@@ -26,6 +27,7 @@ const formatDateTime = (value) => {
 
 const NotificationsPage = () => {
   const { token } = useSelector((state) => state.auth);
+  const { t, isHindi } = useLanguage();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [status, setStatus] = useState("");
@@ -98,15 +100,17 @@ const NotificationsPage = () => {
         <div className="border-b border-[var(--border-subtle)] pb-6">
           <div className="eyebrow-badge mb-4">
             <FiBell size={14} />
-            <span>Notification Center</span>
+            <span>{isHindi ? "सूचना केंद्र" : "Notification Center"}</span>
           </div>
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
               <h1 className="heading-hero text-[var(--text-primary)] mb-2">
-                Notifications
+                {isHindi ? "सूचनाएँ" : "Notifications"}
               </h1>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--text-secondary)] font-normal">
-                Track review updates, family actions, payments, applications, and committee messages in one place.
+                {isHindi
+                  ? "सदस्यता सत्यापन, परिवार अपडेट, भुगतान और समिति संदेश एक ही स्थान पर देखें।"
+                  : "Track review updates, family actions, payments, applications, and committee messages in one place."}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -117,7 +121,7 @@ const NotificationsPage = () => {
                 className="inline-flex h-11 items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-5 text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] transition hover:text-[var(--text-primary)] disabled:opacity-60"
               >
                 <FiRefreshCw size={15} />
-                Refresh
+                {isHindi ? "ताज़ा करें" : "Refresh"}
               </button>
               <button
                 type="button"
@@ -126,7 +130,7 @@ const NotificationsPage = () => {
                 className="btn-primary !h-11 !py-0 !px-5 text-xs"
               >
                 <FiCheckCircle size={15} />
-                Mark All Read
+                {isHindi ? "सभी पढ़े गए चिह्नित करें" : "Mark All Read"}
               </button>
             </div>
           </div>
@@ -135,9 +139,9 @@ const NotificationsPage = () => {
         <div className="grid gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] p-3 md:grid-cols-[1fr_auto] md:items-center">
           <div className="flex flex-wrap gap-2">
             {[
-              { label: "All", value: "" },
-              { label: "Unread", value: "UNREAD" },
-              { label: "Read", value: "READ" },
+              { label: isHindi ? "सभी" : "All", value: "" },
+              { label: isHindi ? "अपठित" : "Unread", value: "UNREAD" },
+              { label: isHindi ? "पठित" : "Read", value: "READ" },
             ].map((option) => (
               <button
                 key={option.label}
@@ -155,7 +159,7 @@ const NotificationsPage = () => {
           </div>
           <div className="inline-flex w-fit items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-3 py-2 text-xs text-[var(--text-secondary)] font-medium">
             <span className="h-2 w-2 rounded-full bg-[var(--accent-primary)]" />
-            {unreadCount} unread
+            {unreadCount} {isHindi ? "अपठित" : "unread"}
           </div>
         </div>
 
@@ -168,7 +172,7 @@ const NotificationsPage = () => {
         ) : notifications.length === 0 ? (
           <div className="ka-card px-6 py-12 text-center border-dashed">
             <FiInbox className="mx-auto text-[var(--text-muted)]" size={34} />
-            <p className="mt-4 text-sm text-[var(--text-muted)]">No notifications found for this filter.</p>
+            <p className="mt-4 text-sm text-[var(--text-muted)]">{isHindi ? "इस फ़िल्टर के लिए कोई सूचना नहीं मिली।" : "No notifications found for this filter."}</p>
           </div>
         ) : (
           <div className="grid gap-3">

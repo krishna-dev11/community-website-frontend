@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useSelector } from "react-redux";
 import { apiConnector } from "../../services/apiConnector";
 import { communityEndpoints } from "../../services/apis";
@@ -313,7 +314,7 @@ const MembershipCardModal = ({ isOpen, onClose }) => {
     window.print();
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || typeof document === "undefined") return null;
 
   const verificationUrl = cardData?.memberId
     ? `${window.location.origin}/verify-member/${cardData.memberId}`
@@ -323,8 +324,8 @@ const MembershipCardModal = ({ isOpen, onClose }) => {
     ? `SMJ-${String(cardData.memberId).slice(-8).toUpperCase()}`
     : "SMJ-MEMBER";
 
-  return (
-    <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/85 p-2 sm:p-4 backdrop-blur-md overflow-y-auto translate-y-[50px] ">
+  return createPortal(
+    <div className="fixed inset-0 z-[2600] flex items-center justify-center bg-black/85 p-2 sm:p-4 backdrop-blur-md overflow-y-auto">
       <div className="relative w-full max-w-xl max-h-[94vh] overflow-y-auto overflow-x-hidden ka-card p-4 sm:p-6 md:p-8 shadow-[0_30px_90px_rgba(0,0,0,0.95)] my-auto rounded-2xl">
         {/* Close Button */}
         <button
@@ -574,7 +575,8 @@ const MembershipCardModal = ({ isOpen, onClose }) => {
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

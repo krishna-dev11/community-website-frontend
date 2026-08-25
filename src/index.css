@@ -580,7 +580,6 @@ textarea:focus {
   overflow-x: hidden;
 }
 
-/* Reduce motion accessibility */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -590,4 +589,203 @@ textarea:focus {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* ======================================================
+   HERO CAROUSEL — THEME-AWARE GLASS CARD
+   ====================================================== */
+
+/* Dark mode (default) */
+:root .hero-glass-card,
+[data-theme="dark"] .hero-glass-card {
+  background: rgba(10, 18, 13, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.80),
+              inset 0 1px 1px 0 rgba(255, 255, 255, 0.10);
+  color: #fff;
+}
+
+/* Light mode */
+[data-theme="light"] .hero-glass-card {
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(0, 0, 0, 0.10);
+  box-shadow: 0 24px 50px -12px rgba(0, 0, 0, 0.22),
+              inset 0 1px 1px 0 rgba(255, 255, 255, 0.80);
+  color: #fff; /* text stays white because it sits on the dark image overlay */
+}
+
+/* ======================================================
+   TAB COMPONENT — THEME-AWARE
+   ====================================================== */
+
+/* Tab.jsx uses hard-coded bg-[#0F0F0F] bg — override for light mode */
+[data-theme="light"] .ka-tab-container,
+[data-theme="light"] [class*="bg-[#0F0F0F]"] {
+  background: var(--surface) !important;
+  border-color: var(--border-subtle) !important;
+}
+
+/* ======================================================
+   CONTACT SECTION INPUTS — THEME-AWARE
+   Already handled by the global input rule above;
+   this ensures bg-[#0a0a0a]/50 inputs flip in light mode.
+   ====================================================== */
+[data-theme="light"] [class*="bg-[#0a0a0a]"] {
+  background: rgba(255, 255, 255, 0.75) !important;
+  border-color: rgba(0, 0, 0, 0.12) !important;
+  color: var(--text-primary) !important;
+}
+
+/* ======================================================
+   DASHBOARD MODALS — THEME-AWARE
+   Override dark-only modal containers in light mode.
+   ====================================================== */
+[data-theme="light"] [class*="bg-[#0a0a0a]"],
+[data-theme="light"] [class*="bg-[#0a0f0d]"] {
+  background: var(--surface) !important;
+  border-color: var(--border-subtle) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Headings inside dashboard that have text-white hard-coded */
+[data-theme="light"] [class*="text-white"]:not(.hero-glass-card *):not([class*="btn-"]):not([class*="bg-emerald"]):not([class*="bg-[#25D366"]):not([class*="bg-gradient"]) {
+  /* Let the cascade handle it — only override structural text-white headings
+     that are NOT inside image-overlay areas or colored buttons */
+}
+
+/* More targeted: dashboard section headings */
+[data-theme="light"] .dashboard-section-heading {
+  color: var(--text-primary) !important;
+}
+
+/* ======================================================
+   SOCIAL STATS — THEME-AWARE
+   bg-black section that houses stats counters
+   ====================================================== */
+[data-theme="light"] section[class*="bg-black"] {
+  background: var(--surface-elevated) !important;
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+[data-theme="light"] section[class*="bg-black"] h2 {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="light"] section[class*="bg-black"] p {
+  color: var(--text-secondary) !important;
+}
+
+[data-theme="light"] section[class*="bg-black"] [class*="border-white/10"] {
+  border-color: var(--border-subtle) !important;
+}
+
+[data-theme="light"] section[class*="bg-black"] [class*="bg-white/[0.03]"] {
+  background: rgba(0, 0, 0, 0.03) !important;
+}
+
+/* ======================================================
+   GLOBAL UTILITY — DARK BACKGROUND OVERRIDES
+   For components that use hard-coded #0F0F0F / bg-black
+   etc. in non-overlay, non-image contexts.
+   ====================================================== */
+
+/* Upload drag zone dark background in light mode */
+[data-theme="light"] [class*="border-[#ffffff]/5"] {
+  border-color: var(--border-subtle) !important;
+}
+
+[data-theme="light"] [class*="bg-[#ffffff]/[0.01]"] {
+  background: rgba(0, 0, 0, 0.02) !important;
+}
+
+/* AuditLog / AdminRegistrationQueue modal override for light mode */
+[data-theme="light"] .rounded-3xl[class*="border-white/10"] {
+  border-color: var(--border-subtle);
+}
+
+/* ======================================================
+   AUTH PAGES (ResendEmail / ResetCompletePage)
+   bg-richblack-900 — override for light mode
+   ====================================================== */
+[data-theme="light"] [class*="bg-richblack-900"] {
+  background: var(--bg) !important;
+}
+
+[data-theme="light"] [class*="border-richblack-400"] {
+  border-color: var(--border-subtle) !important;
+}
+
+[data-theme="light"] [class*="text-richblack-300"] {
+  color: var(--text-secondary) !important;
+}
+
+/* ======================================================
+   DASHBOARD SURFACES — LIGHT MODE BOUNDARY CONTRAST
+   Keeps dark-mode dashboard styling intact while making
+   hard-coded dark-theme surfaces readable in light mode.
+   ====================================================== */
+[data-theme="light"] .dashboard-shell {
+  --dashboard-border: rgba(15, 23, 42, 0.12);
+  --dashboard-border-subtle: rgba(15, 23, 42, 0.10);
+  --dashboard-border-strong: rgba(15, 23, 42, 0.16);
+  --dashboard-surface: rgba(255, 255, 255, 0.88);
+  --dashboard-surface-raised: rgba(248, 250, 252, 0.92);
+}
+
+[data-theme="light"] .dashboard-shell [class*="border-white/10"],
+[data-theme="light"] .dashboard-shell [class*="border-[#ffffff]/10"],
+[data-theme="light"] .dashboard-shell [class*="border-[#ffffff]/5"] {
+  border-color: var(--dashboard-border) !important;
+}
+
+[data-theme="light"] .dashboard-shell [class*="border-t"][class*="border-white/10"],
+[data-theme="light"] .dashboard-shell [class*="border-b"][class*="border-white/10"] {
+  border-color: var(--dashboard-border-subtle) !important;
+}
+
+[data-theme="light"] .dashboard-shell [class*="bg-white/[0.01]"],
+[data-theme="light"] .dashboard-shell [class*="bg-white/[0.02]"],
+[data-theme="light"] .dashboard-shell [class*="bg-white/[0.03]"],
+[data-theme="light"] .dashboard-shell [class*="bg-white/5"] {
+  background: var(--dashboard-surface) !important;
+}
+
+[data-theme="light"] .dashboard-shell [class*="bg-black/20"],
+[data-theme="light"] .dashboard-shell [class*="bg-black/30"],
+[data-theme="light"] .dashboard-shell [class*="bg-black/40"],
+[data-theme="light"] .dashboard-shell [class*="bg-[#ffffff]/[0.01]"] {
+  background: var(--dashboard-surface-raised) !important;
+}
+
+[data-theme="light"] .dashboard-shell [class*="hover:bg-white/10"]:hover,
+[data-theme="light"] .dashboard-shell [class*="hover:bg-white/[0.02]"]:hover,
+[data-theme="light"] .dashboard-shell [class*="hover:bg-[#ffffff]/0.03"]:hover {
+  background: var(--surface-hover) !important;
+}
+
+[data-theme="light"] .dashboard-shell select[class*="bg-black"],
+[data-theme="light"] .dashboard-shell textarea[class*="bg-white/[0.03]"],
+[data-theme="light"] .dashboard-shell input[class*="bg-white/[0.03]"] {
+  background: var(--input-bg) !important;
+  border-color: var(--input-border) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .dashboard-shell [class*="text-white"]:not([class*="bg-[var(--accent-primary)]"]):not([class*="bg-black"]):not([class*="file:text"]) {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .dashboard-shell [class*="placeholder:text-gray-600"]::placeholder {
+  color: var(--text-muted) !important;
+}
+
+[data-theme="light"] .dashboard-shell .ka-card,
+[data-theme="light"] .dashboard-shell .ka-card-elevated,
+[data-theme="light"] .dashboard-shell .ka-input {
+  border-color: var(--dashboard-border) !important;
+}
+
+[data-theme="light"] .dashboard-shell .border-dashed {
+  border-color: var(--dashboard-border-strong) !important;
 }

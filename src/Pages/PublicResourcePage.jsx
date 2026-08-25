@@ -27,6 +27,7 @@ import {
 import { apiConnector } from "../services/apiConnector";
 import { communityEndpoints, contentEndpoints, opportunityEndpoints } from "../services/apis";
 import DocViewer from "../Components/Common/DocViewer";
+import { useLanguage } from "../i18n/LanguageContext";
 
 const formatDate = (value) => {
   if (!value) return "Open";
@@ -40,81 +41,113 @@ const formatDate = (value) => {
 const resourceConfig = {
   notices: {
     title: "Notices & Announcements",
+    titleHi: "सूचनाएँ एवं परिपत्र",
     label: "Community Updates",
+    labelHi: "आधिकारिक सूचनाएँ",
     description: "Important published updates, circulars, and announcements from the Samaj committee.",
+    descriptionHi: "प्रांतीय बैरवा प्रगति संस्था द्वारा प्रकाशित महत्वपूर्ण परिपत्र, सूचनाएँ एवं घोषणाएँ।",
     endpoint: contentEndpoints.NOTICES_API,
     dataKey: "notices",
     empty: "No published notices are available right now.",
+    emptyHi: "वर्तमान में कोई प्रकाशित सूचना उपलब्ध नहीं है।",
     accent: "border-emerald-400/30 bg-emerald-500/10 text-emerald-200",
     icon: FiCalendar,
   },
   solutions: {
     title: "Community Solutions",
+    titleHi: "समुदाय समाधान",
     label: "Public Solutions",
+    labelHi: "प्रकाशित समाधान",
     description: "Real community challenges and their verified resolutions by the Samaj committee.",
+    descriptionHi: "समाज के विभिन्न मुद्दों के आधिकारिक एवं प्रमाणित समाधान।",
     endpoint: communityEndpoints.PUBLIC_SOLUTIONS_API,
     dataKey: "solutions",
     empty: "No community solutions have been published yet.",
+    emptyHi: "वर्तमान में कोई प्रकाशित समाधान उपलब्ध नहीं है।",
     accent: "border-teal-400/30 bg-teal-500/10 text-teal-200",
     icon: FiFileText,
   },
   publications: {
     title: "Samaj Magazine",
+    titleHi: "समाज पत्रिका व स्मारिका",
     label: "Publications",
+    labelHi: "प्रकाशन",
     description: "Browse patrika editions and community publications shared by the content team.",
+    descriptionHi: "मासिक समाचार पत्रिका, परिचय स्मारिका एवं समाज के डिजिटल प्रकाशन।",
     endpoint: contentEndpoints.PUBLICATIONS_API,
     dataKey: "publications",
     empty: "No published magazines are available right now.",
+    emptyHi: "वर्तमान में कोई पत्रिका संस्करण उपलब्ध नहीं है।",
     accent: "border-sky-400/30 bg-sky-500/10 text-sky-200",
     icon: FiBookOpen,
   },
   gallery: {
     title: "Photo & Video Gallery",
+    titleHi: "छायाचित्र एवं वीडियो संग्रह",
     label: "Albums",
+    labelHi: "एल्बम",
     description: "Community moments, programs, and events collected as public gallery albums.",
+    descriptionHi: "समाज के ऐतिहासिक कार्यक्रम, सम्मेलन, प्रतिभा सम्मान एवं सामूहिक गोठ की स्मृतियाँ।",
     endpoint: contentEndpoints.GALLERY_ALBUMS_API,
     dataKey: "albums",
     empty: "No published gallery albums are available right now.",
+    emptyHi: "वर्तमान में कोई एल्बम उपलब्ध नहीं है।",
     accent: "border-amber-400/30 bg-amber-500/10 text-amber-100",
     icon: FiImage,
   },
   jobs: {
     title: "Jobs & Careers",
+    titleHi: "रोजगार एवं करियर",
     label: "Opportunities",
+    labelHi: "अवसर",
     description: "Open career opportunities submitted for Samaj members and moderated by the team.",
+    descriptionHi: "समाज के युवाओं के लिए रोजगार एवं करियर के नए अवसर।",
     endpoint: opportunityEndpoints.JOBS_API,
     dataKey: "jobs",
     empty: "No open jobs are available right now.",
+    emptyHi: "वर्तमान में कोई रोजगार विज्ञप्ति उपलब्ध नहीं है।",
     accent: "border-violet-400/30 bg-violet-500/10 text-violet-100",
     icon: FiBriefcase,
   },
   scholarships: {
     title: "Scholarships",
+    titleHi: "छात्रवृत्ति योजना",
     label: "Education Support",
+    labelHi: "शिक्षा संवर्धन",
     description: "Open scholarship schemes with deadlines, eligibility, amount, and available seats.",
+    descriptionHi: "मेधावी छात्र-छात्राओं के लिए उच्च शिक्षा छात्रवृत्ति एवं संबल योजनाएँ।",
     endpoint: opportunityEndpoints.SCHOLARSHIPS_API,
     dataKey: "scholarships",
     empty: "No open scholarships are available right now.",
+    emptyHi: "वर्तमान में कोई छात्रवृत्ति योजना सक्रिय नहीं है।",
     accent: "border-rose-400/30 bg-rose-500/10 text-rose-100",
     icon: FiBookOpen,
   },
   achievements: {
     title: "Achievements",
+    titleHi: "प्रतिभा एवं गौरव",
     label: "Community Pride",
+    labelHi: "समाज गौरव",
     description: "Celebrate member achievements across education, business, service, sports, and public life.",
+    descriptionHi: "शिक्षा, प्रशासनिक सेवा, खेलकूद व समाज सेवा में उत्कृष्ट उपलब्धि प्राप्त गौरव।",
     endpoint: communityEndpoints.ACHIEVEMENTS_API,
     dataKey: "achievements",
     empty: "No published achievements are available right now.",
+    emptyHi: "वर्तमान में कोई उपलब्धि रिकॉर्ड उपलब्ध नहीं है।",
     accent: "border-yellow-400/30 bg-yellow-500/10 text-yellow-100",
     icon: FiAward,
   },
   condolence: {
     title: "Shradhanjali",
+    titleHi: "श्रद्धांजलि व पुण्य स्मरण",
     label: "Condolence",
+    labelHi: "स्मृति",
     description: "Remember departed community members with dignity, gratitude, and shared prayers.",
+    descriptionHi: "दिवंगत समाज बंधुओं के प्रति सादर श्रद्धांजलि एवं पुण्य स्मरण।",
     endpoint: communityEndpoints.SHRADHANJALIS_API,
     dataKey: "shradhanjalis",
     empty: "No published shradhanjali messages are available right now.",
+    emptyHi: "वर्तमान में कोई श्रद्धांजलि संदेश उपलब्ध नहीं है।",
     accent: "border-fuchsia-400/30 bg-fuchsia-500/10 text-fuchsia-100",
     icon: FiHeart,
   },
@@ -177,7 +210,15 @@ const PublicResourcePage = ({ type }) => {
   const navigate = useNavigate();
   const { token } = useSelector((state) => state.auth);
   const { user } = useSelector((state) => state.profile);
-  const config = resourceConfig[type] || resourceConfig.notices;
+  const { t, isHindi } = useLanguage();
+  const rawConfig = resourceConfig[type] || resourceConfig.notices;
+  const config = {
+    ...rawConfig,
+    title: isHindi ? rawConfig.titleHi || rawConfig.title : rawConfig.title,
+    label: isHindi ? rawConfig.labelHi || rawConfig.label : rawConfig.label,
+    description: isHindi ? rawConfig.descriptionHi || rawConfig.description : rawConfig.description,
+    empty: isHindi ? rawConfig.emptyHi || rawConfig.empty : rawConfig.empty,
+  };
   const Icon = config.icon;
   const [items, setItems] = useState([]);
   const [meta, setMeta] = useState(null);
@@ -472,11 +513,11 @@ const PublicResourcePage = ({ type }) => {
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search keywords..."
+                placeholder={isHindi ? "कीवर्ड से खोजें..." : "Search keywords..."}
                 className="min-w-0 flex-1 bg-transparent px-2 py-2 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] border-none shadow-none focus:ring-0"
               />
               <button type="submit" className="btn-primary !py-2 !px-4 !text-xs uppercase tracking-wider font-bold">
-                Search
+                {isHindi ? "खोजें" : "Search"}
               </button>
             </form>
           </div>

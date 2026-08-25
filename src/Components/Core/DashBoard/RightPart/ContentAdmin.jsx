@@ -523,7 +523,7 @@ const ContentAdmin = () => {
             {activeTab === "notices" && (
               <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
                 <form onSubmit={createNotice} className="grid gap-4 rounded-2xl border border-white/10 bg-white/[0.02] p-6">
-                  <h2 className="text-lg font-bold text-white">Create Notice / Announcement</h2>
+                  <h2 className="text-lg font-bold text-[var(--text-primary)]">Create Notice / Announcement</h2>
                   <Field label="Title *">
                     <input className={inputClass} value={noticeForm.title} onChange={(event) => setNoticeForm((current) => ({ ...current, title: event.target.value }))} required />
                   </Field>
@@ -567,13 +567,13 @@ const ContentAdmin = () => {
                 </form>
 
                 <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-6">
-                  <h2 className="text-lg font-bold text-white">Notice Roster</h2>
+                  <h2 className="text-lg font-bold text-[var(--text-primary)]">Notice Roster</h2>
                   <div className="mt-4 grid gap-3">
                     {notices.map((notice) => (
                       <article key={notice._id} className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
                         <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
                           <div>
-                            <h3 className="font-bold text-white">{notice.title}</h3>
+                            <h3 className="font-bold text-[var(--text-primary)]">{notice.title}</h3>
                             <p className="mt-1 text-xs text-gray-500">{notice.category} · {formatDate(notice.publishedAt || notice.createdAt)}</p>
                           </div>
                           <Status value={notice.status} />
@@ -595,7 +595,7 @@ const ContentAdmin = () => {
             {activeTab === "publications" && (
               <div className="grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
                 <form onSubmit={createPublication} className="grid gap-4 rounded-2xl border border-white/10 bg-white/[0.02] p-6">
-                  <h2 className="text-lg font-bold text-white">Publish Patrika / Magazine</h2>
+                  <h2 className="text-lg font-bold text-[var(--text-primary)]">Publish Patrika / Magazine</h2>
                   <Field label="Title *">
                     <input className={inputClass} value={publicationForm.title} onChange={(event) => setPublicationForm((current) => ({ ...current, title: event.target.value }))} placeholder="e.g. Samaj Sandesh - Diwali Special" required />
                   </Field>
@@ -650,7 +650,7 @@ const ContentAdmin = () => {
                 </form>
 
                 <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-6">
-                  <h2 className="text-lg font-bold text-white">Publications Archive</h2>
+                  <h2 className="text-lg font-bold text-[var(--text-primary)]">Publications Archive</h2>
                   <div className="mt-4 grid gap-3">
                     {publications.map((publication) => (
                       <article key={publication._id} className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
@@ -660,7 +660,7 @@ const ContentAdmin = () => {
                           ) : null}
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-col gap-1 md:flex-row md:items-start md:justify-between">
-                              <h3 className="font-bold text-white">{publication.title}</h3>
+                              <h3 className="font-bold text-[var(--text-primary)]">{publication.title}</h3>
                               <Status value={publication.status} />
                             </div>
                             <p className="text-xs text-gray-500">{publication.edition || "General"} · v{publication.version || 1} · {publication.downloadCount || 0} downloads</p>
@@ -682,7 +682,7 @@ const ContentAdmin = () => {
             {activeTab === "gallery" && (
               <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
                 <form onSubmit={createAlbum} className="grid gap-4 rounded-2xl border border-white/10 bg-white/[0.02] p-6">
-                  <h2 className="text-lg font-bold text-white">Create Gallery Album</h2>
+                  <h2 className="text-lg font-bold text-[var(--text-primary)]">Create Gallery Album</h2>
                   <Field label="Title *">
                     <input className={inputClass} value={albumForm.title} onChange={(event) => setAlbumForm((current) => ({ ...current, title: event.target.value }))} placeholder="e.g. Annual Samaj Sammelan 2026" required />
                   </Field>
@@ -722,7 +722,7 @@ const ContentAdmin = () => {
 
                 <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 flex flex-col gap-6">
                   <div>
-                    <h2 className="text-lg font-bold text-white">Albums Roster</h2>
+                    <h2 className="text-lg font-bold text-[var(--text-primary)]">Albums Roster</h2>
                     <div className="mt-4 grid gap-3">
                       {albums.map((album) => (
                         <article key={album._id} className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
@@ -732,7 +732,7 @@ const ContentAdmin = () => {
                             ) : null}
                             <div className="min-w-0 flex-1">
                               <div className="flex flex-col gap-1 md:flex-row md:items-start md:justify-between">
-                                <h3 className="font-bold text-white">{album.title}</h3>
+                                <h3 className="font-bold text-[var(--text-primary)]">{album.title}</h3>
                                 <Status value={album.status} />
                               </div>
                               <p className="text-xs text-gray-500">{album.photoCount || 0} photos · {formatDate(album.eventDate)}</p>
@@ -749,7 +749,7 @@ const ContentAdmin = () => {
                   <div className="border-t border-white/10 pt-5">
                     <div className="flex items-center gap-2 mb-3">
                       <FaUpload className="text-emerald-300" size={13} />
-                      <h2 className="text-base font-bold text-white">Add Photos to Album</h2>
+                      <h2 className="text-base font-bold text-[var(--text-primary)]">Add Photos to Album</h2>
                     </div>
                     <form onSubmit={addPhotosToAlbum} className="grid gap-3">
                       <Field label="Select Album">
@@ -808,7 +808,7 @@ const ContentAdmin = () => {
             {activeTab === "management" && (
               <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
                 <form onSubmit={createManagement} className="grid gap-4 rounded-2xl border border-white/10 bg-white/[0.02] p-6">
-                  <h2 className="text-lg font-bold text-white">Add Management Committee Member</h2>
+                  <h2 className="text-lg font-bold text-[var(--text-primary)]">Add Management Committee Member</h2>
                   <div className="grid gap-4 md:grid-cols-2">
                     <Field label="Full Name *">
                       <input className={inputClass} value={managementForm.name} onChange={(event) => setManagementForm((current) => ({ ...current, name: event.target.value }))} required />
@@ -857,7 +857,7 @@ const ContentAdmin = () => {
                 </form>
 
                 <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-6">
-                  <h2 className="text-lg font-bold text-white">Current Committee Roster</h2>
+                  <h2 className="text-lg font-bold text-[var(--text-primary)]">Current Committee Roster</h2>
                   <div className="mt-4 grid gap-3">
                     {management.map((member) => (
                       <article key={member._id} className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
@@ -868,7 +868,7 @@ const ContentAdmin = () => {
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-col gap-1 md:flex-row md:items-start md:justify-between">
                               <div>
-                                <h3 className="font-bold text-white">{member.name}</h3>
+                                <h3 className="font-bold text-[var(--text-primary)]">{member.name}</h3>
                                 <p className="text-xs text-emerald-400">{member.roleTitle}</p>
                               </div>
                               <Status value={member.status} />
@@ -888,7 +888,7 @@ const ContentAdmin = () => {
             {activeTab === "gotra" && (
               <div className="grid gap-5 lg:grid-cols-[0.85fr_1.15fr]">
                 <form onSubmit={createGotra} className="grid gap-4 rounded-2xl border border-white/10 bg-white/[0.02] p-6">
-                  <h2 className="text-lg font-bold text-white">Add Gotra Record</h2>
+                  <h2 className="text-lg font-bold text-[var(--text-primary)]">Add Gotra Record</h2>
                   <Field label="Gotra Name *">
                     <input className={inputClass} value={gotraForm.name} onChange={(event) => setGotraForm((current) => ({ ...current, name: event.target.value }))} required />
                   </Field>
@@ -902,13 +902,13 @@ const ContentAdmin = () => {
                 </form>
 
                 <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-6">
-                  <h2 className="text-lg font-bold text-white">Gotra Directory</h2>
+                  <h2 className="text-lg font-bold text-[var(--text-primary)]">Gotra Directory</h2>
                   <div className="mt-4 grid gap-3 sm:grid-cols-2">
                     {gotras.map((gotra) => (
                       <article key={gotra._id} className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
                         <div className="flex items-start justify-between gap-2">
                           <div>
-                            <h3 className="font-bold text-white">{gotra.name}</h3>
+                            <h3 className="font-bold text-[var(--text-primary)]">{gotra.name}</h3>
                             <p className="text-xs text-gray-500">{gotra.region || "All regions"}</p>
                           </div>
                           <Button icon={FaArchive} tone="danger" onClick={() => archiveGotra(gotra._id)} disabled={busyId === gotra._id}>Archive</Button>
@@ -925,7 +925,7 @@ const ContentAdmin = () => {
             {activeTab === "cms" && (
               <form onSubmit={saveCms} className="grid max-w-3xl gap-5 rounded-2xl border border-white/10 bg-white/[0.02] p-6">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-bold text-white">Edit CMS Content</h2>
+                  <h2 className="text-lg font-bold text-[var(--text-primary)]">Edit CMS Content</h2>
                   <select
                     className="h-10 rounded-lg border border-white/10 bg-black px-3 text-xs text-white outline-none"
                     value={cmsPage.key}

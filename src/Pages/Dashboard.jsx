@@ -7,7 +7,7 @@ const Dashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className='relative flex w-full h-screen bg-[var(--bg)] text-[var(--text-primary)] overflow-hidden transition-colors duration-300'>
+    <div className='dashboard-shell relative flex w-full h-screen bg-[var(--bg)] text-[var(--text-primary)] overflow-hidden transition-colors duration-300'>
       <button 
         onClick={() => setIsSidebarOpen(true)}
         className='md:hidden fixed top-20 left-4 z-40 p-2.5 bg-[var(--surface-elevated)] border border-[var(--border-subtle)] rounded-2xl text-[var(--accent-primary)] active:scale-95 transition-all shadow-lg cursor-pointer'

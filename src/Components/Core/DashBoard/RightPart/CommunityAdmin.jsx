@@ -469,7 +469,7 @@ const CommunityAdmin = () => {
                   <article key={issue._id} className="border border-white/10 bg-white/[0.02] p-5">
                     <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                       <div>
-                        <h2 className="text-lg font-bold text-white">{issue.title}</h2>
+                        <h2 className="text-lg font-bold text-[var(--text-primary)]">{issue.title}</h2>
                         <p className="mt-1 text-sm text-gray-500">{issue.description}</p>
                         <p className="mt-2 text-xs text-gray-600">
                           {issue.category || "General"} - {issue.priority} - {formatDate(issue.createdAt)}
@@ -547,7 +547,7 @@ const CommunityAdmin = () => {
                     <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <h2 className="text-lg font-bold text-white">
+                          <h2 className="text-lg font-bold text-[var(--text-primary)]">
                             {booking.dharamshalaName || booking.dharamshala?.name || "Samaj Dharamshala"} — {booking.roomType || "Standard"}
                           </h2>
                           <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${booking.isMember ? "bg-emerald-500/20 text-emerald-300" : "bg-amber-500/20 text-amber-300"}`}>
@@ -602,7 +602,7 @@ const CommunityAdmin = () => {
                 <form onSubmit={createBlockedDate} className="grid gap-4 border border-white/10 bg-white/[0.02] p-5">
                   <div className="flex items-center gap-2">
                     <FaCalendarTimes className="text-emerald-300" size={14} />
-                    <h2 className="text-lg font-bold text-white">Block Dharamshala Dates</h2>
+                    <h2 className="text-lg font-bold text-[var(--text-primary)]">Block Dharamshala Dates</h2>
                   </div>
                   <div className="grid gap-4 md:grid-cols-2">
                     <Field label="Start Date">
@@ -642,7 +642,7 @@ const CommunityAdmin = () => {
                     <article key={block._id} className="border border-white/10 bg-white/[0.02] p-5">
                       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                         <div>
-                          <h2 className="text-lg font-bold text-white">{formatDate(block.startDate)} to {formatDate(block.endDate)}</h2>
+                          <h2 className="text-lg font-bold text-[var(--text-primary)]">{formatDate(block.startDate)} to {formatDate(block.endDate)}</h2>
                           <p className="mt-1 text-sm text-gray-500">{block.reason}</p>
                           <p className="mt-2 text-xs text-gray-600">
                             Created by {block.createdBy?.firstName || "Admin"} {block.createdBy?.lastName || ""}
@@ -683,7 +683,7 @@ const CommunityAdmin = () => {
                 <form onSubmit={createPoll} className="grid gap-4 border border-white/10 bg-white/[0.02] p-5">
                   <div className="flex items-center gap-2">
                     <FaClipboardList className="text-emerald-300" size={14} />
-                    <h2 className="text-lg font-bold text-white">Create Poll</h2>
+                    <h2 className="text-lg font-bold text-[var(--text-primary)]">Create Poll</h2>
                   </div>
                   <Field label="Title">
                     <input className={inputClass} value={pollForm.title} onChange={(event) => setPollForm((current) => ({ ...current, title: event.target.value }))} required />
@@ -741,7 +741,7 @@ const CommunityAdmin = () => {
                     <article key={poll._id} className="border border-white/10 bg-white/[0.02] p-5">
                       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                         <div>
-                          <h2 className="font-bold text-white">{poll.title}</h2>
+                          <h2 className="font-bold text-[var(--text-primary)]">{poll.title}</h2>
                           <p className="mt-1 text-sm text-gray-500">{poll.description}</p>
                           <p className="mt-2 text-xs text-gray-600">{poll.totalVotes || 0} votes - ends {formatDate(poll.endsAt)}</p>
                         </div>
@@ -771,7 +771,7 @@ const CommunityAdmin = () => {
                   <article key={report._id} className="border border-white/10 bg-white/[0.02] p-5">
                     <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                       <div>
-                        <h2 className="text-lg font-bold text-white">{report.targetType} Report</h2>
+                        <h2 className="text-lg font-bold text-[var(--text-primary)]">{report.targetType} Report</h2>
                         <p className="mt-1 text-sm text-gray-500">{report.reason}</p>
                         <p className="mt-2 text-xs text-gray-600">
                           {report.post?.title || report.comment?.body || "Target unavailable"} - by {report.reportedBy?.firstName || "Member"}
@@ -842,7 +842,7 @@ const CommunityAdmin = () => {
                           ) : null}
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-2">
-                              <h2 className="text-base sm:text-lg font-bold text-white">{achievement.title}</h2>
+                              <h2 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">{achievement.title}</h2>
                               <span className="rounded-md bg-[var(--accent-primary)]/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[var(--accent-primary)] border border-[var(--accent-primary)]/20">
                                 {achievement.category || "General"}
                               </span>
@@ -909,7 +909,7 @@ const CommunityAdmin = () => {
                       <div className="flex min-w-0 gap-3">
                         {item.photo?.url ? <img src={item.photo.url} alt={item.personName} className="h-16 w-20 object-cover" /> : null}
                         <div className="min-w-0">
-                          <h2 className="text-lg font-bold text-white">{item.personName}</h2>
+                          <h2 className="text-lg font-bold text-[var(--text-primary)]">{item.personName}</h2>
                           <p className="mt-1 text-sm text-gray-500">Passed on {formatDate(item.dateOfPassing)}</p>
                           <p className="mt-2 line-clamp-2 text-xs text-gray-600">{item.message}</p>
                         </div>

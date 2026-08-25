@@ -7,15 +7,15 @@ const stats = [
 
 const SocialStats = () => {
   return (
-    <section className="bg-black py-16">
+    <section className="bg-[var(--surface-elevated)] py-16 border-y border-[var(--border-subtle)]">
       <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {stats.map((item) => (
           <div
             key={item.label}
-            className="border border-white/10 bg-white/[0.03] rounded-2xl px-8 py-7 text-center"
+            className="border border-[var(--border-subtle)] bg-[var(--surface)] rounded-2xl px-8 py-7 text-center"
           >
-            <h2 className="text-white text-4xl font-bold">{item.value}</h2>
-            <p className="text-gray-400 text-sm mt-2">{item.label}</p>
+            <h2 className="text-[var(--text-primary)] text-4xl font-bold">{item.value}</h2>
+            <p className="text-[var(--text-secondary)] text-sm mt-2">{item.label}</p>
           </div>
         ))}
       </div>

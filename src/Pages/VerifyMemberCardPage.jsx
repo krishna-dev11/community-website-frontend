@@ -3,9 +3,11 @@ import { useParams, Link } from "react-router-dom";
 import { apiConnector } from "../services/apiConnector";
 import { communityEndpoints } from "../services/apis";
 import { FiCheckCircle, FiXCircle, FiShield, FiArrowLeft } from "react-icons/fi";
+import { useLanguage } from "../i18n/LanguageContext";
 
 const VerifyMemberCardPage = () => {
   const { memberId } = useParams();
+  const { isHindi } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [memberData, setMemberData] = useState(null);
   const [error, setError] = useState(null);
