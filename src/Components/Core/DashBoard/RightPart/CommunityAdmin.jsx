@@ -16,7 +16,7 @@ import {
   FaTimes,
   FaGlobe,
 } from "react-icons/fa";
-import { FiX, FiFileText, FiEye } from "react-icons/fi";
+import { FiX, FiFileText, FiEye, FiSearch } from "react-icons/fi";
 import { useSelector } from "react-redux";
 import { apiConnector } from "../../../../services/apiConnector";
 import { communityEndpoints } from "../../../../services/apis";
@@ -86,6 +86,10 @@ const CommunityAdmin = () => {
   const [bookings, setBookings] = useState([]);
   const [blockedDates, setBlockedDates] = useState([]);
   const [polls, setPolls] = useState([]);
+  const [pollResults, setPollResults] = useState(null);
+  const [pollResultLoading, setPollResultLoading] = useState(false);
+  const [pollResultFilter, setPollResultFilter] = useState("ALL");
+  const [pollResultSearch, setPollResultSearch] = useState("");
   const [reports, setReports] = useState([]);
   const [achievements, setAchievements] = useState([]);
   const [shradhanjalis, setShradhanjalis] = useState([]);
@@ -227,15 +231,26 @@ const CommunityAdmin = () => {
 
   const reviewBooking = async (bookingId, action) => {
     const draft = bookingDrafts[bookingId] || {};
-    setBusyId(bookingId);
+    const note = (draft.reviewMessage || "").trim();
+    if (action === "REJECT" && !note) {
+      if (!window.confirm("Are you sure you want to reject this booking request without adding a rejection reason?")) {
+        return;
+      }
+    }
+    setBusyId(`${bookingId}-${action}`);
     try {
       await apiConnector(
         "PATCH",
         communityEndpoints.REVIEW_DHARAMSHALA_BOOKING_API(bookingId),
-        { action, reviewMessage: draft.reviewMessage || undefined },
+        { action, reviewMessage: note || undefined, reviewNote: note || undefined },
         authConfig
       );
-      toast.success("Booking reviewed");
+      toast.success(action === "APPROVE" ? "Booking approved successfully" : "Booking rejected successfully");
+      setBookingDrafts((current) => {
+        const next = { ...current };
+        delete next[bookingId];
+        return next;
+      });
       await loadBookings();
     } catch (error) {
       toast.error(error.response?.data?.message || "Unable to review booking");
@@ -246,15 +261,21 @@ const CommunityAdmin = () => {
 
   const cancelBooking = async (bookingId) => {
     const draft = bookingDrafts[bookingId] || {};
-    setBusyId(bookingId);
+    if (!window.confirm("Are you sure you want to cancel this booking?")) return;
+    setBusyId(`${bookingId}-CANCEL`);
     try {
       await apiConnector(
         "PATCH",
         communityEndpoints.CANCEL_DHARAMSHALA_BOOKING_API(bookingId),
-        { reason: draft.reviewMessage || "Cancelled from dashboard" },
+        { reason: (draft.reviewMessage || "Cancelled by administrator").trim() },
         authConfig
       );
-      toast.success("Booking cancelled");
+      toast.success("Booking cancelled successfully");
+      setBookingDrafts((current) => {
+        const next = { ...current };
+        delete next[bookingId];
+        return next;
+      });
       await loadBookings();
     } catch (error) {
       toast.error(error.response?.data?.message || "Unable to cancel booking");
@@ -343,6 +364,21 @@ const CommunityAdmin = () => {
     }
   };
 
+  const openPollResults = async (pollId) => {
+    setPollResultLoading(true);
+    setPollResults(null);
+    setPollResultFilter("ALL");
+    setPollResultSearch("");
+    try {
+      const response = await apiConnector("GET", communityEndpoints.POLL_RESULTS_API(pollId), null, authConfig);
+      setPollResults(response.data?.data?.poll || null);
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Unable to load poll results");
+    } finally {
+      setPollResultLoading(false);
+    }
+  };
+
   const reviewReport = async (reportId, status) => {
     const draft = reportDrafts[reportId] || {};
     setBusyId(reportId);
@@ -411,6 +447,13 @@ const CommunityAdmin = () => {
       setBusyId(null);
     }
   };
+
+  const filteredPollVoters = (pollResults?.voters || []).filter((voter) => {
+    const selectedLabels = (voter.selectedOptions || []).map((option) => option.label);
+    const matchesOption = pollResultFilter === "ALL" || selectedLabels.includes(pollResultFilter);
+    const matchesSearch = !pollResultSearch.trim() || voter.name?.toLowerCase().includes(pollResultSearch.trim().toLowerCase());
+    return matchesOption && matchesSearch;
+  });
 
   return (
     <>
@@ -569,28 +612,70 @@ const CommunityAdmin = () => {
                       </div>
                       <Status value={booking.status} />
                     </div>
-                    <div className="mt-4 grid gap-3 border-t border-white/10 pt-4 lg:grid-cols-[1fr_auto_auto_auto]">
-                      <input
-                        className={inputClass}
-                        value={bookingDrafts[booking._id]?.reviewMessage || ""}
-                        onChange={(event) =>
-                          setBookingDrafts((current) => ({
-                            ...current,
-                            [booking._id]: { reviewMessage: event.target.value },
-                          }))
-                        }
-                        placeholder="Review message"
-                      />
-                      <Button icon={FaCheck} tone="success" onClick={() => reviewBooking(booking._id, "APPROVE")} disabled={booking.status !== "PENDING" || busyId === booking._id}>
-                        Approve
-                      </Button>
-                      <Button icon={FaTimes} tone="danger" onClick={() => reviewBooking(booking._id, "REJECT")} disabled={booking.status !== "PENDING" || busyId === booking._id}>
-                        Reject
-                      </Button>
-                      <Button tone="warning" onClick={() => cancelBooking(booking._id)} disabled={["CANCELLED", "ARCHIVED", "COMPLETED"].includes(booking.status) || busyId === booking._id}>
-                        Cancel
-                      </Button>
-                    </div>
+                    {/* Display existing review note / cancellation reason if already reviewed/cancelled */}
+                    {(booking.reviewNote || booking.reviewMessage || booking.cancellationReason) && (
+                      <div className={`mt-3 rounded-xl border p-3 text-xs ${
+                        booking.status === "REJECTED"
+                          ? "border-red-500/30 bg-red-500/10 text-red-300"
+                          : booking.status === "APPROVED"
+                          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                          : "border-gray-500/30 bg-gray-500/10 text-gray-300"
+                      }`}>
+                        <p className="font-bold uppercase tracking-wider text-[10px]">
+                          {booking.status === "CANCELLED"
+                            ? "Cancellation Reason"
+                            : booking.status === "APPROVED"
+                            ? "Admin Note"
+                            : "Rejection Reason"}
+                        </p>
+                        <p className="mt-1 leading-relaxed text-[var(--text-primary)] font-normal text-xs">
+                          {booking.status === "CANCELLED"
+                            ? booking.cancellationReason
+                            : (booking.reviewNote || booking.reviewMessage)}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Pending Review Actions */}
+                    {booking.status === "PENDING" && (
+                      <div className="mt-4 grid gap-3 border-t border-white/10 pt-4 lg:grid-cols-[1fr_auto_auto_auto]">
+                        <input
+                          className={inputClass}
+                          value={bookingDrafts[booking._id]?.reviewMessage || ""}
+                          onChange={(event) =>
+                            setBookingDrafts((current) => ({
+                              ...current,
+                              [booking._id]: { reviewMessage: event.target.value },
+                            }))
+                          }
+                          placeholder="Review message / Rejection reason"
+                          disabled={Boolean(busyId && busyId.startsWith(booking._id))}
+                        />
+                        <Button
+                          icon={FaCheck}
+                          tone="success"
+                          onClick={() => reviewBooking(booking._id, "APPROVE")}
+                          disabled={Boolean(busyId)}
+                        >
+                          {busyId === `${booking._id}-APPROVE` ? "Approving..." : "Approve"}
+                        </Button>
+                        <Button
+                          icon={FaTimes}
+                          tone="danger"
+                          onClick={() => reviewBooking(booking._id, "REJECT")}
+                          disabled={Boolean(busyId)}
+                        >
+                          {busyId === `${booking._id}-REJECT` ? "Rejecting..." : "Reject"}
+                        </Button>
+                        <Button
+                          tone="warning"
+                          onClick={() => cancelBooking(booking._id)}
+                          disabled={Boolean(busyId)}
+                        >
+                          {busyId === `${booking._id}-CANCEL` ? "Cancelling..." : "Cancel"}
+                        </Button>
+                      </div>
+                    )}
                   </article>
                 ))}
                 {bookings.length === 0 && <Empty text="No dharamshala booking requests found." />}
@@ -747,7 +832,10 @@ const CommunityAdmin = () => {
                         </div>
                         <Status value={poll.status} />
                       </div>
-                      <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                      <div className="mt-4 grid gap-2 sm:grid-cols-4">
+                        <Button icon={FiEye} onClick={() => openPollResults(poll._id)} disabled={pollResultLoading}>
+                          View Results
+                        </Button>
                         <Button tone="success" onClick={() => updatePollStatus(poll._id, "ACTIVE")} disabled={busyId === poll._id || poll.status === "ACTIVE"}>
                           Activate
                         </Button>
@@ -947,6 +1035,111 @@ const CommunityAdmin = () => {
         )}
       </div>
     </div>
+
+    {pollResults || pollResultLoading ? (
+      <div className="fixed inset-0 z-[2200] flex items-center justify-center bg-black/75 px-4 py-8 backdrop-blur-md">
+        <div className="ka-card flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden border border-[var(--border-strong)] bg-[var(--surface)] shadow-2xl">
+          <div className="flex items-start justify-between gap-4 border-b border-[var(--border-subtle)] p-5">
+            <div>
+              <span className="eyebrow-badge mb-2">Poll Results</span>
+              <h2 className="text-xl font-bold text-[var(--text-primary)]">{pollResults?.title || "Loading poll results..."}</h2>
+              {pollResults?.description && <p className="mt-1 text-xs text-[var(--text-secondary)]">{pollResults.description}</p>}
+            </div>
+            <button
+              type="button"
+              onClick={() => setPollResults(null)}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer"
+            >
+              <FiX size={18} />
+            </button>
+          </div>
+
+          <div className="grid gap-5 overflow-y-auto p-5 lg:grid-cols-[0.9fr_1.1fr]">
+            {pollResultLoading ? (
+              <div className="lg:col-span-2 flex h-56 items-center justify-center">
+                <div className="h-9 w-9 animate-spin rounded-full border-2 border-[var(--accent-primary)] border-t-transparent" />
+              </div>
+            ) : (
+              <>
+                <section className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-4">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Total Votes</p>
+                      <p className="mt-1 text-2xl font-black text-[var(--text-primary)]">{pollResults?.totalVotes || 0}</p>
+                    </div>
+                    <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-4">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Unique Voters</p>
+                      <p className="mt-1 text-2xl font-black text-[var(--text-primary)]">{pollResults?.uniqueVoters || 0}</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    {(pollResults?.options || []).map((option) => (
+                      <div key={option._id} className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-3.5">
+                        <div className="flex items-center justify-between gap-3 text-xs">
+                          <span className="font-bold text-[var(--text-primary)]">{option.label}</span>
+                          <span className="font-mono font-bold text-[var(--accent-primary)]">{option.voteCount || 0} votes · {Math.round(option.percentage || 0)}%</span>
+                        </div>
+                        <div className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--surface)] border border-[var(--border-subtle)]">
+                          <div className="h-full rounded-full bg-[var(--accent-primary)]" style={{ width: `${Math.min(option.percentage || 0, 100)}%` }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+
+                <section className="space-y-3">
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <div className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-3">
+                      <FiSearch className="text-[var(--text-muted)]" />
+                      <input
+                        className="h-10 min-w-0 flex-1 border-none bg-transparent text-xs text-[var(--text-primary)] outline-none"
+                        value={pollResultSearch}
+                        onChange={(event) => setPollResultSearch(event.target.value)}
+                        placeholder="Search member..."
+                      />
+                    </div>
+                    <select className={inputClass} value={pollResultFilter} onChange={(event) => setPollResultFilter(event.target.value)}>
+                      <option value="ALL">All Voters</option>
+                      {(pollResults?.options || []).map((option) => (
+                        <option key={option._id} value={option.label}>{option.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <h3 className="text-sm font-bold text-[var(--text-primary)]">Voters ({filteredPollVoters.length})</h3>
+                  <div className="grid max-h-[46vh] gap-2 overflow-y-auto pr-1">
+                    {filteredPollVoters.map((voter) => (
+                      <article key={`${voter.memberId}-${voter.updatedAt}`} className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-3.5">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <h4 className="text-sm font-bold text-[var(--text-primary)]">{voter.name}</h4>
+                            <p className="mt-1 text-xs text-[var(--text-secondary)]">
+                              Selected: {(voter.selectedOptions || []).map((option) => option.label).join(", ") || "No option"}
+                            </p>
+                            <p className="mt-1 text-[11px] text-[var(--text-muted)]">
+                              Voted: {voter.updatedAt ? new Date(voter.updatedAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }) : "Not set"}
+                            </p>
+                          </div>
+                          {voter.voteChanged && (
+                            <span className="rounded-full border border-sky-400/30 bg-sky-400/10 px-2 py-0.5 text-[10px] font-bold text-sky-300">Changed</span>
+                          )}
+                        </div>
+                      </article>
+                    ))}
+                    {filteredPollVoters.length === 0 && (
+                      <div className="rounded-2xl border border-dashed border-[var(--border-subtle)] p-8 text-center text-xs text-[var(--text-muted)]">
+                        No members have voted on this poll yet.
+                      </div>
+                    )}
+                  </div>
+                </section>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    ) : null}
 
     {/* Publish as Community Solution Modal */}
  {solutionModal && (

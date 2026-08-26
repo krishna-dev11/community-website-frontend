@@ -118,6 +118,7 @@ const DharamshalaPage = () => {
   };
 
   const handleCancelBooking = async (bookingId) => {
+    if (submittingBooking || checkingAvailability) return;
     if (!window.confirm("Are you sure you want to cancel this booking request?")) return;
     try {
       await apiConnector(
@@ -208,6 +209,7 @@ const DharamshalaPage = () => {
 
   const handleBookingSubmit = async (e) => {
     e.preventDefault();
+    if (submittingBooking) return;
     if (!bookingModalItem || !selectedRoomType) return;
 
     if (!bookingForm.guestName || !bookingForm.guestPhone) {
@@ -418,6 +420,38 @@ const DharamshalaPage = () => {
                           </strong>
                         </span>
                       </div>
+                      {/* Pending Status Guidance */}
+                      {b.status === "PENDING" && (
+                        <p className="text-[11px] text-amber-500/90 dark:text-amber-300/90 font-medium pt-1">
+                          ⏳ {isHindi ? "आपकी बुकिंग अनुरोध प्रशासक समीक्षा की प्रतीक्षा में है।" : "Your booking request is waiting for admin review."}
+                        </p>
+                      )}
+
+                      {/* Admin Review Note / Rejection Reason / Cancellation Reason */}
+                      {((b.status === "REJECTED" && (b.reviewNote || b.reviewMessage)) ||
+                        (b.status === "APPROVED" && (b.reviewNote || b.reviewMessage)) ||
+                        (b.status === "CANCELLED" && b.cancellationReason)) && (
+                        <div
+                          className={`mt-4 rounded-2xl border p-3.5 text-xs ${
+                            b.status === "REJECTED"
+                              ? "border-red-500/30 bg-red-500/10 dark:bg-red-950/30 text-red-500 dark:text-red-300"
+                              : b.status === "APPROVED"
+                              ? "border-emerald-500/30 bg-emerald-500/10 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-300"
+                              : "border-gray-500/30 bg-gray-500/10 text-gray-500 dark:text-gray-300"
+                          }`}
+                        >
+                          <p className="font-bold uppercase tracking-wider text-[10px]">
+                            {b.status === "CANCELLED"
+                              ? isHindi ? "रद्दीकरण का कारण" : "Cancellation Reason"
+                              : b.status === "APPROVED"
+                              ? isHindi ? "प्रशासक टिप्पणी" : "Admin Note"
+                              : isHindi ? "प्रशासक समीक्षा / अस्वीकृति का कारण" : "Admin Review / Rejection Reason"}
+                          </p>
+                          <p className="mt-1 leading-relaxed text-[var(--text-primary)] font-normal text-xs">
+                            {b.status === "CANCELLED" ? b.cancellationReason : (b.reviewNote || b.reviewMessage)}
+                          </p>
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-2 self-end md:self-center shrink-0">

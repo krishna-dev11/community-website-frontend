@@ -4,8 +4,10 @@ import { useSelector } from "react-redux";
 import {
   FiEye,
   FiHeart,
+  FiMail,
   FiPauseCircle,
   FiPlayCircle,
+  FiPhone,
   FiRefreshCw,
   FiSearch,
   FiSend,
@@ -15,6 +17,7 @@ import {
   FiMapPin,
   FiBriefcase,
   FiBook,
+  FiX,
 } from "react-icons/fi";
 import { apiConnector } from "../services/apiConnector";
 import { matrimonialEndpoints } from "../services/apis";
@@ -38,6 +41,10 @@ const ageFromDate = (value) => {
   if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) age -= 1;
   return Number.isFinite(age) ? age : null;
 };
+
+const profileAge = (profile) => profile?.age || ageFromDate(profile?.dateOfBirth) || null;
+
+const formatProfileValue = (value) => value || "Not shared";
 
 const initialForm = {
   displayName: "",
@@ -163,6 +170,10 @@ const MatrimonialPage = () => {
   const [form, setForm] = useState(initialForm);
   const [matrimonialPhotoFile, setMatrimonialPhotoFile] = useState(null);
   const [messageDrafts, setMessageDrafts] = useState({});
+  const [selectedProfile, setSelectedProfile] = useState(null);
+  const [profileDetailLoading, setProfileDetailLoading] = useState(false);
+  const [protectedContactUnlocked, setProtectedContactUnlocked] = useState(false);
+  const [interestSentIds, setInterestSentIds] = useState([]);
 
   const authConfig = useMemo(
     () => ({
@@ -238,6 +249,21 @@ const MatrimonialPage = () => {
 
   const updateForm = (key, value) => setForm((current) => ({ ...current, [key]: value }));
 
+  const openProfileDetail = async (profileId) => {
+    setProfileDetailLoading(true);
+    setProtectedContactUnlocked(false);
+    setSelectedProfile(null);
+    try {
+      const response = await apiConnector("GET", matrimonialEndpoints.PROFILE_API(profileId), null, authConfig);
+      setSelectedProfile(response.data?.data?.profile || null);
+      setProtectedContactUnlocked(Boolean(response.data?.data?.protectedContactUnlocked));
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Unable to load profile details");
+    } finally {
+      setProfileDetailLoading(false);
+    }
+  };
+
   const saveProfile = async (event) => {
     event.preventDefault();
     setBusyId("profile-save");
@@ -294,6 +320,7 @@ const MatrimonialPage = () => {
   };
 
   const expressInterest = async (profileId) => {
+    if (busyId === profileId || interestSentIds.includes(profileId)) return;
     setBusyId(profileId);
     try {
       await apiConnector(
@@ -303,6 +330,7 @@ const MatrimonialPage = () => {
         authConfig
       );
       toast.success("Interest sent");
+      setInterestSentIds((current) => (current.includes(profileId) ? current : [...current, profileId]));
       setMessageDrafts((current) => ({ ...current, [profileId]: "" }));
       await loadProfiles();
     } catch (error) {
@@ -457,7 +485,7 @@ const MatrimonialPage = () => {
                           <div>
                             <h2 className="text-lg font-bold text-[var(--text-primary)]">{profile.displayName}</h2>
                             <p className="mt-0.5 text-xs text-[var(--text-secondary)]">
-                              {ageFromDate(profile.dateOfBirth) || "N/A"} yrs • {profile.gender === "FEMALE" ? "Bride" : "Groom"}
+                              {profileAge(profile) || "N/A"} yrs • {profile.gender === "FEMALE" ? "Bride" : "Groom"}
                             </p>
                           </div>
                           <Status value={profile.gotra || "Gotra"} />
@@ -486,15 +514,25 @@ const MatrimonialPage = () => {
                           onChange={(event) => setMessageDrafts((current) => ({ ...current, [profile._id]: event.target.value }))}
                           placeholder="Optional personal message..."
                         />
-                        <Button
-                          className="mt-3 w-full"
-                          icon={FiHeart}
-                          tone="success"
-                          onClick={() => expressInterest(profile._id)}
-                          disabled={busyId === profile._id}
-                        >
-                          Express Interest
-                        </Button>
+                        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                          <Button
+                            icon={FiEye}
+                            type="button"
+                            onClick={() => openProfileDetail(profile._id)}
+                            disabled={profileDetailLoading}
+                          >
+                            View Profile
+                          </Button>
+                          <Button
+                            icon={FiHeart}
+                            tone="success"
+                            type="button"
+                            onClick={() => expressInterest(profile._id)}
+                            disabled={busyId === profile._id || interestSentIds.includes(profile._id)}
+                          >
+                            {busyId === profile._id ? "Sending..." : interestSentIds.includes(profile._id) ? "Interest Sent" : "Express Interest"}
+                          </Button>
+                        </div>
                       </div>
                     </article>
                   ))}
@@ -592,6 +630,15 @@ const MatrimonialPage = () => {
                     </div>
                   </div>
 
+                  <Field label="Residential Address (Protected)">
+                    <textarea
+                      className={textareaClass}
+                      value={form.address}
+                      onChange={(event) => updateForm("address", event.target.value)}
+                      placeholder="Full address — shared only after approved contact access"
+                    />
+                  </Field>
+
                   <div className="border-t border-[var(--border-subtle)] pt-4">
                     <Field label="Profile Photo">
                       <FileUploadWithPreview
@@ -603,19 +650,32 @@ const MatrimonialPage = () => {
                     </Field>
                   </div>
 
-                  <div className="mt-4 flex flex-wrap gap-3">
-                    <Button tone="success" type="submit" disabled={busyId === "profile-save"}>
-                      Save & Submit For Review
+                  <div className="flex flex-wrap gap-3 border-t border-[var(--border-subtle)] pt-4">
+                    <Button
+                      icon={FiSend}
+                      tone="solid"
+                      type="submit"
+                      disabled={busyId === "profile-save"}
+                    >
+                      {busyId === "profile-save"
+                        ? "Submitting..."
+                        : myProfile
+                          ? "Update Profile"
+                          : "Submit For Review"}
                     </Button>
                     {myProfile ? (
                       <>
                         <Button
-                          tone="neutral"
+                          icon={myProfile.status === "PAUSED" ? FiPlayCircle : FiPauseCircle}
                           type="button"
                           onClick={() => pauseOrResume(myProfile.status !== "PAUSED")}
                           disabled={busyId === "visibility"}
                         >
-                          {myProfile.status === "PAUSED" ? "Resume Profile" : "Pause Profile"}
+                          {busyId === "visibility"
+                            ? "Updating..."
+                            : myProfile.status === "PAUSED"
+                              ? "Resume Profile"
+                              : "Pause Profile"}
                         </Button>
                         <Button
                           tone="danger"
@@ -623,7 +683,7 @@ const MatrimonialPage = () => {
                           onClick={removeProfile}
                           disabled={busyId === "remove"}
                         >
-                          Delete Profile
+                          {busyId === "remove" ? "Deleting..." : "Delete Profile"}
                         </Button>
                       </>
                     ) : null}
@@ -784,6 +844,118 @@ const MatrimonialPage = () => {
           </>
         )}
       </section>
+
+      {(selectedProfile || profileDetailLoading) && (
+        <div className="fixed inset-0 z-[2200] flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-sm">
+          <div className="ka-card relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-3xl border border-[var(--border-subtle)] p-5 shadow-2xl sm:p-7">
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedProfile(null);
+                setProfileDetailLoading(false);
+                setProtectedContactUnlocked(false);
+              }}
+              className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-primary)]"
+              aria-label="Close profile details"
+            >
+              <FiX size={18} />
+            </button>
+
+            {profileDetailLoading ? (
+              <div className="flex min-h-80 items-center justify-center">
+                <div className="h-10 w-10 animate-spin rounded-full border-4 border-[var(--accent-primary)] border-t-transparent" />
+              </div>
+            ) : (
+              <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+                <div>
+                  <div className="aspect-[9/16] overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)]">
+                    {selectedProfile?.photos?.[0]?.url ? (
+                      <img src={selectedProfile.photos[0].url} alt={selectedProfile.displayName} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-[var(--text-muted)]">
+                        <FiUser size={48} />
+                      </div>
+                    )}
+                  </div>
+                  <Button
+                    className="mt-4 w-full"
+                    icon={FiHeart}
+                    tone="success"
+                    type="button"
+                    onClick={() => expressInterest(selectedProfile._id)}
+                    disabled={busyId === selectedProfile?._id || interestSentIds.includes(selectedProfile?._id)}
+                  >
+                    {busyId === selectedProfile?._id ? "Sending Interest..." : interestSentIds.includes(selectedProfile?._id) ? "Interest Sent" : "Express Interest"}
+                  </Button>
+                </div>
+
+                <div className="min-w-0 pr-8 sm:pr-10">
+                  <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--border-subtle)] pb-4">
+                    <div>
+                      <h2 className="text-2xl font-black text-[var(--text-primary)]">{selectedProfile?.displayName}</h2>
+                      <p className="mt-1 text-xs font-bold uppercase tracking-wider text-[var(--accent-primary)]">
+                        {profileAge(selectedProfile) || "N/A"} yrs • {selectedProfile?.gender === "FEMALE" ? "Bride" : "Groom"} • {formatProfileValue(selectedProfile?.maritalStatus)}
+                      </p>
+                    </div>
+                    <Status value={selectedProfile?.status === "APPROVED" ? "Verified" : selectedProfile?.status} />
+                  </div>
+
+                  <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                    {[
+                      ["Height", selectedProfile?.height],
+                      ["Gotra", selectedProfile?.gotra],
+                      ["Education", selectedProfile?.education],
+                      ["Profession", selectedProfile?.profession],
+                      ["Annual Income", selectedProfile?.annualIncome],
+                      ["Current City", selectedProfile?.currentCity],
+                      ["Native Place", selectedProfile?.nativePlace],
+                      ["Guardian", [selectedProfile?.guardian?.name, selectedProfile?.guardian?.relation].filter(Boolean).join(" - ")],
+                    ].map(([label, value]) => (
+                      <div key={label} className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-3">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--text-muted)]">{label}</p>
+                        <p className="mt-1 text-sm font-bold text-[var(--text-primary)]">{formatProfileValue(value)}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-5 grid gap-4">
+                    {selectedProfile?.about ? (
+                      <section>
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--accent-primary)]">About</h3>
+                        <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">{selectedProfile.about}</p>
+                      </section>
+                    ) : null}
+                    {selectedProfile?.expectations ? (
+                      <section>
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--accent-primary)]">Partner Expectations</h3>
+                        <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">{selectedProfile.expectations}</p>
+                      </section>
+                    ) : null}
+                  </div>
+
+                  <div className="mt-5 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-4">
+                    <div className="flex items-center gap-2 text-sm font-bold text-[var(--text-primary)]">
+                      <FiShield size={16} />
+                      <span>Protected Contact</span>
+                    </div>
+                    {protectedContactUnlocked && selectedProfile?.protectedContact ? (
+                      <div className="mt-3 grid gap-2 text-xs text-[var(--text-secondary)]">
+                        {selectedProfile.protectedContact.phone ? <p className="flex items-center gap-2"><FiPhone size={13} /> {selectedProfile.protectedContact.phone}</p> : null}
+                        {selectedProfile.protectedContact.email ? <p className="flex items-center gap-2"><FiMail size={13} /> {selectedProfile.protectedContact.email}</p> : null}
+                        {selectedProfile.protectedContact.address ? <p className="flex items-center gap-2"><FiMapPin size={13} /> {selectedProfile.protectedContact.address}</p> : null}
+                      </div>
+                    ) : (
+                      <p className="mt-2 text-xs leading-5 text-[var(--text-muted)]">
+                        Phone, email, exact address, and guardian contact details are hidden until mutual interest and approved contact access.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </main>
   );
 };

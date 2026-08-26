@@ -112,6 +112,14 @@ const formatDate = (value) => {
   });
 };
 
+const storyStatusMessage = (status, type) => {
+  if (status === "PUBLISHED") return "Approved and visible to the community.";
+  if (status === "REJECTED") return "Reviewed by the committee. Please check the reason below.";
+  return type === "achievement"
+    ? "Your achievement is waiting for committee verification."
+    : "Your tribute has been submitted and is waiting for committee review.";
+};
+
 const CommunityHub = () => {
   const { token } = useSelector((state) => state.auth);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -230,12 +238,12 @@ const CommunityHub = () => {
   };
 
   const loadAchievements = async () => {
-    const response = await apiConnector("GET", communityEndpoints.ACHIEVEMENTS_API, null, authConfig, { limit: 20 });
+    const response = await apiConnector("GET", communityEndpoints.MY_ACHIEVEMENTS_API, null, authConfig, { limit: 20 });
     setAchievements(response.data?.data?.achievements || []);
   };
 
   const loadShradhanjalis = async () => {
-    const response = await apiConnector("GET", communityEndpoints.SHRADHANJALIS_API, null, authConfig, { limit: 20 });
+    const response = await apiConnector("GET", communityEndpoints.MY_SHRADHANJALIS_API, null, authConfig, { limit: 20 });
     setShradhanjalis(response.data?.data?.shradhanjalis || []);
   };
 
@@ -401,6 +409,7 @@ const CommunityHub = () => {
   // Submit Achievement with actual Photo & Document
   const submitAchievement = async (event) => {
     event.preventDefault();
+    if (busyId === "achievement") return;
     setBusyId("achievement");
     try {
       const formData = new FormData();
@@ -418,8 +427,9 @@ const CommunityHub = () => {
         formData.append("supportingDocument", achievementDocFile);
       }
 
-      await apiConnector("POST", communityEndpoints.ACHIEVEMENTS_API, formData, authConfig);
-      toast.success("Achievement submitted for review");
+      const response = await apiConnector("POST", communityEndpoints.ACHIEVEMENTS_API, formData, authConfig);
+      const created = response.data?.data?.achievement;
+      toast.success("Achievement submitted successfully. It is now pending committee review.");
       setAchievementForm({
         title: "",
         achieverName: "",
@@ -430,7 +440,8 @@ const CommunityHub = () => {
       });
       setAchievementImageFile(null);
       setAchievementDocFile(null);
-      await loadAchievements();
+      if (created) setAchievements((current) => [created, ...current.filter((item) => item._id !== created._id)]);
+      else await loadAchievements();
     } catch (error) {
       toast.error(error.response?.data?.message || "Unable to submit achievement");
     } finally {
@@ -441,6 +452,7 @@ const CommunityHub = () => {
   // Submit Shradhanjali with actual Photo & Document
   const submitShradhanjali = async (event) => {
     event.preventDefault();
+    if (busyId === "shradhanjali") return;
     setBusyId("shradhanjali");
     try {
       const formData = new FormData();
@@ -458,8 +470,9 @@ const CommunityHub = () => {
         formData.append("supportingDocument", shradhanjaliDocFile);
       }
 
-      await apiConnector("POST", communityEndpoints.SHRADHANJALIS_API, formData, authConfig);
-      toast.success("Shradhanjali tribute submitted for review");
+      const response = await apiConnector("POST", communityEndpoints.SHRADHANJALIS_API, formData, authConfig);
+      const created = response.data?.data?.shradhanjali;
+      toast.success("Tribute submitted successfully. It is now pending verification.");
       setShradhanjaliForm({
         personName: "",
         message: "",
@@ -470,7 +483,8 @@ const CommunityHub = () => {
       });
       setShradhanjaliPhotoFile(null);
       setShradhanjaliDocFile(null);
-      await loadShradhanjalis();
+      if (created) setShradhanjalis((current) => [created, ...current.filter((item) => item._id !== created._id)]);
+      else await loadShradhanjalis();
     } catch (error) {
       toast.error(error.response?.data?.message || "Unable to submit tribute");
     } finally {
@@ -683,7 +697,7 @@ const CommunityHub = () => {
                     <input className={inputClass} value={issueForm.location} onChange={(event) => updateIssue("location", event.target.value)} placeholder="City, ward, or community center" />
                   </Field>
                   <Button icon={FaPaperPlane} tone="success" disabled={busyId === "issue"}>
-                    Submit Issue
+                    {busyId === "issue" ? "Submitting Issue..." : "Submit Issue"}
                   </Button>
                 </form>
 
@@ -858,7 +872,7 @@ const CommunityHub = () => {
                     <textarea className={textareaClass} value={postForm.body} onChange={(event) => updatePost("body", event.target.value)} placeholder="Share your message or idea with the community..." required />
                   </Field>
                   <Button icon={FaPaperPlane} tone="success" disabled={busyId === "post"}>
-                    Publish Post
+                    {busyId === "post" ? "Publishing Post..." : "Publish Post"}
                   </Button>
                 </form>
 
@@ -1025,7 +1039,7 @@ const CommunityHub = () => {
                   </div>
 
                   <Button icon={FaPaperPlane} tone="success" disabled={busyId === "achievement"}>
-                    Submit For Committee Review
+                    {busyId === "achievement" ? "Submitting Achievement..." : "Submit For Committee Review"}
                   </Button>
                 </form>
 
@@ -1057,6 +1071,26 @@ const CommunityHub = () => {
                               <Status value={achievement.status} />
                             </div>
                             <p className="mt-2 line-clamp-2 text-xs text-[var(--text-secondary)]">{achievement.description}</p>
+                            <div
+                              className={`mt-3 rounded-xl border px-3 py-2 text-[11px] ${
+                                achievement.status === "REJECTED"
+                                  ? "border-red-400/30 bg-red-400/10 text-red-200"
+                                  : achievement.status === "PUBLISHED"
+                                  ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-200"
+                                  : "border-amber-400/30 bg-amber-400/10 text-amber-200"
+                              }`}
+                            >
+                              <p className="font-bold uppercase tracking-wider">
+                                {achievement.status === "PENDING" ? "Pending Review" : achievement.status}
+                              </p>
+                              <p className="mt-1 text-[var(--text-primary)]">{storyStatusMessage(achievement.status, "achievement")}</p>
+                              {achievement.status === "REJECTED" && achievement.reviewReason && (
+                                <p className="mt-2 text-[var(--text-primary)]">
+                                  <strong>Reason:</strong> {achievement.reviewReason}
+                                </p>
+                              )}
+                              <p className="mt-1 text-[var(--text-muted)]">Submitted on: {formatDate(achievement.createdAt)}</p>
+                            </div>
                             {achievement.supportingDocument?.url && (
                               <a
                                 href={achievement.supportingDocument.url}
@@ -1173,7 +1207,7 @@ const CommunityHub = () => {
                   </div>
 
                   <Button icon={FaPaperPlane} tone="success" disabled={busyId === "shradhanjali"}>
-                    Submit For Verification
+                    {busyId === "shradhanjali" ? "Submitting Tribute..." : "Submit For Verification"}
                   </Button>
                 </form>
 
@@ -1209,6 +1243,26 @@ const CommunityHub = () => {
                               <p className="mt-1 text-xs text-[var(--brand)] font-medium">{item.familyInfo}</p>
                             )}
                             <p className="mt-2 text-xs text-[var(--text-secondary)]">{item.message}</p>
+                            <div
+                              className={`mt-3 rounded-xl border px-3 py-2 text-[11px] ${
+                                item.status === "REJECTED"
+                                  ? "border-red-400/30 bg-red-400/10 text-red-200"
+                                  : item.status === "PUBLISHED"
+                                  ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-200"
+                                  : "border-amber-400/30 bg-amber-400/10 text-amber-200"
+                              }`}
+                            >
+                              <p className="font-bold uppercase tracking-wider">
+                                {item.status === "PENDING" ? "Pending Verification" : item.status}
+                              </p>
+                              <p className="mt-1 text-[var(--text-primary)]">{storyStatusMessage(item.status, "shradhanjali")}</p>
+                              {item.status === "REJECTED" && item.reviewReason && (
+                                <p className="mt-2 text-[var(--text-primary)]">
+                                  <strong>Reason:</strong> {item.reviewReason}
+                                </p>
+                              )}
+                              <p className="mt-1 text-[var(--text-muted)]">Submitted on: {formatDate(item.createdAt)}</p>
+                            </div>
                           </div>
                         </div>
                       </article>

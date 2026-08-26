@@ -22,6 +22,7 @@ import { FaWhatsapp, FaGraduationCap } from "react-icons/fa";
 import ModernFooter from "../Components/Core/Home/ModernFooter";
 import ManagementCommitteeSlider from "../Components/Common/ManagementCommitteeSlider";
 import HeroCarousel from "../Components/Core/Home/HeroCarousel";
+import DynamicShowcaseSlider from "../Components/Core/Home/DynamicShowcaseSlider";
 import { apiConnector } from "../services/apiConnector";
 import { contentEndpoints, paymentEndpoints, communityEndpoints } from "../services/apis";
 import {
@@ -40,6 +41,8 @@ const HomePage = () => {
   const [campaigns, setCampaigns] = useState([]);
   const [notices, setNotices] = useState([]);
   const [achievements, setAchievements] = useState([]);
+  const [supporters, setSupporters] = useState([]);
+  const [supporterCampaign, setSupporterCampaign] = useState(null);
   const [managementMembers, setManagementMembers] = useState([]);
 
   useEffect(() => {
@@ -53,10 +56,21 @@ const HomePage = () => {
       .then((res) => setNotices(res?.data?.data?.notices || []))
       .catch(() => {});
 
-    // Fetch achievements
-    apiConnector("GET", communityEndpoints.ACHIEVEMENTS_API, null, null, { limit: 3 })
+    // Fetch published Samaj Pride entries
+    apiConnector("GET", communityEndpoints.ACHIEVEMENTS_API, null, null, { limit: 12 })
       .then((res) => setAchievements(res?.data?.data?.achievements || []))
       .catch(() => {});
+
+    // Fetch verified public supporters from successful donations only
+    apiConnector("GET", paymentEndpoints.PUBLIC_SUPPORTERS_API, null, null, { limit: 12 })
+      .then((res) => {
+        setSupporters(res?.data?.data?.supporters || []);
+        setSupporterCampaign(res?.data?.data?.campaign || null);
+      })
+      .catch(() => {
+        setSupporters([]);
+        setSupporterCampaign(null);
+      });
 
     // Fetch Management Committee members
     apiConnector("GET", contentEndpoints.MANAGEMENT_API, null, null, { limit: 15, status: "active" })
@@ -95,6 +109,36 @@ const HomePage = () => {
           </Link>
         </div>
       </section>
+
+      {achievements.length > 0 && (
+        <section className="py-16 sm:py-20 bg-[var(--surface)]">
+          <DynamicShowcaseSlider
+            type="achievements"
+            items={achievements}
+            title={isHindi ? "समाज गौरव" : "Samaj Pride"}
+            subtitle={isHindi ? "समाज के प्रकाशित उपलब्धि सम्मान और प्रेरक कार्य।" : "Published achievements and inspiring contributions from our community members."}
+            cta={{ to: "/achievements", label: isHindi ? "सभी उपलब्धियां" : "View All" }}
+          />
+        </section>
+      )}
+
+      {supporters.length > 0 && (
+        <section className="py-16 sm:py-20 bg-[var(--surface-elevated)]/60 border-y border-[var(--border-subtle)]">
+          <DynamicShowcaseSlider
+            type="supporters"
+            items={supporters}
+            title={isHindi ? "समुदाय सहयोगी" : "Community Supporters"}
+            subtitle={
+              supporterCampaign?.title
+                ? `${supporterCampaign.title} - ${isHindi ? "सफल सहयोग देने वाले सदस्य" : "members who have contributed successfully"}`
+                : isHindi
+                ? "सफल सहयोग देने वाले सदस्यों का सम्मान।"
+                : "Recognizing members who have contributed successfully."
+            }
+            cta={{ to: "/donate", label: isHindi ? "सहयोग करें" : "Contribute" }}
+          />
+        </section>
+      )}
 
       {/* ================= 3. MAHARSHI BALINATH JI MAHARAJ ================= */}
       <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">

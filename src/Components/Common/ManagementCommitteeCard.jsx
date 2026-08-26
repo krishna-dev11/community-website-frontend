@@ -10,10 +10,22 @@ const ManagementCommitteeCard = ({ member }) => {
 
   const displayName = isHindi ? member.name || member.nameEn : member.nameEn || member.name;
   const displayDesignation = isHindi
-    ? member.designation || member.designationEn
-    : member.designationEn || member.designation;
+    ? member.designation || member.roleTitle || member.designationEn
+    : member.designationEn || member.roleTitle || member.designation;
   const displayTenure = isHindi ? member.tenure || member.tenureEn : member.tenureEn || member.tenure;
-  const photoUrl = member.photo?.url || member.imageUrl;
+  
+  // Extract photo from any backend or local data convention
+  const rawPhoto =
+    (typeof member.image === "string" && member.image ? member.image : member.image?.url) ||
+    (typeof member.photo === "string" && member.photo ? member.photo : member.photo?.url) ||
+    member.photoUrl ||
+    member.imageUrl ||
+    member.profilePhoto ||
+    member.avatar ||
+    "";
+
+  const [imgError, setImgError] = useState(false);
+  const photoUrl = imgError ? "" : rawPhoto;
 
   return (
     <>
@@ -25,6 +37,7 @@ const ManagementCommitteeCard = ({ member }) => {
               src={photoUrl}
               alt={displayName}
               loading="lazy"
+              onError={() => setImgError(true)}
               className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
             />
           ) : (
