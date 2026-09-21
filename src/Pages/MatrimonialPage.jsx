@@ -27,11 +27,6 @@ import { useLanguage } from "../i18n/LanguageContext";
 const inputClass = "ka-input";
 const textareaClass = "ka-input !min-h-24 resize-none !py-3";
 
-const formatDate = (value) => {
-  if (!value) return "Not set";
-  return new Intl.DateTimeFormat("en-IN", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(value));
-};
-
 const ageFromDate = (value) => {
   if (!value) return null;
   const birth = new Date(value);
@@ -158,7 +153,7 @@ const formToPayload = (form) => ({
 
 const MatrimonialPage = () => {
   const { token } = useSelector((state) => state.auth);
-  const { t, isHindi } = useLanguage();
+  const { isHindi } = useLanguage();
   const [activeTab, setActiveTab] = useState("browse");
   const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState(null);
@@ -246,6 +241,17 @@ const MatrimonialPage = () => {
   useEffect(() => {
     refreshActive();
   }, [activeTab]);
+
+  useEffect(() => {
+    const modalOpen = Boolean(selectedProfile || profileDetailLoading);
+    if (!modalOpen) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [selectedProfile, profileDetailLoading]);
 
   const updateForm = (key, value) => setForm((current) => ({ ...current, [key]: value }));
 
@@ -394,7 +400,7 @@ const MatrimonialPage = () => {
               </h1>
               <p className="mt-2 max-w-2xl text-xs sm:text-sm leading-6 text-[var(--text-secondary)] font-normal">
                 {isHindi
-                  ? "बैरवा समाज के सत्यापित युवक-युवतियों के बायोडाटा देखें, रुचि प्रेषित करें एवं अभिभावकों से संपर्क स्थापित करें।"
+                  ? "हल्बा/हल्बी समाज के सत्यापित युवक-युवतियों के बायोडाटा देखें, रुचि प्रेषित करें एवं अभिभावकों से संपर्क स्थापित करें।"
                   : "Create a reviewed profile, browse approved matches within Samaj, express mutual interest, and request verified contact details."}
               </p>
             </div>
@@ -846,21 +852,38 @@ const MatrimonialPage = () => {
       </section>
 
       {(selectedProfile || profileDetailLoading) && (
-        <div className="fixed inset-0 z-[2200] flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-sm">
-          <div className="ka-card relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-3xl border border-[var(--border-subtle)] p-5 shadow-2xl sm:p-7">
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedProfile(null);
-                setProfileDetailLoading(false);
-                setProtectedContactUnlocked(false);
-              }}
-              className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-primary)]"
-              aria-label="Close profile details"
-            >
-              <FiX size={18} />
-            </button>
+        <div className="fixed inset-0 z-[2200] flex items-center justify-center overflow-hidden bg-black/70 px-3 py-4 backdrop-blur-sm sm:px-4 sm:py-6">
+          <div className="ka-card flex max-h-[calc(100vh-2rem)] min-h-0 w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-[var(--border-subtle)] shadow-2xl sm:max-h-[90vh]">
+            <div className="relative flex shrink-0 items-start justify-between gap-4 border-b border-[var(--border-subtle)] bg-[var(--surface)] p-5 sm:p-7">
+              <div className="min-w-0 pr-10">
+                <p className="eyebrow-badge mb-2">Matrimonial Profile</p>
+                <h2 className="break-words text-xl font-black text-[var(--text-primary)] sm:text-2xl">
+                  {profileDetailLoading ? "Loading Profile" : selectedProfile?.displayName}
+                </h2>
+                {selectedProfile && (
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-wider text-[var(--accent-primary)]">
+                    <span>{profileAge(selectedProfile) || "N/A"} yrs</span>
+                    <span>•</span>
+                    <span>{selectedProfile.gender === "FEMALE" ? "Bride" : "Groom"}</span>
+                    <Status value={selectedProfile.status === "APPROVED" ? "Verified" : selectedProfile.status} />
+                  </div>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedProfile(null);
+                  setProfileDetailLoading(false);
+                  setProtectedContactUnlocked(false);
+                }}
+                className="absolute right-4 top-4 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-primary)] sm:right-6 sm:top-6"
+                aria-label="Close profile details"
+              >
+                <FiX size={18} />
+              </button>
+            </div>
 
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5 custom-scrollbar sm:p-7">
             {profileDetailLoading ? (
               <div className="flex min-h-80 items-center justify-center">
                 <div className="h-10 w-10 animate-spin rounded-full border-4 border-[var(--accent-primary)] border-t-transparent" />
@@ -868,7 +891,7 @@ const MatrimonialPage = () => {
             ) : (
               <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
                 <div>
-                  <div className="aspect-[9/16] overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)]">
+                  <div className="mx-auto aspect-[9/16] max-h-[42vh] w-full max-w-[280px] overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] lg:mx-0">
                     {selectedProfile?.photos?.[0]?.url ? (
                       <img src={selectedProfile.photos[0].url} alt={selectedProfile.displayName} className="h-full w-full object-cover" />
                     ) : (
@@ -877,27 +900,16 @@ const MatrimonialPage = () => {
                       </div>
                     )}
                   </div>
-                  <Button
-                    className="mt-4 w-full"
-                    icon={FiHeart}
-                    tone="success"
-                    type="button"
-                    onClick={() => expressInterest(selectedProfile._id)}
-                    disabled={busyId === selectedProfile?._id || interestSentIds.includes(selectedProfile?._id)}
-                  >
-                    {busyId === selectedProfile?._id ? "Sending Interest..." : interestSentIds.includes(selectedProfile?._id) ? "Interest Sent" : "Express Interest"}
-                  </Button>
                 </div>
 
                 <div className="min-w-0 pr-8 sm:pr-10">
-                  <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--border-subtle)] pb-4">
+                <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--border-subtle)] pb-4">
                     <div>
                       <h2 className="text-2xl font-black text-[var(--text-primary)]">{selectedProfile?.displayName}</h2>
                       <p className="mt-1 text-xs font-bold uppercase tracking-wider text-[var(--accent-primary)]">
                         {profileAge(selectedProfile) || "N/A"} yrs • {selectedProfile?.gender === "FEMALE" ? "Bride" : "Groom"} • {formatProfileValue(selectedProfile?.maritalStatus)}
                       </p>
                     </div>
-                    <Status value={selectedProfile?.status === "APPROVED" ? "Verified" : selectedProfile?.status} />
                   </div>
 
                   <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -913,7 +925,7 @@ const MatrimonialPage = () => {
                     ].map(([label, value]) => (
                       <div key={label} className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-3">
                         <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--text-muted)]">{label}</p>
-                        <p className="mt-1 text-sm font-bold text-[var(--text-primary)]">{formatProfileValue(value)}</p>
+                        <p className="mt-1 break-words text-sm font-bold text-[var(--text-primary)]">{formatProfileValue(value)}</p>
                       </div>
                     ))}
                   </div>
@@ -922,13 +934,13 @@ const MatrimonialPage = () => {
                     {selectedProfile?.about ? (
                       <section>
                         <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--accent-primary)]">About</h3>
-                        <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">{selectedProfile.about}</p>
+                        <p className="mt-2 whitespace-pre-line break-words text-sm leading-6 text-[var(--text-secondary)]">{selectedProfile.about}</p>
                       </section>
                     ) : null}
                     {selectedProfile?.expectations ? (
                       <section>
                         <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--accent-primary)]">Partner Expectations</h3>
-                        <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">{selectedProfile.expectations}</p>
+                        <p className="mt-2 whitespace-pre-line break-words text-sm leading-6 text-[var(--text-secondary)]">{selectedProfile.expectations}</p>
                       </section>
                     ) : null}
                   </div>
@@ -951,6 +963,22 @@ const MatrimonialPage = () => {
                     )}
                   </div>
                 </div>
+              </div>
+            )}
+            </div>
+
+            {selectedProfile && (
+              <div className="flex shrink-0 justify-end border-t border-[var(--border-subtle)] bg-[var(--surface)] p-4 sm:p-5">
+                <Button
+                  className="w-full sm:w-auto"
+                  icon={FiHeart}
+                  tone="success"
+                  type="button"
+                  onClick={() => expressInterest(selectedProfile._id)}
+                  disabled={busyId === selectedProfile?._id || interestSentIds.includes(selectedProfile?._id)}
+                >
+                  {busyId === selectedProfile?._id ? "Sending Interest..." : interestSentIds.includes(selectedProfile?._id) ? "Interest Sent" : "Express Interest"}
+                </Button>
               </div>
             )}
           </div>

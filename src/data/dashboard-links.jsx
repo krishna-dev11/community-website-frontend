@@ -43,12 +43,6 @@ export const sidebarLinks = [
         path: "/dashboard/admin/registrations",
         icon: "FaUserCheck",
       },
-      {
-        name: "Audit Logs",
-        nameHi: "ऑडिट लॉग्स",
-        path: "/dashboard/admin/audit-logs",
-        icon: "FaShieldAlt",
-      },
     ],
   },
   {

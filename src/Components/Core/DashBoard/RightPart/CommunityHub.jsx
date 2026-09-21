@@ -667,7 +667,7 @@ const CommunityHub = () => {
             {/* TAB 2: ISSUES & PUBLIC SOLUTIONS */}
             {activeTab === "issues" && (
               <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
-                <form onSubmit={submitIssue} className="grid gap-4 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-5">
+                <form onSubmit={submitIssue} className="grid gap-4 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-4 sm:p-5">
                   <div>
                     <h2 className="text-lg font-bold text-[var(--text-primary)]">Submit Community Issue</h2>
                     <p className="mt-1 text-xs text-[var(--text-secondary)]">
@@ -945,7 +945,7 @@ const CommunityHub = () => {
             {/* TAB 5: SAMAJ PRIDE / ACHIEVEMENTS */}
             {activeTab === "achievements" && (
               <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
-                <form onSubmit={submitAchievement} className="grid gap-4 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-6">
+                <form onSubmit={submitAchievement} className="grid gap-4 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-4 sm:p-6">
                   <div>
                     <h2 className="text-lg font-black text-[var(--text-primary)]">Submit Samaj Achievement</h2>
                     <p className="mt-1 text-xs text-[var(--text-secondary)]">
@@ -1043,20 +1043,20 @@ const CommunityHub = () => {
                   </Button>
                 </form>
 
-                <section className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-6">
+                <section className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-4 sm:p-6">
                   <h2 className="text-lg font-black text-[var(--text-primary)]">Community Pride & Achievements</h2>
                   <div className="mt-4 divide-y divide-[var(--border-subtle)]">
                     {achievements.map((achievement) => (
                       <article key={achievement._id} className="py-4">
-                        <div className="flex gap-3.5">
+                        <div className="flex flex-col sm:flex-row gap-3.5">
                           {achievement.recipientPhoto?.url || achievement.image?.url ? (
                             <img
                               src={achievement.recipientPhoto?.url || achievement.image?.url}
                               alt={achievement.title}
-                              className="h-20 w-24 shrink-0 rounded-xl border border-[var(--border-subtle)] object-cover shadow-md"
+                              className="h-32 sm:h-20 w-full sm:w-24 shrink-0 rounded-xl border border-[var(--border-subtle)] object-cover shadow-md"
                             />
                           ) : (
-                            <div className="flex h-20 w-24 shrink-0 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-amber-300">
+                            <div className="flex h-20 w-full sm:w-24 shrink-0 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-amber-300">
                               <FiAward size={28} />
                             </div>
                           )}
@@ -1114,7 +1114,7 @@ const CommunityHub = () => {
             {/* TAB 6: SHRADHANJALI / MEMORIAL TRIBUTE */}
             {activeTab === "shradhanjali" && (
               <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
-                <form onSubmit={submitShradhanjali} className="grid gap-4 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-6">
+                <form onSubmit={submitShradhanjali} className="grid gap-4 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-4 sm:p-6">
                   <div>
                     <h2 className="text-lg font-black text-[var(--text-primary)]">Submit Shradhanjali Tribute</h2>
                     <p className="mt-1 text-xs text-[var(--text-secondary)]">
@@ -1211,20 +1211,20 @@ const CommunityHub = () => {
                   </Button>
                 </form>
 
-                <section className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-6">
+                <section className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-4 sm:p-6">
                   <h2 className="text-lg font-black text-[var(--text-primary)]">Recent Tributes & Condolences</h2>
                   <div className="mt-4 divide-y divide-[var(--border-subtle)]">
                     {shradhanjalis.map((item) => (
                       <article key={item._id} className="py-4">
-                        <div className="flex gap-3.5">
+                        <div className="flex flex-col sm:flex-row gap-3.5">
                           {item.photo?.url ? (
                             <img
                               src={item.photo.url}
                               alt={item.personName}
-                              className="h-20 w-20 shrink-0 rounded-xl border border-[var(--border-subtle)] object-cover shadow-md"
+                              className="h-32 sm:h-20 w-full sm:w-20 shrink-0 rounded-xl border border-[var(--border-subtle)] object-cover shadow-md"
                             />
                           ) : (
-                            <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-gray-500">
+                            <div className="flex h-20 w-full sm:w-20 shrink-0 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-gray-500">
                               <FaHeart size={24} />
                             </div>
                           )}

@@ -68,6 +68,7 @@ const EmptyState = () => (
 
 const AdminRegistrationQueue = () => {
   const { token } = useSelector((state) => state.auth);
+  const { user } = useSelector((state) => state.profile);
   const [activeTab, setActiveTab] = useState("registrations");
   const [users, setUsers] = useState([]);
   const [invites, setInvites] = useState([]);
@@ -282,7 +283,7 @@ const AdminRegistrationQueue = () => {
               {filteredUsers.map((user) => (
                 <div
                   key={user._id}
-                  className="grid gap-4 bg-black/40 px-4 py-5 transition hover:bg-white/[0.02] md:grid-cols-[1.4fr_1fr_1fr_1.3fr] md:px-5"
+                  className="flex flex-col gap-4 bg-black/40 px-4 py-5 transition hover:bg-white/[0.02] md:grid md:grid-cols-[1.4fr_1fr_1fr_1.3fr] md:px-5"
                 >
                   {/* Column 1: Applicant Profile */}
                   <div className="flex min-w-0 items-start gap-3">
@@ -356,7 +357,7 @@ const AdminRegistrationQueue = () => {
                       placeholder="Reason or reviewer note..."
                       className="h-9 rounded-lg border border-white/10 bg-white/[0.03] px-3 text-xs text-white outline-none placeholder:text-gray-600 focus:border-emerald-400/50"
                     />
-                    <div className="grid grid-cols-3 gap-1.5">
+                    <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
                       <ActionButton
                         icon={FaCheck}
                         tone="success"
@@ -592,7 +593,7 @@ const AdminRegistrationQueue = () => {
             </div>
 
             {/* Modal Footer Controls */}
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4">
+            <div className="flex flex-col gap-3 border-t border-white/10 pt-4 sm:flex-row sm:items-center sm:justify-between">
               <button
                 onClick={() => setSelectedUserForDoc(null)}
                 className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white transition hover:bg-white/10"
@@ -600,25 +601,25 @@ const AdminRegistrationQueue = () => {
                 Close
               </button>
 
-              <div className="flex items-center gap-2">
+              <div className="grid grid-cols-1 gap-2 sm:flex sm:items-center sm:gap-2">
                 <button
                   disabled={activeUserId === selectedUserForDoc._id}
                   onClick={() => reviewUser(selectedUserForDoc._id, "REJECT")}
-                  className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-2.5 text-xs font-black uppercase tracking-wider text-red-300 transition hover:bg-red-500/20 disabled:opacity-50"
+                  className="w-full sm:w-auto rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-2.5 text-xs font-black uppercase tracking-wider text-red-300 transition hover:bg-red-500/20 disabled:opacity-50"
                 >
                   Reject
                 </button>
                 <button
                   disabled={activeUserId === selectedUserForDoc._id}
                   onClick={() => reviewUser(selectedUserForDoc._id, "REQUEST_CORRECTION")}
-                  className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-2.5 text-xs font-black uppercase tracking-wider text-amber-300 transition hover:bg-amber-500/20 disabled:opacity-50"
+                  className="w-full sm:w-auto rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-2.5 text-xs font-black uppercase tracking-wider text-amber-300 transition hover:bg-amber-500/20 disabled:opacity-50"
                 >
                   Request Correction
                 </button>
                 <button
                   disabled={activeUserId === selectedUserForDoc._id}
                   onClick={() => reviewUser(selectedUserForDoc._id, "APPROVE")}
-                  className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 px-5 py-2.5 text-xs font-black uppercase tracking-wider text-black shadow-lg shadow-emerald-500/20 transition hover:from-emerald-400 hover:to-teal-300 disabled:opacity-50"
+                  className="w-full sm:w-auto rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 px-5 py-2.5 text-xs font-black uppercase tracking-wider text-black shadow-lg shadow-emerald-500/20 transition hover:from-emerald-400 hover:to-teal-300 disabled:opacity-50"
                 >
                   Approve Application
                 </button>

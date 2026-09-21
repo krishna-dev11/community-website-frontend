@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import SlideBarButton from "./SlideBarButton";
 import { sidebarLinks } from "../../../../data/dashboard-links";
 import { IoIosLogOut } from "react-icons/io";
+import { FiX } from "react-icons/fi";
 import ConfirmationModal from "../../../Common/ConfirmationModal";
 import { setLogOut } from "../../../../services/Operations/authAPI";
 import { useLanguage } from "../../../../i18n/LanguageContext";
@@ -47,8 +48,22 @@ const SideBar = ({ isSidebarOpen, setIsSidebarOpen }) => {
       `}>
         <div className="absolute bottom-[-10%] left-[-20%] w-[300px] h-[300px] bg-[var(--accent-primary)]/5 blur-[100px] rounded-full pointer-events-none" />
 
+        {/* Mobile drawer close button row */}
+        {isSidebarOpen && (
+          <div className="md:hidden flex items-center justify-between px-4 pt-5 pb-3 border-b border-[var(--border-subtle)] shrink-0">
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--text-muted)] select-none">Navigation</span>
+            <button
+              onClick={() => setIsSidebarOpen(false)}
+              className="flex h-8 w-8 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
+              aria-label="Close sidebar"
+            >
+              <FiX size={16} />
+            </button>
+          </div>
+        )}
+
         {/* Scrollable Navigation Area - generous top and bottom padding so upper items and bottom Finance section are 100% visible */}
-        <div className="flex flex-col text-[var(--text-primary)] pt-20 md:pt-20 pb-28 gap-y-4 flex-1 min-h-0 px-2.5 md:px-4 overflow-y-auto custom-scrollbar">
+        <div className="flex flex-col text-[var(--text-primary)] pt-6 md:pt-20 pb-28 gap-y-4 flex-1 min-h-0 px-2.5 md:px-4 overflow-y-auto custom-scrollbar">
           {sidebarLinks.map((section, i) => {
             const accountAllowed = !section.accountTypes || section.accountTypes.includes(userAccountType);
             const roleAllowed = !section.roles || section.roles.some((role) => userRoles.includes(role) || role === userAccountType);

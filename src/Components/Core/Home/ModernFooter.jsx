@@ -10,8 +10,8 @@ import {
   FiUsers,
   FiBookOpen,
 } from "react-icons/fi";
-import { FaWhatsapp, FaFacebookF, FaYoutube } from "react-icons/fa";
-import { organizationInfo } from "../../../data/bairwaData";
+import { FaWhatsapp, FaFacebookF } from "react-icons/fa";
+import { organizationInfo } from "../../../data/halbaData";
 import { useLanguage } from "../../../i18n/LanguageContext";
 
 const FooterLink = ({ to, children }) => (
@@ -39,14 +39,14 @@ const ModernFooter = () => {
           <div className="lg:col-span-2 flex flex-col gap-4">
             <Link to="/" className="flex items-center gap-3 w-fit text-decoration-none">
               <div className="h-10 w-10 rounded-xl bg-[var(--accent-primary)]/10 border border-[var(--accent-primary)]/30 flex items-center justify-center shadow-sm">
-                <span className="text-[var(--accent-primary)] font-black text-xl">ब</span>
+                <span className="text-[var(--accent-primary)] font-black text-xl">ह</span>
               </div>
               <div className="flex flex-col leading-tight">
                 <span className="text-base font-black tracking-wider uppercase text-[var(--text-primary)]">
                   {isHindi ? organizationInfo.nameHi : organizationInfo.nameEn}
                 </span>
                 <span className="text-[10px] font-bold tracking-widest uppercase text-[var(--accent-primary)]">
-                  {isHindi ? "बैरवा समाज का आधिकारिक मंच" : "Official Bairwa Samaaj Platform"}
+                  {isHindi ? "हल्बा/हल्बी समाज का आधिकारिक मंच" : "Official Halba Samaaj Platform"}
                 </span>
               </div>
             </Link>
@@ -58,13 +58,22 @@ const ModernFooter = () => {
             {/* Social & Helpdesk Icons */}
             <div className="flex gap-2.5 mt-2">
               <a
-                href="https://wa.me/919928260244"
+                href="https://wa.me/919926018058"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="WhatsApp Helpline"
                 className="h-9 w-9 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] text-[var(--text-muted)] hover:text-emerald-400 hover:border-emerald-500/40 hover:bg-[var(--surface-raised)] flex items-center justify-center transition-all duration-200"
               >
                 <FaWhatsapp size={15} />
+              </a>
+              <a
+                href="https://www.facebook.com/halbahalbisamaj.ujjain"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Official Facebook Page"
+                className="h-9 w-9 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] text-[var(--text-muted)] hover:text-blue-400 hover:border-blue-500/40 hover:bg-[var(--surface-raised)] flex items-center justify-center transition-all duration-200"
+              >
+                <FaFacebookF size={13} />
               </a>
             </div>
           </div>
@@ -78,7 +87,7 @@ const ModernFooter = () => {
               <FooterLink to="/">{isHindi ? "मुख्य पृष्ठ" : "Home"}</FooterLink>
               <FooterLink to="/about">{isHindi ? "संस्था परिचय" : "About Us"}</FooterLink>
               <FooterLink to="/management-committee">{isHindi ? "प्रदेश कार्यकारिणी" : "Executive Committee"}</FooterLink>
-              <FooterLink to="/balinath">{isHindi ? "महर्षि बालीनाथ जी" : "Maharshi Balinath Ji"}</FooterLink>
+              <FooterLink to="/faith">{isHindi ? "आराध्य देव एवं धर्म" : "Faith & Deities"}</FooterLink>
               <FooterLink to="/gotras">{isHindi ? "समाज के गोत्र" : "Gotra Directory"}</FooterLink>
               <FooterLink to="/history">{isHindi ? "समाज का इतिहास" : "History & Heritage"}</FooterLink>
             </ul>
@@ -95,6 +104,7 @@ const ModernFooter = () => {
               <FooterLink to="/jobs">{isHindi ? "रोजगार एवं अवसर" : "Jobs & Careers"}</FooterLink>
               <FooterLink to="/dharamshala">{isHindi ? "धर्मशाला बुकिंग" : "Dharamshala Booking"}</FooterLink>
               <FooterLink to="/publications">{isHindi ? "मासिक समाचार पत्रिका" : "Samaj Patrika"}</FooterLink>
+              <FooterLink to="/membership">{isHindi ? "सदस्यता नियम" : "Membership Rules"}</FooterLink>
               <FooterLink to="/donate">{isHindi ? "सहयोग एवं दान" : "Donations & Seva"}</FooterLink>
             </ul>
           </div>
@@ -111,13 +121,13 @@ const ModernFooter = () => {
               </p>
               <p className="flex items-center gap-2">
                 <FiPhone className="text-[var(--accent-primary)] shrink-0" size={13} />
-                <a href="tel:+919928260244" className="hover:text-emerald-400 font-mono font-bold">
+                <a href="tel:+9199260 18058" className="hover:text-emerald-400 font-mono font-bold">
                   {organizationInfo.headOffice.phone}
                 </a>
               </p>
               <p className="flex items-center gap-2">
                 <FiMail className="text-[var(--accent-primary)] shrink-0" size={13} />
-                <a href="mailto:contact@bairwasamaaj.com" className="hover:text-emerald-400">
+                <a href="mailto:halbahalbiujjain79@gmail.com" className="hover:text-emerald-400">
                   {organizationInfo.headOffice.email}
                 </a>
               </p>

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { FaCheck, FaCopy, FaCrown, FaSearch, FaTimes, FaUserPlus } from "react-icons/fa";
-import { FiUsers } from "react-icons/fi";
+import { FiUsers, FiPhone, FiMail, FiMapPin, FiBriefcase, FiBookOpen, FiUser, FiShield, FiTag } from "react-icons/fi";
 import { useSelector } from "react-redux";
 import { apiConnector } from "../../../../services/apiConnector";
 import { familyEndpoints } from "../../../../services/apis";
@@ -222,7 +222,7 @@ const FamilyHub = () => {
           </div>
         ) : familyState.family ? (
           <>
-            <section className="ka-card p-6">
+            <section className="ka-card p-4 sm:p-6">
               <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                 <div>
                   <h2 className="text-2xl font-bold text-[var(--text-primary)]">{familyState.family.familyName}</h2>
@@ -247,7 +247,7 @@ const FamilyHub = () => {
             </section>
 
             {isFamilyAdmin && (
-              <section className="ka-card p-6">
+              <section className="ka-card p-4 sm:p-6">
                 <div className="flex flex-col gap-1 border-b border-[var(--border-subtle)] pb-4">
                   <h2 className="text-lg font-bold text-[var(--text-primary)]">Join Requests</h2>
                   <p className="text-xs text-[var(--text-muted)]">Approve verified members before they enter your household record.</p>
@@ -270,7 +270,7 @@ const FamilyHub = () => {
                             <p className="truncate text-xs text-[var(--text-muted)]">{request.message || request.requestedBy?.email}</p>
                           </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-2 md:w-64">
+                        <div className="grid grid-cols-2 gap-2 w-full md:w-64">
                           <Button tone="success" icon={FaCheck} disabled={busyId === request._id} onClick={() => reviewJoinRequest(request._id, "APPROVE")}>Approve</Button>
                           <Button tone="danger" icon={FaTimes} disabled={busyId === request._id} onClick={() => reviewJoinRequest(request._id, "REJECT")}>Reject</Button>
                         </div>
@@ -281,45 +281,145 @@ const FamilyHub = () => {
               </section>
             )}
 
-            <section className="ka-card p-6">
+            <section className="ka-card p-4 sm:p-6">
               <div className="flex flex-col gap-1 border-b border-[var(--border-subtle)] pb-4">
                 <h2 className="text-lg font-bold text-[var(--text-primary)]">Household Members</h2>
-                <p className="text-xs text-[var(--text-muted)]">{familyState.members.length} active family members</p>
+                <p className="text-xs text-[var(--text-muted)]">{familyState.members.length} active family members in this household record</p>
               </div>
-              <div className="mt-4 grid gap-3 md:grid-cols-2">
-                {familyState.members.map((membership) => (
-                  <article key={membership._id} className="flex items-center justify-between gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-3.5">
-                    <div className="flex min-w-0 items-center gap-3">
-                      <img
-                        src={membership.member?.imageUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${membership.member?.firstName || "Member"}`}
-                        alt={`${membership.member?.firstName || "Member"} profile`}
-                        className="h-11 w-11 rounded-2xl border border-[var(--border-subtle)] object-cover shadow-sm"
-                      />
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-bold text-[var(--text-primary)]">{membership.member?.firstName} {membership.member?.lastName}</p>
-                        <p className="truncate text-xs text-[var(--text-muted)]">{membership.member?.additionalDetails?.profession || membership.member?.email}</p>
-                      </div>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-2">
-                      {membership.role === "FAMILY_ADMIN" && <FaCrown className="text-amber-400" size={15} />}
-                      {isFamilyAdmin && membership.role !== "FAMILY_ADMIN" && (
-                        <button
-                          onClick={() => transferAdmin(membership.member?._id)}
-                          disabled={busyId === membership.member?._id}
-                          className="rounded-full border border-[var(--border-subtle)] bg-[var(--surface)] px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)] transition hover:text-[var(--text-primary)] disabled:opacity-50 cursor-pointer"
-                        >
-                          Make Admin
-                        </button>
-                      )}
-                    </div>
-                  </article>
-                ))}
-              </div>
+
+              {familyState.members.length === 0 ? (
+                <div className="py-12 text-center text-sm text-[var(--text-muted)]">
+                  इस परिवार में अभी कोई अन्य सक्रिय सदस्य उपलब्ध नहीं है।
+                </div>
+              ) : (
+                <div className="mt-5 grid gap-4 lg:grid-cols-2">
+                  {familyState.members.map((membership) => {
+                    const member = membership.member;
+                    const details = member?.additionalDetails || {};
+                    const fullName = `${member?.firstName || ""} ${member?.lastName || ""}`.trim();
+                    const isHead = membership.role === "FAMILY_ADMIN";
+
+                    return (
+                      <article
+                        key={membership._id}
+                        className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-4 sm:p-5 transition-all hover:border-[var(--border-strong)] shadow-sm flex flex-col justify-between"
+                      >
+                        {/* Member Header */}
+                        <div>
+                          <div className="flex items-start justify-between gap-3 border-b border-[var(--border-subtle)] pb-4">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="relative shrink-0">
+                                <img
+                                  src={member?.imageUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(fullName || "Member")}`}
+                                  alt={fullName}
+                                  className="h-14 w-14 rounded-2xl border border-[var(--border-subtle)] object-cover shadow-sm"
+                                />
+                                {isHead && (
+                                  <div className="absolute -top-1.5 -right-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-amber-400 text-black shadow-md border-2 border-[var(--surface-elevated)]" title="Family Admin">
+                                    <FaCrown size={11} />
+                                  </div>
+                                )}
+                              </div>
+                              <div className="min-w-0">
+                                <h3 className="text-base font-bold text-[var(--text-primary)] truncate">
+                                  {fullName}
+                                </h3>
+                                <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                                  <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
+                                    isHead
+                                      ? "bg-amber-400/10 text-amber-400 border border-amber-400/30"
+                                      : "bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] border border-[var(--accent-primary)]/30"
+                                  }`}>
+                                    {isHead ? "Family Admin" : "Family Member"}
+                                  </span>
+                                  {member?.accountStatus && (
+                                    <span className="inline-flex rounded-full bg-emerald-500/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-400 border border-emerald-500/30">
+                                      {member.accountStatus}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            {isFamilyAdmin && !isHead && (
+                              <button
+                                onClick={() => transferAdmin(member?._id)}
+                                disabled={busyId === member?._id}
+                                className="rounded-full border border-[var(--border-subtle)] bg-[var(--surface)] px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)] transition hover:text-[var(--text-primary)] hover:border-[var(--border-strong)] disabled:opacity-50 cursor-pointer shrink-0"
+                              >
+                                Make Admin
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Member Detailed Grid */}
+                          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                            {member?.email && (
+                              <div className="flex items-center gap-2 text-[var(--text-secondary)] min-w-0">
+                                <FiMail className="text-[var(--text-muted)] shrink-0" size={13} />
+                                <span className="truncate" title={member.email}>{member.email}</span>
+                              </div>
+                            )}
+                            {details.contactNumber && (
+                              <div className="flex items-center gap-2 text-[var(--text-secondary)] min-w-0">
+                                <FiPhone className="text-[var(--text-muted)] shrink-0" size={13} />
+                                <span>{details.contactNumber}</span>
+                              </div>
+                            )}
+                            {details.profession && (
+                              <div className="flex items-center gap-2 text-[var(--text-secondary)] min-w-0">
+                                <FiBriefcase className="text-[var(--text-muted)] shrink-0" size={13} />
+                                <span className="truncate">Prof: <strong className="text-[var(--text-primary)] font-medium">{details.profession}</strong></span>
+                              </div>
+                            )}
+                            {details.education && (
+                              <div className="flex items-center gap-2 text-[var(--text-secondary)] min-w-0">
+                                <FiBookOpen className="text-[var(--text-muted)] shrink-0" size={13} />
+                                <span className="truncate">Edu: <strong className="text-[var(--text-primary)] font-medium">{details.education}</strong></span>
+                              </div>
+                            )}
+                            {details.currentCity && (
+                              <div className="flex items-center gap-2 text-[var(--text-secondary)] min-w-0">
+                                <FiMapPin className="text-[var(--text-muted)] shrink-0" size={13} />
+                                <span className="truncate">City: <strong className="text-[var(--text-primary)] font-medium">{details.currentCity}</strong></span>
+                              </div>
+                            )}
+                            {details.nativePlace && (
+                              <div className="flex items-center gap-2 text-[var(--text-secondary)] min-w-0">
+                                <FiMapPin className="text-[var(--text-muted)] shrink-0" size={13} />
+                                <span className="truncate">Native: <strong className="text-[var(--text-primary)] font-medium">{details.nativePlace}</strong></span>
+                              </div>
+                            )}
+                            {details.gotra && (
+                              <div className="flex items-center gap-2 text-[var(--text-secondary)] min-w-0">
+                                <FiTag className="text-[var(--text-muted)] shrink-0" size={13} />
+                                <span>Gotra: <strong className="text-[var(--text-primary)] font-medium">{details.gotra}</strong></span>
+                              </div>
+                            )}
+                            {details.gender && (
+                              <div className="flex items-center gap-2 text-[var(--text-secondary)] min-w-0">
+                                <FiUser className="text-[var(--text-muted)] shrink-0" size={13} />
+                                <span>Gender: <strong className="text-[var(--text-primary)] font-medium">{details.gender}</strong></span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {details.about && (
+                          <div className="mt-3.5 pt-3 border-t border-[var(--border-subtle)] text-[11px] text-[var(--text-muted)] italic line-clamp-2">
+                            "{details.about}"
+                          </div>
+                        )}
+                      </article>
+                    );
+                  })}
+                </div>
+              )}
             </section>
           </>
         ) : (
           <div className="grid gap-6 lg:grid-cols-2">
-            <section className="ka-card p-6">
+            <section className="ka-card p-4 sm:p-6">
               <div className="border-b border-[var(--border-subtle)] pb-4">
                 <h2 className="text-lg font-bold text-[var(--text-primary)]">Create Family</h2>
                 <p className="text-xs text-[var(--text-muted)]">Start a new household record and become its family admin.</p>
@@ -338,7 +438,7 @@ const FamilyHub = () => {
               </form>
             </section>
 
-            <section className="ka-card p-6">
+            <section className="ka-card p-4 sm:p-6">
               <div className="border-b border-[var(--border-subtle)] pb-4">
                 <h2 className="text-lg font-bold text-[var(--text-primary)]">Find Family</h2>
                 <p className="text-xs text-[var(--text-muted)]">Search by family code, SSSM ID, or family name and request access.</p>

@@ -7,19 +7,26 @@ const Dashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className='dashboard-shell relative flex w-full h-screen bg-[var(--bg)] text-[var(--text-primary)] overflow-hidden transition-colors duration-300'>
-      <button 
-        onClick={() => setIsSidebarOpen(true)}
-        className='md:hidden fixed top-20 left-4 z-40 p-2.5 bg-[var(--surface-elevated)] border border-[var(--border-subtle)] rounded-2xl text-[var(--accent-primary)] active:scale-95 transition-all shadow-lg cursor-pointer'
-        aria-label="Open sidebar"
-      >
-        <HiMenuAlt2 size={20} />
-      </button>
+    <div className='dashboard-shell relative flex w-full bg-[var(--bg)] text-[var(--text-primary)] overflow-hidden transition-colors duration-300'
+      style={{ height: 'calc(100dvh - 64px)', marginTop: '64px' }}>
+
+      {/* Mobile sticky header bar — replaces the floating hamburger */}
+      <div className='md:hidden fixed left-0 right-0 z-30 flex items-center gap-3 px-4 py-2.5 bg-[var(--surface)]/95 backdrop-blur-md border-b border-[var(--border-subtle)] shadow-sm'
+        style={{ top: '64px' }}>
+        <button
+          onClick={() => setIsSidebarOpen(true)}
+          className='flex items-center gap-2.5 px-3.5 py-2 rounded-2xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)] text-[var(--accent-primary)] active:scale-95 transition-all shadow cursor-pointer'
+          aria-label="Open dashboard menu"
+        >
+          <HiMenuAlt2 size={18} />
+          <span className='text-xs font-bold uppercase tracking-wider text-[var(--text-primary)]'>Dashboard Menu</span>
+        </button>
+      </div>
 
       <SideBar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
 
-      <div className='flex-1 h-full border-l border-[var(--border-subtle)] bg-[var(--bg)] overflow-auto custom-scrollbar'>
-        <div className='mx-auto px-3 sm:px-6 md:px-10 pt-24 md:pt-12 pb-16 max-w-7xl'>
+      <div className='flex-1 h-full border-l border-[var(--border-subtle)] bg-[var(--bg)] overflow-y-auto custom-scrollbar'>
+        <div className='mx-auto px-3 sm:px-6 md:px-10 pt-16 md:pt-10 pb-16 max-w-7xl'>
           <Outlet/>
         </div>
       </div>

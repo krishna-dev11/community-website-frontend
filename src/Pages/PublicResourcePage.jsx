@@ -24,6 +24,7 @@ import {
   FiDollarSign,
   FiClock,
 } from "react-icons/fi";
+import { FaYoutube, FaPlay } from "react-icons/fa";
 import { apiConnector } from "../services/apiConnector";
 import { communityEndpoints, contentEndpoints, opportunityEndpoints } from "../services/apis";
 import DocViewer from "../Components/Common/DocViewer";
@@ -45,7 +46,7 @@ const resourceConfig = {
     label: "Community Updates",
     labelHi: "आधिकारिक सूचनाएँ",
     description: "Important published updates, circulars, and announcements from the Samaj committee.",
-    descriptionHi: "प्रांतीय बैरवा प्रगति संस्था द्वारा प्रकाशित महत्वपूर्ण परिपत्र, सूचनाएँ एवं घोषणाएँ।",
+    descriptionHi: "आदिवासी हल्बा/हल्बी समाज कल्याण समिति, उज्जैन द्वारा प्रकाशित महत्वपूर्ण परिपत्र, सूचनाएँ एवं घोषणाएँ।",
     endpoint: contentEndpoints.NOTICES_API,
     dataKey: "notices",
     empty: "No published notices are available right now.",
@@ -94,6 +95,20 @@ const resourceConfig = {
     emptyHi: "वर्तमान में कोई एल्बम उपलब्ध नहीं है।",
     accent: "border-amber-400/30 bg-amber-500/10 text-amber-100",
     icon: FiImage,
+  },
+  videos: {
+    title: "Samaj Videos",
+    titleHi: "समाज वीडियो संग्रह",
+    label: "YouTube Videos",
+    labelHi: "वीडियो झलकियां",
+    description: "Official community video recordings, conventions, and cultural celebrations.",
+    descriptionHi: "आदिवासी हल्बा/हल्बी समाज कल्याण समिति के आधिकारिक कार्यक्रम एवं समारोहों के वीडियो।",
+    endpoint: contentEndpoints.VIDEOS_API,
+    dataKey: "videos",
+    empty: "No published videos are available right now.",
+    emptyHi: "वर्तमान में कोई वीडियो उपलब्ध नहीं है।",
+    accent: "border-red-400/30 bg-red-500/10 text-red-200",
+    icon: FaYoutube,
   },
   jobs: {
     title: "Jobs & Careers",
@@ -194,7 +209,19 @@ const getDescription = (item) => {
   return item.description || item.message || item.eligibility || item.summary || item.solution || "Details will be available soon.";
 };
 
+const getRequiredDocument = (scholarship) => {
+  const config = scholarship?.requiredDocument || {};
+  const name = config.name || scholarship?.requiredDocumentName || "";
+  return {
+    ...config,
+    enabled: Boolean(config.enabled ?? name),
+    name,
+    instructions: config.instructions || scholarship?.requiredDocumentDescription || "",
+  };
+};
+
 const getCoverImage = (type, item) => {
+  if (type === "videos") return item.thumbnailUrl || (item.videoId ? `https://img.youtube.com/vi/${item.videoId}/hqdefault.jpg` : undefined);
   if (type === "achievements") return item.image?.url;
   if (type === "condolence") return item.photo?.url;
   if (type === "notices") return item.attachments?.[0]?.url;
@@ -206,11 +233,181 @@ const getTitle = (type, item) => {
   return item.title || item.achieverName || "Untitled";
 };
 
+const EMPLOYMENT_LABELS = {
+  FULL_TIME: "Full Time",
+  PART_TIME: "Part Time",
+  CONTRACT: "Contract",
+  INTERNSHIP: "Internship",
+  REMOTE: "Remote",
+  OTHER: "Other",
+};
+
+const getJobStatus = (job) => {
+  if (job.status === "EXPIRED" || (job.expiresAt && new Date(job.expiresAt) <= new Date())) return "Expired";
+  if (job.expiresAt && new Date(job.expiresAt).getTime() - Date.now() <= 7 * 24 * 60 * 60 * 1000) return "Closing Soon";
+  return "Open";
+};
+
+const getJobPoster = (job) => {
+  const poster = job.postedBy;
+  if (!poster) return "";
+  return [poster.firstName, poster.lastName].filter(Boolean).join(" ");
+};
+
+const JobDetail = ({ job }) => {
+  const status = getJobStatus(job);
+  const poster = getJobPoster(job);
+  const details = [
+    ["Salary / Stipend", job.salaryRange],
+    ["Experience", job.experienceRequired],
+    ["Application Deadline", job.expiresAt ? formatDate(job.expiresAt) : "Open"],
+    ["Posted Date", formatDate(job.publishedAt || job.createdAt)],
+  ].filter(([, value]) => value);
+
+  return (
+    <div className="space-y-5 min-w-0">
+      <div className="grid gap-3 sm:grid-cols-2">
+        {details.map(([label, value]) => (
+          <div key={label} className="min-w-0 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-3">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">{label}</p>
+            <p className="mt-1 break-words text-sm font-semibold text-[var(--text-primary)]">{value}</p>
+          </div>
+        ))}
+      </div>
+
+      {job.skills?.length > 0 && (
+        <section>
+          <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Required Skills</h3>
+          <div className="flex flex-wrap gap-2">
+            {job.skills.map((skill) => (
+              <span key={skill} className="max-w-full break-words rounded-full border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-3 py-1 text-xs text-[var(--text-secondary)]">{skill}</span>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <section>
+        <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Job Description</h3>
+        <p className="whitespace-pre-line break-words text-sm leading-relaxed text-[var(--text-primary)]">{job.description}</p>
+      </section>
+
+      {poster && (
+        <p className="break-words border-t border-[var(--border-subtle)] pt-4 text-xs text-[var(--text-muted)]">Posted by <span className="font-semibold text-[var(--text-primary)]">{poster}</span></p>
+      )}
+
+      {status === "Expired" && (
+        <p className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-400">This opportunity is no longer accepting applications.</p>
+      )}
+    </div>
+  );
+};
+
+const JobCard = ({ job, onDetails, onApply }) => {
+  const status = getJobStatus(job);
+  const poster = getJobPoster(job);
+  const statusClass = status === "Expired"
+    ? "border-red-500/30 bg-red-500/10 text-red-400"
+    : status === "Closing Soon"
+      ? "border-amber-500/30 bg-amber-500/10 text-amber-500"
+      : "border-emerald-500/30 bg-emerald-500/10 text-emerald-500";
+
+  const details = [
+    ["Salary / Stipend", job.salaryRange, FiDollarSign],
+    ["Experience", job.experienceRequired, FiClock],
+    ["Apply Before", job.expiresAt ? formatDate(job.expiresAt) : "Open", FiCalendar],
+  ].filter(([, value]) => value);
+
+  return (
+    <article className="group flex min-w-0 flex-col justify-between overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-5 transition-all duration-300 hover:-translate-y-1 hover:border-emerald-500/40 hover:shadow-lg">
+      <div className="min-w-0">
+        <div className="flex min-w-0 items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="line-clamp-2 break-words text-lg font-black leading-snug text-[var(--text-primary)] group-hover:text-emerald-500">{job.title}</h2>
+            <p className="mt-1 break-words text-sm font-semibold text-[var(--text-secondary)]">{job.companyName}</p>
+          </div>
+          <span className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${statusClass}`}>{status}</span>
+        </div>
+
+        <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-[var(--text-secondary)]">
+          {job.location && <span className="max-w-full break-words rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-2 py-1">📍 {job.location}</span>}
+          {job.employmentType && <span className="max-w-full break-words rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-2 py-1">💼 {EMPLOYMENT_LABELS[job.employmentType] || job.employmentType}</span>}
+        </div>
+
+        {job.description && <p className="mt-4 line-clamp-4 break-words text-sm leading-relaxed text-[var(--text-secondary)]">{job.description}</p>}
+
+        {details.length > 0 && (
+          <div className="mt-4 grid min-w-0 gap-2 sm:grid-cols-3">
+            {details.map(([label, value]) => (
+              <div key={label} className="min-w-0 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-2.5">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">{label}</p>
+                <p className="mt-1 break-words text-xs font-semibold text-[var(--text-primary)]">{value}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {job.skills?.length > 0 && (
+          <div className="mt-4">
+            <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Required Skills</p>
+            <div className="flex flex-wrap gap-1.5">
+              {job.skills.slice(0, 6).map((skill) => <span key={skill} className="max-w-full break-words rounded-full border border-[var(--border-subtle)] bg-[var(--surface)] px-2.5 py-1 text-[10px] text-[var(--text-secondary)]">{skill}</span>)}
+              {job.skills.length > 6 && <span className="self-center text-[10px] text-[var(--text-muted)]">+{job.skills.length - 6} more</span>}
+            </div>
+          </div>
+        )}
+
+        {poster && <p className="mt-3 break-words text-[10px] text-[var(--text-muted)]">Posted by {poster}</p>}
+      </div>
+
+      <div className="mt-5 flex flex-col gap-2 border-t border-[var(--border-subtle)] pt-4 sm:flex-row">
+        <button type="button" onClick={onDetails} className="btn-secondary !w-full !py-2.5 !px-4 !text-xs sm:flex-1">View Full Details</button>
+        {status !== "Expired" && <button type="button" onClick={onApply} className="btn-primary !w-full !py-2.5 !px-4 !text-xs sm:flex-1"><FiSend size={14} /> Apply Now</button>}
+      </div>
+    </article>
+  );
+};
+
+const ScholarshipDetail = ({ scholarship }) => (
+  <div className="space-y-5 min-w-0">
+    <div className="grid gap-3 sm:grid-cols-2">
+      {[
+        ["Amount", scholarship.amount ? `Rs. ${Number(scholarship.amount).toLocaleString("en-IN")}` : "Not disclosed"],
+        ["Available Seats", scholarship.seats],
+        ["Application Deadline", formatDate(scholarship.applicationDeadline)],
+        ["Published Date", formatDate(scholarship.publishedAt || scholarship.createdAt)],
+      ].filter(([, value]) => value).map(([label, value]) => (
+        <div key={label} className="min-w-0 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-3">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">{label}</p>
+          <p className="mt-1 break-words text-sm font-semibold text-[var(--text-primary)]">{value}</p>
+        </div>
+      ))}
+    </div>
+    <section>
+      <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Full Description</h3>
+      <p className="whitespace-pre-line break-words text-sm leading-relaxed text-[var(--text-primary)]">{scholarship.description}</p>
+    </section>
+    {scholarship.eligibility && (
+      <section>
+        <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Eligibility</h3>
+        <p className="whitespace-pre-line break-words text-sm leading-relaxed text-[var(--text-primary)]">{scholarship.eligibility}</p>
+      </section>
+    )}
+    {scholarship.requiredDocument?.enabled && (
+      <section className="rounded-2xl border border-emerald-500/25 bg-emerald-500/5 p-4">
+        <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-emerald-500">Required Document</h3>
+        <p className="break-words text-sm font-semibold text-[var(--text-primary)]">{scholarship.requiredDocument.name}</p>
+        {scholarship.requiredDocument.instructions && <p className="mt-1 whitespace-pre-line break-words text-xs text-[var(--text-secondary)]">{scholarship.requiredDocument.instructions}</p>}
+        {scholarship.requiredDocument.file?.url && <a href={scholarship.requiredDocument.file.url} target="_blank" rel="noreferrer" className="mt-2 inline-flex text-xs font-bold text-[var(--accent-primary)] hover:underline">View reference document</a>}
+      </section>
+    )}
+  </div>
+);
+
 const PublicResourcePage = ({ type }) => {
   const navigate = useNavigate();
   const { token } = useSelector((state) => state.auth);
   const { user } = useSelector((state) => state.profile);
-  const { t, isHindi } = useLanguage();
+  const { isHindi } = useLanguage();
   const rawConfig = resourceConfig[type] || resourceConfig.notices;
   const config = {
     ...rawConfig,
@@ -229,6 +426,7 @@ const PublicResourcePage = ({ type }) => {
 
   // Modals & Active targets
   const [selectedItem, setSelectedItem] = useState(null); // Detail view modal
+  const [viewingVideo, setViewingVideo] = useState(null);
   const [applicationTarget, setApplicationTarget] = useState(null);
   const [applying, setApplying] = useState(false);
   const [applicationForm, setApplicationForm] = useState({
@@ -238,6 +436,9 @@ const PublicResourcePage = ({ type }) => {
     incomeDetails: "",
     statement: "",
   });
+  const [applicationDocument, setApplicationDocument] = useState(null);
+  const [myScholarshipApplications, setMyScholarshipApplications] = useState([]);
+  const [downloadingPublicationId, setDownloadingPublicationId] = useState(null);
 
   // Post a Job Modal (Requirement 17)
   const [isPostingJob, setIsPostingJob] = useState(false);
@@ -260,7 +461,6 @@ const PublicResourcePage = ({ type }) => {
   const [openAlbum, setOpenAlbum] = useState(null);
   const [albumLoading, setAlbumLoading] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(null);
-  const [viewingDoc, setViewingDoc] = useState(null);
 
   const params = useMemo(() => {
     const next = { page: 1, limit: type === "gallery" ? 12 : 10 };
@@ -294,6 +494,23 @@ const PublicResourcePage = ({ type }) => {
     };
   }, [config.dataKey, config.endpoint, params]);
 
+  useEffect(() => {
+    if (type !== "scholarships" || !token) return undefined;
+    let mounted = true;
+    apiConnector("GET", opportunityEndpoints.MY_SCHOLARSHIP_APPLICATIONS_API, null, { headers: { Authorization: `Bearer ${token}` }, withCredentials: true })
+      .then((response) => { if (mounted) setMyScholarshipApplications(response?.data?.data?.applications || []); })
+      .catch(() => { if (mounted) setMyScholarshipApplications([]); });
+    return () => { mounted = false; };
+  }, [type, token]);
+
+  useEffect(() => {
+    const modalOpen = Boolean(selectedItem || applicationTarget || viewingVideo || openAlbum);
+    if (!modalOpen) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = previousOverflow; };
+  }, [selectedItem, applicationTarget, viewingVideo, openAlbum]);
+
   const openGalleryAlbum = useCallback(async (album) => {
     setOpenAlbum({ ...album, photos: [] });
     setAlbumLoading(true);
@@ -325,28 +542,56 @@ const PublicResourcePage = ({ type }) => {
     setActiveQuery(query);
   };
 
-  const handlePublicationDownload = async (item) => {
+  const handlePublicationRead = (item) => {
     if (type !== "publications" || !item?._id) return;
+    if (!item.file?.url) {
+      toast.error("Publication PDF is not available.");
+      return;
+    }
+    const pdfUrl = contentEndpoints.PUBLICATION_VIEW_FILE_API(item._id);
+    window.open(pdfUrl, "_blank", "noopener,noreferrer");
+  };
+
+  const handlePublicationDownload = async (item) => {
+    if (type !== "publications" || !item?._id || downloadingPublicationId) return;
+    if (!item.file?.url) {
+      toast.error("Publication PDF is not available.");
+      return;
+    }
+    setDownloadingPublicationId(item._id);
     try {
-      await apiConnector("POST", contentEndpoints.PUBLICATION_DOWNLOAD_API(item._id));
-    } catch {}
-    if (item?.file?.url) {
-      let downloadUrl = item.file.url;
-      if (downloadUrl.includes("cloudinary.com") && downloadUrl.includes("/upload/")) {
-        downloadUrl = downloadUrl.replace("/upload/", "/upload/fl_attachment/");
+      const response = await fetch(contentEndpoints.PUBLICATION_DOWNLOAD_FILE_API(item._id));
+      const contentType = (response.headers.get("content-type") || "").toLowerCase();
+      if (!response.ok || !contentType.includes("application/pdf")) {
+        let errMessage = "Unable to download publication PDF.";
+        try {
+          const errData = await response.json();
+          if (errData?.message) errMessage = errData.message;
+        } catch {}
+        throw new Error(response.status === 404 ? "Publication file not found." : errMessage);
       }
-      const cleanTitle = (item.title || "Samaj_Patrika").replace(/[^a-zA-Z0-9_-]/g, "_");
-      const a = document.createElement("a");
-      a.href = downloadUrl;
-      a.download = `${cleanTitle}.pdf`;
-      a.target = "_blank";
-      a.rel = "noopener noreferrer";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      toast.success("Publication download started");
-    } else {
-      toast.error("Publication file not found");
+      const blob = await response.blob();
+      if (blob.size < 5 || (blob.type && !blob.type.includes("application/pdf") && !blob.type.includes("application/octet-stream"))) {
+        throw new Error("Publication file is not a valid PDF.");
+      }
+      const cleanTitle = String(item.title || "Samaj_Patrika")
+        .trim()
+        .replace(/[\\/:*?"<>|]+/g, "-")
+        .slice(0, 100) || "Samaj_Patrika";
+      const objectUrl = URL.createObjectURL(new Blob([blob], { type: "application/pdf" }));
+      const anchor = document.createElement("a");
+      anchor.href = objectUrl;
+      anchor.download = `${cleanTitle}.pdf`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(objectUrl);
+      await apiConnector("POST", contentEndpoints.PUBLICATION_DOWNLOAD_API(item._id)).catch(() => {});
+      toast.success("Publication PDF downloaded");
+    } catch (error) {
+      toast.error(error.message || "Unable to download publication PDF.");
+    } finally {
+      setDownloadingPublicationId(null);
     }
   };
 
@@ -357,7 +602,12 @@ const PublicResourcePage = ({ type }) => {
       return;
     }
 
-    setApplicationTarget(item);
+    const existingApplication = myScholarshipApplications.find((application) => application.scholarship?._id === item._id || application.scholarship === item._id);
+    if (type === "scholarships" && existingApplication) {
+      toast(existingApplication.status === "SUBMITTED" ? "Application under review" : `Application ${existingApplication.status.toLowerCase()}`);
+      return;
+    }
+    setApplicationTarget({ ...item, requiredDocument: getRequiredDocument(item) });
     setApplicationForm({
       coverLetter: "",
       applicantName: `${user?.firstName || ""} ${user?.lastName || ""}`.trim(),
@@ -365,6 +615,7 @@ const PublicResourcePage = ({ type }) => {
       incomeDetails: "",
       statement: "",
     });
+    setApplicationDocument(null);
   };
 
   const closeApplication = () => {
@@ -380,6 +631,10 @@ const PublicResourcePage = ({ type }) => {
     if (!applicationTarget?._id) return;
 
     const isScholarship = type === "scholarships";
+        if (isScholarship && applicationTarget.requiredDocument?.enabled && !applicationDocument) {
+          toast.error("Please upload the required document before submitting your application.");
+          return;
+        }
     if (isScholarship && (!applicationForm.applicantName || !applicationForm.statement)) {
       toast.error("Applicant name and statement are required.");
       return;
@@ -390,12 +645,15 @@ const PublicResourcePage = ({ type }) => {
       : opportunityEndpoints.APPLY_JOB_API(applicationTarget._id);
 
     const body = isScholarship
-      ? {
-          applicantName: applicationForm.applicantName,
-          educationDetails: applicationForm.educationDetails,
-          incomeDetails: applicationForm.incomeDetails,
-          statement: applicationForm.statement,
-        }
+      ? (() => {
+          const formData = new FormData();
+          formData.append("applicantName", applicationForm.applicantName);
+          formData.append("educationDetails", applicationForm.educationDetails);
+          formData.append("incomeDetails", applicationForm.incomeDetails);
+          formData.append("statement", applicationForm.statement);
+          if (applicationDocument) formData.append("documents", applicationDocument);
+          return formData;
+        })()
       : {
           coverLetter: applicationForm.coverLetter,
         };
@@ -529,6 +787,30 @@ const PublicResourcePage = ({ type }) => {
           </div>
         )}
 
+        {type === "scholarships" && token && myScholarshipApplications.length > 0 && (
+          <section className="mb-6 rounded-3xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-5 sm:p-6">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-base font-black text-[var(--text-primary)]">My Scholarship Applications</h2>
+                <p className="mt-1 text-xs text-[var(--text-muted)]">Track submitted documents and review decisions.</p>
+              </div>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              {myScholarshipApplications.map((application) => (
+                <div key={application._id} className="min-w-0 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <h3 className="min-w-0 break-words text-sm font-bold text-[var(--text-primary)]">{application.scholarship?.title || "Scholarship"}</h3>
+                    <span className="shrink-0 rounded-full border border-[var(--accent-primary)]/30 bg-[var(--accent-primary)]/10 px-2 py-0.5 text-[10px] font-bold text-[var(--accent-primary)]">{application.status === "SUBMITTED" ? "PENDING" : application.status}</span>
+                  </div>
+                  <p className="mt-2 text-[11px] text-[var(--text-muted)]">Submitted: {application.createdAt ? new Date(application.createdAt).toLocaleDateString("en-IN") : "Not available"}</p>
+                  {application.requiredDocument?.name && <p className="mt-1 break-words text-xs text-[var(--text-secondary)]">Document: {application.requiredDocument.name} ✓</p>}
+                  {application.reviewReason && <p className="mt-2 break-words rounded-lg bg-red-500/10 px-2.5 py-2 text-xs text-red-400">Review note: {application.reviewReason}</p>}
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
         {loading ? (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {Array.from({ length: 6 }).map((_, index) => (
@@ -542,13 +824,26 @@ const PublicResourcePage = ({ type }) => {
         ) : (
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             {items.map((item) => (
-              <article
+              type === "jobs" ? (
+                <JobCard
+                  key={item._id}
+                  job={item}
+                  onDetails={() => setSelectedItem(item)}
+                  onApply={() => openApplication(item)}
+                />
+              ) : <article
                 key={item._id}
-                className="ka-card flex flex-col justify-between p-0 overflow-hidden group hover:border-[var(--accent-primary)]/40 transition-all cursor-pointer"
+                className="ka-card flex min-w-0 flex-col justify-between overflow-hidden p-0 group hover:border-[var(--accent-primary)]/40 transition-all cursor-pointer"
                 onClick={() => {
                   if (type === "gallery") {
                     openGalleryAlbum(item);
-                  } else if (type !== "publications") {
+                  } else if (type === "publications") {
+                    if (item.file?.url) {
+                      window.open(contentEndpoints.PUBLICATION_VIEW_FILE_API(item._id), "_blank", "noopener,noreferrer");
+                    } else {
+                      toast.error("Publication PDF is not available.");
+                    }
+                  } else {
                     setSelectedItem(item);
                   }
                 }}
@@ -578,10 +873,10 @@ const PublicResourcePage = ({ type }) => {
                       </span>
                     </div>
 
-                    <h2 className="line-clamp-2 text-lg font-bold leading-snug tracking-tight text-[var(--text-primary)] group-hover:text-[var(--accent-primary)] transition-colors">
+                    <h2 className="line-clamp-2 break-words text-lg font-bold leading-snug tracking-tight text-[var(--text-primary)] group-hover:text-[var(--accent-primary)] transition-colors">
                       {getTitle(type, item)}
                     </h2>
-                    <p className="mt-2 line-clamp-3 text-xs sm:text-sm leading-relaxed text-[var(--text-secondary)]">
+                    <p className="mt-2 line-clamp-3 break-words text-xs sm:text-sm leading-relaxed text-[var(--text-secondary)]">
                       {getDescription(item)}
                     </p>
 
@@ -597,29 +892,43 @@ const PublicResourcePage = ({ type }) => {
                   </div>
 
                   <div className="pt-4 mt-4 border-t border-[var(--border-subtle)]">
-                    {type === "publications" && item.file?.url ? (
+                    {type === "publications" ? (
                       <div className="flex flex-col sm:flex-row gap-2">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setViewingDoc({ url: item.file.url, title: item.title });
-                          }}
-                          className="btn-secondary !py-2 !px-4 !text-xs w-full sm:w-auto"
-                        >
-                          <FiFileText size={14} />
-                          <span>Read Online</span>
-                        </button>
+                        {item.file?.url ? (
+                          <a
+                            href={contentEndpoints.PUBLICATION_VIEW_FILE_API(item._id)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="btn-secondary !py-2 !px-4 !text-xs w-full sm:w-auto inline-flex items-center justify-center gap-1.5"
+                          >
+                            <FiFileText size={14} />
+                            <span>Read Online</span>
+                          </a>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toast.error("Publication PDF is not available.");
+                            }}
+                            className="btn-secondary !py-2 !px-4 !text-xs w-full sm:w-auto opacity-60 cursor-not-allowed inline-flex items-center justify-center gap-1.5"
+                          >
+                            <FiFileText size={14} />
+                            <span>PDF unavailable</span>
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
                             handlePublicationDownload(item);
                           }}
-                          className="btn-primary !py-2.5 !px-5 !text-xs w-full sm:flex-1"
+                          disabled={downloadingPublicationId === item._id || !item.file?.url}
+                          className="btn-primary !py-2.5 !px-5 !text-xs w-full sm:flex-1 inline-flex items-center justify-center gap-1.5"
                         >
                           <FiDownload size={15} />
-                          <span>Download Edition</span>
+                          <span>{downloadingPublicationId === item._id ? "Downloading..." : "Download Edition"}</span>
                         </button>
                       </div>
                     ) : type === "gallery" ? (
@@ -634,6 +943,31 @@ const PublicResourcePage = ({ type }) => {
                         <FiImage size={15} />
                         <span>View {item.photoCount || 0} Photos</span>
                       </button>
+                    ) : type === "videos" ? (
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setViewingVideo(item);
+                          }}
+                          className="btn-primary !py-2.5 !px-4 !text-xs flex-1 inline-flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                          <FaPlay size={11} />
+                          <span>Play Video</span>
+                        </button>
+                        <a
+                          href={item.youtubeUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="btn-secondary !py-2.5 !px-3 !text-xs text-red-500 inline-flex items-center gap-1.5"
+                          title="Watch on YouTube"
+                        >
+                          <FaYoutube size={14} />
+                          <span className="hidden sm:inline">YouTube</span>
+                        </a>
+                      </div>
                     ) : type === "jobs" || type === "scholarships" ? (
                       <div className="flex items-center gap-2">
                         <button
@@ -642,10 +976,11 @@ const PublicResourcePage = ({ type }) => {
                             e.stopPropagation();
                             openApplication(item);
                           }}
-                          className="btn-primary !py-2.5 !px-4 !text-xs flex-1"
+                          disabled={type === "scholarships" && myScholarshipApplications.some((application) => application.scholarship?._id === item._id || application.scholarship === item._id)}
+                          className="btn-primary !py-2.5 !px-4 !text-xs flex-1 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           <FiSend size={14} />
-                          <span>Apply</span>
+                          <span>{type === "scholarships" && myScholarshipApplications.some((application) => application.scholarship?._id === item._id || application.scholarship === item._id) ? "Already Applied" : "Apply"}</span>
                         </button>
                         <button
                           type="button"
@@ -682,16 +1017,18 @@ const PublicResourcePage = ({ type }) => {
       {selectedItem && (
         <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/80 px-4 py-6 backdrop-blur-md">
           <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto ka-card p-6 sm:p-8 shadow-2xl border border-[var(--border-strong)]">
-            <div className="mb-5 flex items-start justify-between gap-4 border-b border-[var(--border-subtle)] pb-4">
-              <div>
+            <div className="mb-5 flex min-w-0 items-start justify-between gap-4 border-b border-[var(--border-subtle)] pb-4">
+              <div className="min-w-0">
                 <span className="eyebrow-badge mb-2">{config.label}</span>
-                <h2 className="mt-1 text-2xl font-bold leading-snug text-[var(--text-primary)]">
+                <h2 className="mt-1 break-words text-2xl font-bold leading-snug text-[var(--text-primary)]">
                   {getTitle(type, selectedItem)}
                 </h2>
-                <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-[var(--text-muted)]">
+                <div className="mt-2 flex flex-wrap items-center gap-3 break-words text-xs text-[var(--text-muted)]">
                   <span>📅 {formatDate(getItemDate(type, selectedItem))}</span>
                   {selectedItem.category && <span>• 🏷️ {selectedItem.category}</span>}
                   {selectedItem.location && <span>• 📍 {selectedItem.location}</span>}
+                  {type === "jobs" && selectedItem.companyName && <span>• {selectedItem.companyName}</span>}
+                  {type === "jobs" && selectedItem.employmentType && <span>• {EMPLOYMENT_LABELS[selectedItem.employmentType] || selectedItem.employmentType}</span>}
                 </div>
               </div>
               <button
@@ -704,7 +1041,10 @@ const PublicResourcePage = ({ type }) => {
             </div>
 
             {/* Content Details */}
-            <div className="space-y-6 text-sm text-[var(--text-secondary)] leading-relaxed">
+            <div className="min-w-0 space-y-6 break-words text-sm leading-relaxed text-[var(--text-secondary)]">
+              {type === "jobs" && <JobDetail job={selectedItem} />}
+              {type === "scholarships" && <ScholarshipDetail scholarship={selectedItem} />}
+
               {/* Solution Specific View */}
               {type === "solutions" && (
                 <>
@@ -740,7 +1080,7 @@ const PublicResourcePage = ({ type }) => {
               )}
 
               {/* General Description */}
-              {type !== "solutions" && (
+              {type !== "solutions" && type !== "jobs" && type !== "scholarships" && (
                 <div className="whitespace-pre-line text-sm leading-relaxed text-[var(--text-primary)]">
                   {getDescription(selectedItem)}
                 </div>
@@ -954,7 +1294,7 @@ const PublicResourcePage = ({ type }) => {
                   rows={5}
                   value={jobForm.description}
                   onChange={(e) => handleJobFormChange("description", e.target.value)}
-                  className="ka-input resize-none"
+                  className="ka-input resize-y"
                   placeholder="Describe the role responsibilities, qualifications, and how members can apply."
                 />
               </label>
@@ -1075,12 +1415,12 @@ const PublicResourcePage = ({ type }) => {
 
       {/* ================= JOB / SCHOLARSHIP APPLICATION MODAL ================= */}
       {applicationTarget ? (
-        <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/75 px-4 py-6 backdrop-blur-md">
+        <div className="fixed inset-0 z-[1200] flex items-center justify-center overflow-hidden bg-black/75 px-3 py-4 backdrop-blur-md sm:px-4 sm:py-6">
           <form
             onSubmit={submitApplication}
-            className="max-h-[92vh] w-full max-w-2xl overflow-y-auto ka-card p-6 sm:p-8 shadow-2xl border border-[var(--border-strong)]"
+            className="ka-card flex max-h-[calc(100dvh-20px)] min-h-0 w-full max-w-2xl flex-col overflow-hidden border border-[var(--border-strong)] p-0 shadow-2xl sm:max-h-[calc(100dvh-32px)]"
           >
-            <div className="mb-5 flex items-start justify-between gap-4 border-b border-[var(--border-subtle)] pb-4">
+            <div className="flex shrink-0 items-start justify-between gap-4 border-b border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-5 sm:p-8">
               <div>
                 <p className="eyebrow-badge mb-2">
                   {type === "scholarships" ? "Scholarship Application" : "Job Application"}
@@ -1101,8 +1441,9 @@ const PublicResourcePage = ({ type }) => {
               </button>
             </div>
 
-            {type === "scholarships" ? (
-              <div className="grid gap-4">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5 custom-scrollbar [-webkit-overflow-scrolling:touch] sm:p-8">
+              {type === "scholarships" ? (
+                <div className="grid gap-4">
                 <label className="grid gap-1">
                   <span className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Applicant Name</span>
                   <input
@@ -1118,7 +1459,7 @@ const PublicResourcePage = ({ type }) => {
                     value={applicationForm.educationDetails}
                     onChange={(event) => handleApplicationChange("educationDetails", event.target.value)}
                     rows={3}
-                    className="ka-input resize-none"
+                    className="ka-input resize-y"
                     placeholder="Class, course, college, marks, or other relevant education details"
                   />
                 </label>
@@ -1128,7 +1469,7 @@ const PublicResourcePage = ({ type }) => {
                     value={applicationForm.incomeDetails}
                     onChange={(event) => handleApplicationChange("incomeDetails", event.target.value)}
                     rows={3}
-                    className="ka-input resize-none"
+                    className="ka-input resize-y"
                     placeholder="Family income or financial background"
                   />
                 </label>
@@ -1138,43 +1479,105 @@ const PublicResourcePage = ({ type }) => {
                     value={applicationForm.statement}
                     onChange={(event) => handleApplicationChange("statement", event.target.value)}
                     rows={4}
-                    className="ka-input resize-none"
+                    className="ka-input resize-y"
                     placeholder="Why are you applying?"
                   />
                 </label>
-              </div>
-            ) : (
-              <label className="grid gap-1">
-                <span className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Cover Letter & Experience Summary</span>
-                <textarea
-                  value={applicationForm.coverLetter}
-                  onChange={(event) => handleApplicationChange("coverLetter", event.target.value)}
-                  rows={7}
-                  className="ka-input resize-none"
-                  placeholder="Introduce yourself, mention key skills, past work, and why you are applying."
-                />
-              </label>
-            )}
+                {getRequiredDocument(applicationTarget).enabled && (
+                  <div className="grid gap-2 rounded-2xl border border-emerald-500/25 bg-emerald-500/5 p-4">
+                    <div className="flex items-start gap-3">
+                      <FiFileText className="mt-0.5 shrink-0 text-emerald-500" size={18} />
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold uppercase tracking-wider text-[var(--text-primary)]">Required Document *</p>
+                        <p className="mt-1 break-words text-sm font-semibold text-emerald-500">{getRequiredDocument(applicationTarget).name}</p>
+                        {getRequiredDocument(applicationTarget).instructions && <p className="mt-1 whitespace-pre-line break-words text-xs text-[var(--text-secondary)]">{getRequiredDocument(applicationTarget).instructions}</p>}
+                        {applicationTarget.requiredDocument.file?.url && <a href={applicationTarget.requiredDocument.file.url} target="_blank" rel="noreferrer" className="mt-2 inline-flex text-xs font-bold text-[var(--accent-primary)] hover:underline">View reference document</a>}
+                      </div>
+                    </div>
+                    <input type="file" accept="application/pdf,image/jpeg,image/png" onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      const allowed = ["application/pdf", "image/jpeg", "image/png"];
+                      if (file && (!allowed.includes(file.type) || file.size > 15 * 1024 * 1024)) {
+                        toast.error("Please select a PDF, JPG, or PNG file up to 15 MB.");
+                        event.target.value = "";
+                        setApplicationDocument(null);
+                        return;
+                      }
+                      setApplicationDocument(file || null);
+                    }} className="ka-input !py-2 text-xs" required />
+                    {applicationDocument && <p className="break-words text-xs text-emerald-500">Selected: {applicationDocument.name}</p>}
+                  </div>
+                )}
+                </div>
+              ) : (
+                <label className="grid gap-1">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Cover Letter & Experience Summary</span>
+                  <textarea
+                    value={applicationForm.coverLetter}
+                    onChange={(event) => handleApplicationChange("coverLetter", event.target.value)}
+                    rows={7}
+                    className="ka-input resize-y"
+                    placeholder="Introduce yourself, mention key skills, past work, and why you are applying."
+                  />
+                </label>
+              )}
 
-            <button
-              type="submit"
-              disabled={applying}
-              className="btn-primary mt-6 w-full"
-            >
-              <FiSend size={16} />
-              <span>{applying ? "Submitting..." : "Submit Application"}</span>
-            </button>
+              <button
+                type="submit"
+                disabled={applying}
+                className="btn-primary mt-6 w-full"
+              >
+                <FiSend size={16} />
+                <span>{applying ? "Submitting..." : "Submit Application"}</span>
+              </button>
+            </div>
           </form>
         </div>
       ) : null}
 
-      {/* Document / Publication Viewer */}
-      <DocViewer
-        isOpen={Boolean(viewingDoc)}
-        onClose={() => setViewingDoc(null)}
-        url={viewingDoc?.url}
-        title={viewingDoc?.title}
-      />
+      {/* Video Modal Player */}
+      {viewingVideo && (
+        <div
+          className="fixed inset-0 z-[1300] flex items-center justify-center bg-black/85 p-4 backdrop-blur-md"
+          onClick={() => setViewingVideo(null)}
+        >
+          <div
+            className="w-full max-w-3xl rounded-3xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-5 shadow-2xl space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
+              <h3 className="text-base font-bold text-[var(--text-primary)] truncate pr-4">{viewingVideo.title}</h3>
+              <button
+                type="button"
+                onClick={() => setViewingVideo(null)}
+                className="h-8 w-8 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer"
+              >
+                <FiX size={16} />
+              </button>
+            </div>
+            <div className="aspect-video w-full overflow-hidden rounded-2xl bg-black">
+              <iframe
+                src={`https://www.youtube-nocookie.com/embed/${viewingVideo.videoId}?autoplay=1`}
+                title={viewingVideo.title}
+                className="h-full w-full border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+            <div className="flex items-center justify-between text-xs pt-1">
+              <span className="text-[var(--text-muted)]">{viewingVideo.eventName || ""}</span>
+              <a
+                href={viewingVideo.youtubeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 font-bold text-red-500 hover:underline"
+              >
+                <FaYoutube size={14} /> Watch on YouTube
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 };

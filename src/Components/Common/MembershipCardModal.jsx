@@ -325,8 +325,8 @@ const MembershipCardModal = ({ isOpen, onClose }) => {
     : "SMJ-MEMBER";
 
   return createPortal(
-    <div className="fixed inset-0 z-[2600] flex items-center justify-center bg-black/85 p-2 sm:p-4 backdrop-blur-md overflow-y-auto">
-      <div className="relative w-full max-w-xl max-h-[94vh] overflow-y-auto overflow-x-hidden ka-card p-4 sm:p-6 md:p-8 shadow-[0_30px_90px_rgba(0,0,0,0.95)] my-auto rounded-2xl">
+    <div className="fixed inset-0 z-[2600] flex items-center justify-center bg-black/85 p-3 sm:p-4 backdrop-blur-md overflow-y-auto">
+      <div className="relative w-full max-w-xl max-h-[92dvh] overflow-y-auto overflow-x-hidden ka-card p-4 sm:p-6 md:p-8 shadow-[0_30px_90px_rgba(0,0,0,0.95)] my-auto rounded-2xl">
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -548,25 +548,25 @@ const MembershipCardModal = ({ isOpen, onClose }) => {
             </div>
 
             {/* Action Buttons */}
-            <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+            <div className="mt-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
               <button
                 onClick={handlePrint}
-                className="btn-secondary !py-2.5 !px-4 !text-xs cursor-pointer"
+                className="btn-secondary !py-2.5 !px-4 !text-xs cursor-pointer justify-center"
               >
                 <FiPrinter size={14} /> Print
               </button>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 [&>*]:flex-1 sm:[&>*]:flex-none">
                 <button
                   onClick={handleDownloadCard}
                   disabled={downloading}
-                  className="btn-primary !py-2.5 !px-5 !text-xs cursor-pointer disabled:opacity-50"
+                  className="btn-primary !py-2.5 !px-5 !text-xs cursor-pointer disabled:opacity-50 justify-center"
                 >
-                  <FiDownload size={14} /> {downloading ? "Generating PDF..." : "Download PDF Card"}
+                  <FiDownload size={14} /> {downloading ? "Generating..." : "Download PDF"}
                 </button>
                 <button
                   onClick={onClose}
-                  className="btn-secondary !py-2.5 !px-4 !text-xs cursor-pointer"
+                  className="btn-secondary !py-2.5 !px-4 !text-xs cursor-pointer justify-center"
                 >
                   Done
                 </button>

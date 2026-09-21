@@ -44,7 +44,7 @@ const PasswordUpdate = () => {
 
   return (
     <form onSubmit={handleSubmit(onFormSubmit)} className="flex flex-col gap-6">
-      <div className="ka-card p-6 md:p-8">
+      <div className="ka-card p-4 sm:p-6 md:p-8">
         <div className="flex items-center gap-3 mb-6 border-b border-[var(--border-subtle)] pb-4">
           <div className="w-10 h-10 rounded-2xl bg-[var(--accent-primary)]/10 flex items-center justify-center border border-[var(--accent-primary)]/20 text-[var(--accent-primary)]">
             <FiLock size={18} />
@@ -115,17 +115,17 @@ const PasswordUpdate = () => {
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row justify-end gap-3 px-2">
+      <div className="flex flex-col sm:flex-row justify-end gap-3 px-2 [&>*]:flex-1 sm:[&>*]:flex-none">
         <button 
           type="button"
           onClick={() => navigate("/dashboard/my-profile")} 
-          className="btn-secondary !py-2.5 !px-6 !text-xs cursor-pointer"
+          className="btn-secondary !py-2.5 !px-6 !text-xs cursor-pointer justify-center"
         >
           Cancel
         </button>
         <button 
           type="submit" 
-          className="btn-primary !py-2.5 !px-8 !text-xs cursor-pointer"
+          className="btn-primary !py-2.5 !px-8 !text-xs cursor-pointer justify-center"
         >
           <span>Update Password</span>
         </button>

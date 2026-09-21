@@ -57,7 +57,7 @@ const UpdateProfile = () => {
   return (
     <form onSubmit={handleSubmit(onFormSubmit)} className="flex flex-col gap-6">
       {/* 1. Personal Details */}
-      <div className="ka-card p-6 md:p-8">
+      <div className="ka-card p-4 sm:p-6 md:p-8">
         <div className="mb-6 border-b border-[var(--border-subtle)] pb-4">
           <div className="eyebrow-badge mb-1">Section 1</div>
           <h3 className="text-xl font-bold tracking-tight text-[var(--text-primary)]">
@@ -106,7 +106,7 @@ const UpdateProfile = () => {
       </div>
 
       {/* 2. Address & Residence */}
-      <div className="ka-card p-6 md:p-8">
+      <div className="ka-card p-4 sm:p-6 md:p-8">
         <div className="mb-6 border-b border-[var(--border-subtle)] pb-4">
           <div className="eyebrow-badge mb-1">Section 2</div>
           <h3 className="text-xl font-bold tracking-tight text-[var(--text-primary)]">
@@ -117,7 +117,7 @@ const UpdateProfile = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <label>
             <span className={labelStyle}>Native Place / Mool Niwas</span>
-            <input type="text" placeholder="e.g. Jaipur, Nagaur, etc." {...register("nativePlace")} className={inputStyle} />
+            <input type="text" placeholder="e.g. Ujjain, Bastar, Balod, etc." {...register("nativePlace")} className={inputStyle} />
           </label>
 
           <label>
@@ -135,7 +135,7 @@ const UpdateProfile = () => {
       </div>
 
       {/* 3. Education & Profession */}
-      <div className="ka-card p-6 md:p-8">
+      <div className="ka-card p-4 sm:p-6 md:p-8">
         <div className="mb-6 border-b border-[var(--border-subtle)] pb-4">
           <div className="eyebrow-badge mb-1">Section 3</div>
           <h3 className="text-xl font-bold tracking-tight text-[var(--text-primary)]">
@@ -163,17 +163,17 @@ const UpdateProfile = () => {
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row justify-end gap-3 px-2">
+      <div className="flex flex-col sm:flex-row justify-end gap-3 px-2 [&>*]:flex-1 sm:[&>*]:flex-none">
         <button 
           type="button"
           onClick={() => navigate("/dashboard/my-profile")} 
-          className="btn-secondary !py-2.5 !px-6 !text-xs cursor-pointer"
+          className="btn-secondary !py-2.5 !px-6 !text-xs cursor-pointer justify-center"
         >
           Cancel
         </button>
         <button 
           type="submit" 
-          className="btn-primary !py-2.5 !px-8 !text-xs cursor-pointer"
+          className="btn-primary !py-2.5 !px-8 !text-xs cursor-pointer justify-center"
         >
           <span>Save Changes</span>
         </button>

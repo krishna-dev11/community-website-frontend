@@ -126,26 +126,26 @@ const DesktopDropdown = ({ item, isOpen, setOpenDropdown, closeMenus, isDropdown
         />
       </button>
 
-      {/* Dropdown Menu */}
+      {/* Dropdown Menu — fully opaque, no glass/blur */}
       <div
         style={{
           position: "absolute",
           left: "50%",
           top: "calc(100% + 8px)",
-          zIndex: 1100,
+          zIndex: 1200,
           width: 290,
-          transform: `translateX(-50%) translateY(${isOpen ? 0 : -8}px)`,
+          transform: `translateX(-50%) translateY(${isOpen ? 0 : -6}px)`,
           borderRadius: 18,
-          border: "1px solid var(--glass-border)",
-          background: "var(--glass-bg)",
-          backdropFilter: "var(--glass-backdrop)",
-          WebkitBackdropFilter: "var(--glass-backdrop)",
+          border: "1px solid var(--border-strong)",
+          background: "var(--surface-elevated)",
+          backdropFilter: "none",
+          WebkitBackdropFilter: "none",
           padding: 8,
-          boxShadow: "var(--shadow-modal)",
+          boxShadow: "0 20px 60px rgba(0,0,0,0.3), 0 2px 8px rgba(0,0,0,0.15)",
           opacity: isOpen ? 1 : 0,
           visibility: isOpen ? "visible" : "hidden",
           pointerEvents: isOpen ? "auto" : "none",
-          transition: "all 200ms ease",
+          transition: "opacity 180ms ease, transform 180ms ease, visibility 180ms ease",
         }}
       >
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -154,12 +154,13 @@ const DesktopDropdown = ({ item, isOpen, setOpenDropdown, closeMenus, isDropdown
               key={subItem.path}
               to={subItem.path}
               onClick={closeMenus}
+              className="nav-dropdown-item"
               style={{
                 display: "flex",
                 flexDirection: "column",
                 padding: "10px 14px",
                 borderRadius: 12,
-                transition: "all 180ms ease",
+                transition: "background 150ms ease",
                 textDecoration: "none",
               }}
             >
@@ -233,24 +234,34 @@ const NavBar = () => {
           desc: isHindi ? "मान्यताएं, कालक्रम व 2011 जनगणना" : "Historical Traditions, Timeline & 2011 Census",
         },
         {
-          title: isHindi ? "महापुरुष" : "Community Icons",
-          path: "/mahapurush",
-          desc: isHindi ? "महर्षि बालीनाथ जी महाराज व प्रेरणापुंज" : "Maharshi Balinath Ji & Icons",
+          title: isHindi ? "आराध्य देव एवं आस्था" : "Faith & Deities",
+          path: "/faith",
+          desc: isHindi ? "ग्राम देव, मोथो, कारु बोआ, श्री विट्ठल-रुक्मिणी मंदिर" : "Gram Dev, Motho, Karu Boa, Vitthal-Rukmani Mandir",
+        },
+        {
+          title: isHindi ? "दार्शनिक विरासत" : "Heritage & Rebellion",
+          path: "/heritage",
+          desc: isHindi ? "हल्बा विद्रोह 1774–1779, बस्तर संपर्क" : "Halba Rebellion 1774–1779, Bastar Connection",
         },
         {
           title: isHindi ? "प्रदेश कार्यकारिणी" : "Management Committee",
-          path: "/committee",
+          path: "/management-committee",
           desc: isHindi ? "संरक्षक मंडल एवं पदाधिकारी" : "Board of Patrons & Executives",
         },
         {
-          title: isHindi ? "101 गोत्र डायरेक्टरी" : "101 Gotra Directory",
-          path: "/gotra",
-          desc: isHindi ? "मूल व संशोधित गोत्रों की सूची" : "Directory of 101 Bairwa Gotras",
+          title: isHindi ? "सामाजिक स्थिति (ST)" : "Constitutional Status",
+          path: "/constitutional-status",
+          desc: isHindi ? "ST अधिसूचना, जनगणना 2011 डेटा" : "ST Order 1950, Census 2011 Profile",
         },
         {
-          title: isHindi ? "संस्था नीतियां व नियम" : "Policies & Guidelines",
-          path: "/policies",
-          desc: isHindi ? "गोपनीयता, नियम व दिशानिर्देश" : "Terms, privacy & guidelines",
+          title: isHindi ? "101 गोत्र डायरेक्टरी" : "Gotra Directory",
+          path: "/gotras",
+          desc: isHindi ? "समिति-सत्यापित गोत्र सूचना" : "Samiti-verified Gotra information",
+        },
+        {
+          title: isHindi ? "सदस्यता नियम" : "Membership Rules",
+          path: "/membership",
+          desc: isHindi ? "अनिवार्य दस्तावेज, अंशदान नियम" : "Mandatory documents & contribution rules",
         },
       ],
     },
@@ -329,9 +340,14 @@ const NavBar = () => {
           desc: isHindi ? "मासिक समाचार पत्र डाउनलोड करें" : "Download monthly editions",
         },
         {
-          title: isHindi ? "फोटो एवं वीडियो गैलरी" : "Photo & Video Gallery",
+          title: isHindi ? "फोटो गैलरी" : "Photo Gallery",
           path: "/gallery",
           desc: isHindi ? "12 श्रेणियों में सामाजिक झलकियां" : "Event albums & community memories",
+        },
+        {
+          title: isHindi ? "समाज वीडियो" : "YouTube Videos",
+          path: "/videos",
+          desc: isHindi ? "कार्यक्रम, समारोह एवं सम्मेलनों के वीडियो" : "Community events & celebrations videos",
         },
         {
           title: isHindi ? "श्रद्धांजलि" : "Shradhanjali / Condolence",
@@ -440,7 +456,7 @@ const NavBar = () => {
           >
             <img
               src="/logo.png"
-              alt="प्रांतीय बैरवा प्रगति संस्था राज."
+              alt="आदिवासी हल्बा/हल्बी समाज कल्याण समिति, उज्जैन राज."
               style={{
                 height: 48,
                 width: "auto",
@@ -607,22 +623,22 @@ const NavBar = () => {
                     />
                   </button>
 
-                  {/* Complete Rich Profile Dropdown Menu */}
+                  {/* Complete Rich Profile Dropdown Menu — fully opaque, no glass/blur */}
                   {isProfileOpen && (
                     <div
                       style={{
                         position: "absolute",
                         right: 0,
                         top: "calc(100% + 8px)",
-                        zIndex: 1200,
+                        zIndex: 1300,
                         width: 270,
                         borderRadius: 16,
-                        border: "1px solid var(--glass-border)",
-                        background: "var(--glass-bg)",
-                        backdropFilter: "var(--glass-backdrop)",
-                        WebkitBackdropFilter: "var(--glass-backdrop)",
+                        border: "1px solid var(--border-strong)",
+                        background: "var(--surface-elevated)",
+                        backdropFilter: "none",
+                        WebkitBackdropFilter: "none",
                         padding: 8,
-                        boxShadow: "var(--shadow-modal)",
+                        boxShadow: "0 20px 60px rgba(0,0,0,0.3), 0 2px 8px rgba(0,0,0,0.15)",
                       }}
                     >
                       <div style={{ borderBottom: "1px solid var(--line)", padding: "8px 10px 10px", marginBottom: 6 }}>
@@ -665,7 +681,6 @@ const NavBar = () => {
                             { to: "/dashboard/admin/matrimonial", icon: <FaHeartSolid size={11} style={{ color: "#fb7185" }} />, label: "Matrimonial Admin" },
                             { to: "/dashboard/admin/opportunities", icon: <FaGraduationCap size={12} style={{ color: "#fbbf24" }} />, label: "Opportunities Admin" },
                             { to: "/dashboard/admin/finance", icon: <FaRupeeSign size={12} style={{ color: "var(--brand)" }} />, label: "Finance Admin" },
-                            { to: "/dashboard/admin/audit-logs", icon: <FiFileText size={12} style={{ color: "#38bdf8" }} />, label: "Audit Logs" },
                           ].map(({ to, icon, label }) => (
                             <Link
                               key={to}

@@ -14,7 +14,7 @@ const DeleteAccount = () => {
 
   return (
     <>
-      <div className="ka-card p-6 md:p-8 border-red-500/20 bg-red-500/[0.02] flex flex-col sm:flex-row items-start gap-6">
+      <div className="ka-card p-4 sm:p-6 md:p-8 border-red-500/20 bg-red-500/[0.02] flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
         <div className="w-12 h-12 rounded-2xl bg-red-500/10 flex items-center justify-center border border-red-500/20 text-red-500 shrink-0 shadow-sm">
           <RiDeleteBin7Line size={22} />
         </div>

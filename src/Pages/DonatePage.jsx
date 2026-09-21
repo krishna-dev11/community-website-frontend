@@ -131,7 +131,7 @@ const DonatePage = () => {
         key: data.key,
         amount: data.order.amount,
         currency: data.order.currency || "INR",
-        name: "Samaj Community",
+        name: "Adivasi Halba/Halbi Samaj Kalyan Samiti, Ujjain",
         description: selectedCampaignData?.title || "Community donation",
         order_id: data.order.id,
         prefill: {
@@ -216,6 +216,18 @@ const DonatePage = () => {
                 ? "किसी सक्रिय अभियान का चयन करें, राशि दर्ज करें और सुरक्षित भुगतान करें। सभी योगदान सीधे समाज कल्याण व शिक्षा सहायता हेतु उपयोग किए जाते हैं।"
                 : "Choose an active campaign, enter an amount, and complete payment securely. All contributions directly fund approved community initiatives and welfare programs."}
             </p>
+          </div>
+
+          {/* Section 15 — Contribution Rules Banner */}
+          <div className="mb-6 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-xs">
+            <p className="font-bold text-emerald-400 mb-2 uppercase tracking-wider text-[10px]">
+              {isHindi ? "अनुभाग 15 · आधिकारिक अंशदान नियम" : "Section 15 · Official Contribution Rules"}
+            </p>
+            <ul className="space-y-1 text-[var(--text-secondary)] leading-relaxed">
+              <li>• {isHindi ? "मासिक अंशदान: ₹60/माह (1-10 तारीख तक सामान्य)" : "Monthly contribution: ₹60/month (normal if paid 1st–10th)"}</li>
+              <li>• {isHindi ? "10 तारीख के बाद: ₹2/माह विलंब शुल्क अतिरिक्त" : "After 10th: ₹2/month late fine applies"}</li>
+              <li>• {isHindi ? "ऐच्छिक दान: कोई सीमा नहीं — समाज कल्याण हेतु स्वेच्छा से" : "Voluntary donation: No limit — for community welfare at will"}</li>
+            </ul>
           </div>
 
           <div className="mb-6 flex min-w-0 items-center gap-2 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-2">
@@ -398,6 +410,14 @@ const DonatePage = () => {
               <FiLock size={15} />
               <span>{paying ? "Starting Payment..." : `Donate ${formatCurrency(amount)}`}</span>
             </button>
+
+            {/* Section 15 — Payment Gateway Pending Notice */}
+            <div className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-[10px] leading-relaxed text-amber-300">
+              <strong className="block mb-1">{isHindi ? "⚠ ऑनलाइन भुगतान की स्थिति:" : "⚠ Online Payment Notice:"}</strong>
+              {isHindi
+                ? "UPI ID, QR कोड और बैंक खाता विवरण समिति द्वारा शीघ्र प्रदान किए जाएंगे। अभी भुगतान करने के लिए कार्यालय से संपर्क करें: 9926018058"
+                : "Official UPI ID, QR Code, and bank account details will be provided by the Samiti shortly. To contribute now, contact the office: 9926018058"}
+            </div>
 
             {!token ? (
               <p className="mt-4 text-center text-xs text-amber-500 font-medium">

@@ -24,6 +24,7 @@ import { apiConnector } from "../services/apiConnector";
 import { communityEndpoints } from "../services/apis";
 import ImageSkeleton from "../Components/Common/ImageSkeleton";
 import { useLanguage } from "../i18n/LanguageContext";
+import { formatDharamshalaPrice, getDharamshalaPrice } from "../Utilities/dharamshalaPricing";
 
 const {
   DHARAMSHALAS_API,
@@ -32,7 +33,18 @@ const {
   DHARAMSHALA_AVAILABILITY_API,
   MY_DHARAMSHALA_BOOKINGS_API,
   CANCEL_DHARAMSHALA_BOOKING_API,
+  CREATE_DHARAMSHALA_PAYMENT_ORDER_API,
+  VERIFY_DHARAMSHALA_PAYMENT_API,
 } = communityEndpoints;
+
+const loadRazorpay = () => new Promise((resolve) => {
+  if (window.Razorpay) return resolve(true);
+  const script = document.createElement("script");
+  script.src = "https://checkout.razorpay.com/v1/checkout.js";
+  script.onload = () => resolve(true);
+  script.onerror = () => resolve(false);
+  document.body.appendChild(script);
+});
 
 const DharamshalaPage = () => {
   const { user } = useSelector((state) => state.profile);
@@ -72,6 +84,8 @@ const DharamshalaPage = () => {
   const [availabilityStatus, setAvailabilityStatus] = useState(null);
   const [submittingBooking, setSubmittingBooking] = useState(false);
   const [bookingSuccessData, setBookingSuccessData] = useState(null);
+  const [processingPayment, setProcessingPayment] = useState(null);
+  const [bookingRequestKey, setBookingRequestKey] = useState("");
 
   // Backend strictly determines member status, but UI gives friendly visual cues
   const isMember = Boolean(user && user.accountStatus === "ACTIVE");
@@ -86,16 +100,83 @@ const DharamshalaPage = () => {
     }
   }, [token, activeTab]);
 
+  const FALLBACK_DHARAMSHALAS = [
+    {
+      _id: "ujjain-halba-dharmshala",
+      name: "हल्बा समाज धर्मशाला, उज्जैन",
+      slug: "halba-samaj-dharmshala-ujjain",
+      tagline: "श्री विट्ठल मंदिर परिसर, नरसिंह घाट रोड, कालिका माता मंदिर के पीछे, उज्जैन",
+      description:
+        "आदिवासी हल्बा/हल्बी समाज कल्याण समिति, उज्जैन द्वारा संचालित अधिकृत धर्मशाला। कुल 05 डबल कमरे (अधिकतम क्षमता 4 व्यक्ति प्रति कमरा) एवं 01 विशाल हॉल। सभी अतिथियों के लिए समान मानक दरें लागू हैं।",
+      location: {
+        address: "श्री विट्ठल मंदिर, नरसिंह घाट रोड, कालिका माता मंदिर के पीछे",
+        city: "Ujjain",
+        state: "Madhya Pradesh",
+        pincode: "456006",
+        landmark: "कालिका माता मंदिर के पीछे, नरसिंह घाट",
+      },
+      mainImage: "https://images.unsplash.com/photo-1624462966581-bc6d768cbce5?auto=format&fit=crop&w=1200&q=80",
+      roomTypes: [
+        {
+          name: "AC Double Room (Attached Toilet)",
+          description: "02 AC कमरे — अटैच्ड टॉयलेट युक्त। अधिकतम क्षमता 04 व्यक्ति।",
+          capacity: 4,
+          totalRooms: 2,
+          pricePerNight: 1200,
+          amenities: ["Air Conditioning", "Attached Toilet", "Double Bed", "Clean Water", "Geyser"],
+        },
+        {
+          name: "Non-AC Double Room (Non-Attached Toilet)",
+          description: "03 Non-AC कमरे — नॉन-अटैच्ड टॉयलेट युक्त। अधिकतम क्षमता 04 व्यक्ति।",
+          capacity: 4,
+          totalRooms: 3,
+          pricePerNight: 800,
+          amenities: ["Ceiling Fan", "Non-Attached Toilet", "Double Bed", "Clean Water"],
+        },
+        {
+          name: "Community Hall",
+          description: "01 विशाल सामुदायिक हॉल। बड़े समूहों और सामुदायिक आयोजनों के लिए।",
+          capacity: 25,
+          totalRooms: 1,
+          pricePerNight: 3000,
+          amenities: ["Spacious Hall", "Clean Facilities"],
+        },
+      ],
+      facilities: [
+        "श्री विट्ठल-रुक्मिणी मंदिर परिसर",
+        "नरसिंह घाट व पवित्र क्षिप्रा तट के निकट",
+        "24 घंटे जल एवं प्रकाश व्यवस्था",
+        "शांत एवं सुरक्षित आध्यात्मिक वातावरण",
+      ],
+      rules: [
+        "ओरिजिनल आईडी (Original ID) के बिना प्रवेश की अनुमति नहीं दी जाएगी।",
+        "धूम्रपान (Smoking) परिसर में पूर्णतः वर्जित है।",
+        "मद्यपान / शराब (Drinking) पूर्णतः प्रतिबंधित है।",
+        "मांसाहार (Non-veg) परिसर में सख्त मना है।",
+        "यात्री अपने कीमती सामान की सुरक्षा के लिए स्वयं जिम्मेदार हैं।",
+        "चेक-इन: 12:00 AM (क्लाइंट द्वारा प्रेषित — पुष्टि हेतु चिन्हित) | चेक-आउट: 10:00 AM",
+        "24 घंटे पूर्व निरस्तीकरण पर रिफंड नियम लागू | 24 घंटे के बाद कोई रिफंड नहीं",
+      ],
+      checkInTime: "12:00 AM",
+      checkOutTime: "10:00 AM",
+      contactPhone: "+91 99260 18058",
+      contactEmail: "halbahalbiujjain79@gmail.com",
+    },
+  ];
+
   const fetchDharamshalas = async () => {
     try {
       setLoading(true);
       const res = await apiConnector("GET", DHARAMSHALAS_API);
-      if (res.data?.data?.dharamshalas) {
-        setDharamshalas(res.data.data.dharamshalas);
+      const list = res.data?.data?.dharamshalas;
+      if (Array.isArray(list) && list.length > 0) {
+        setDharamshalas(list);
+      } else {
+        setDharamshalas(FALLBACK_DHARAMSHALAS);
       }
     } catch (err) {
-      console.error("Failed to fetch dharamshalas:", err);
-      toast.error("Could not load Dharamshala listings");
+      console.error("Failed to fetch dharamshalas, using official fallback:", err);
+      setDharamshalas(FALLBACK_DHARAMSHALAS);
     } finally {
       setLoading(false);
     }
@@ -134,12 +215,54 @@ const DharamshalaPage = () => {
     }
   };
 
+  const handleDharamshalaPayment = async (booking) => {
+    if (!token || processingPayment) return;
+    setProcessingPayment(booking._id);
+    try {
+      const loaded = await loadRazorpay();
+      if (!loaded) throw new Error("Razorpay checkout could not be loaded.");
+      const authHeaders = { Authorization: `Bearer ${token}` };
+      const orderResponse = await apiConnector("POST", CREATE_DHARAMSHALA_PAYMENT_ORDER_API(booking._id), null, authHeaders);
+      const { order, key } = orderResponse.data?.data || {};
+      if (!order?.id || !key) throw new Error("Payment gateway is not configured.");
+
+      await new Promise((resolve, reject) => {
+        const checkout = new window.Razorpay({
+          key,
+          amount: order.amount,
+          currency: order.currency || "INR",
+          name: booking.dharamshalaName || "Halba Samaj Dharamshala",
+          description: `${booking.bookingReference || "Dharamshala booking"} - ${booking.roomType}`,
+          order_id: order.id,
+          prefill: { name: booking.guestName || "", email: booking.guestEmail || user?.email || "", contact: booking.guestPhone || "" },
+          handler: async (response) => {
+            try {
+              await apiConnector("POST", VERIFY_DHARAMSHALA_PAYMENT_API, response, authHeaders);
+              toast.success("Payment verified. Your Dharamshala booking is confirmed.");
+              await fetchMyBookings();
+              resolve();
+            } catch (error) {
+              reject(new Error(error.response?.data?.message || "Payment verification failed"));
+            }
+          },
+          modal: { ondismiss: () => reject(new Error("Payment was cancelled")) },
+        });
+        checkout.open();
+      });
+    } catch (error) {
+      toast.error(error.message || "Payment could not be completed");
+    } finally {
+      setProcessingPayment(null);
+    }
+  };
+
   const openBookingModal = (dharamshala, defaultRoom = null) => {
     setBookingModalItem(dharamshala);
     const room = defaultRoom || dharamshala.roomTypes?.[0] || null;
     setSelectedRoomType(room);
     setAvailabilityStatus(null);
     setBookingSuccessData(null);
+    setBookingRequestKey(window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`);
 
     // Pre-populate today & tomorrow as default dates
     const today = new Date();
@@ -168,8 +291,9 @@ const DharamshalaPage = () => {
     const start = new Date(bookingForm.startDate);
     const end = new Date(bookingForm.endDate);
     const nights = Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24)));
-    const rate = isMember ? selectedRoomType.memberPricePerNight : selectedRoomType.nonMemberPricePerNight;
-    return nights * bookingForm.roomsRequested * rate;
+    const rate = getDharamshalaPrice(selectedRoomType);
+    if (!rate) return null;
+    return nights * Number(bookingForm.roomsRequested) * rate;
   };
 
   const getNumberOfNights = () => {
@@ -189,7 +313,7 @@ const DharamshalaPage = () => {
       setCheckingAvailability(true);
       const res = await apiConnector(
         "GET",
-        `${DHARAMSHALA_AVAILABILITY_API}?startDate=${bookingForm.startDate}&endDate=${bookingForm.endDate}&dharamshalaId=${bookingModalItem._id}&roomType=${encodeURIComponent(selectedRoomType.name)}`
+        `${DHARAMSHALA_AVAILABILITY_API}?startDate=${bookingForm.startDate}&endDate=${bookingForm.endDate}&dharamshalaId=${bookingModalItem._id}&roomType=${encodeURIComponent(selectedRoomType.name)}&roomsRequested=${Number(bookingForm.roomsRequested)}`
       );
 
       if (res.data?.data?.available) {
@@ -212,6 +336,11 @@ const DharamshalaPage = () => {
     if (submittingBooking) return;
     if (!bookingModalItem || !selectedRoomType) return;
 
+    if (!getDharamshalaPrice(selectedRoomType)) {
+      toast.error("Pricing is unavailable. Please contact the Dharamshala team.");
+      return;
+    }
+
     if (!bookingForm.guestName || !bookingForm.guestPhone) {
       toast.error("Please provide guest contact details");
       return;
@@ -226,7 +355,10 @@ const DharamshalaPage = () => {
 
     try {
       setSubmittingBooking(true);
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const headers = {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        "Idempotency-Key": bookingRequestKey,
+      };
 
       const payload = {
         dharamshalaId: bookingModalItem._id,
@@ -288,17 +420,15 @@ const DharamshalaPage = () => {
           </h1>
           <p className="mt-3 text-sm sm:text-base text-[var(--text-secondary)] leading-relaxed">
             {isHindi
-              ? "देशभर के प्रमुख तीर्थ स्थलों पर समाज बंधुओं एवं आगंतुक तीर्थयात्रियों हेतु स्वच्छ, सुरक्षित एवं रियायती आवास व्यवस्था।"
-              : "Comfortable, subsidized, and secure accommodations in holy pilgrimage hubs across India. Dedicated service for Samaj members and welcoming pilgrim guests."}
+              ? "देशभर के प्रमुख तीर्थ स्थलों पर समाज बंधुओं एवं आगंतुक तीर्थयात्रियों हेतु स्वच्छ, सुरक्षित एवं व्यवस्थित आवास व्यवस्था।"
+              : "Comfortable and secure accommodations in holy pilgrimage hubs across India for community members and visiting pilgrims."}
           </p>
 
-          {/* Member Pricing Banner */}
+          {/* Standard Pricing Banner */}
           <div className="mt-6 inline-flex flex-wrap items-center justify-center gap-2 rounded-2xl border border-[var(--accent-primary)]/30 bg-[var(--accent-primary)]/10 px-4 py-2 text-xs font-semibold text-[var(--text-primary)]">
             <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
             <span>
-              {isMember
-                ? (isHindi ? "✨ सत्यापित समाज सदस्य — विशेष रियायती दरें स्वतः लागू" : "✨ Active Samaj Member — Exclusive Member Rates Automatically Applied")
-                : (isHindi ? "समाज सदस्यों (रियायती) एवं आगंतुक यात्रियों दोनों हेतु उपलब्ध" : "Open to both Samaj Members (Subsidized) and Guest Pilgrims")}
+              {isHindi ? "सभी अतिथियों के लिए समान दरें लागू" : "Standard room rates apply to all guests"}
             </span>
           </div>
 
@@ -378,7 +508,7 @@ const DharamshalaPage = () => {
                         </h3>
                         <span
                           className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                            b.status === "APPROVED"
+                            ["APPROVED", "PAYMENT_PENDING"].includes(b.status)
                               ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
                               : b.status === "PENDING"
                               ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
@@ -387,13 +517,8 @@ const DharamshalaPage = () => {
                               : "bg-red-500/15 text-red-400 border border-red-500/30"
                           }`}
                         >
-                          {b.status}
+                          {b.status === "PAYMENT_PENDING" ? "PAYMENT REQUIRED" : b.status}
                         </span>
-                        {b.isMember && (
-                          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] border border-[var(--accent-primary)]/20">
-                            Member Rate
-                          </span>
-                        )}
                       </div>
 
                       <p className="text-xs text-[var(--text-secondary)]">
@@ -416,7 +541,7 @@ const DharamshalaPage = () => {
                         <span>
                           💰 Total Amount:{" "}
                           <strong className="text-emerald-400 font-bold">
-                            ₹{b.totalAmount || 0}
+                            {formatDharamshalaPrice(b.totalAmount, "Contact for pricing")}
                           </strong>
                         </span>
                       </div>
@@ -425,6 +550,14 @@ const DharamshalaPage = () => {
                         <p className="text-[11px] text-amber-500/90 dark:text-amber-300/90 font-medium pt-1">
                           ⏳ {isHindi ? "आपकी बुकिंग अनुरोध प्रशासक समीक्षा की प्रतीक्षा में है।" : "Your booking request is waiting for admin review."}
                         </p>
+                      )}
+                      {["APPROVED", "PAYMENT_PENDING"].includes(b.status) && (
+                        <div className="flex flex-wrap items-center gap-3 pt-2">
+                          <p className="text-[11px] font-semibold text-amber-500">Payment required to confirm this booking.</p>
+                          <button type="button" onClick={() => handleDharamshalaPayment(b)} disabled={processingPayment === b._id} className="btn-primary !py-2 !px-4 !text-xs disabled:opacity-50">
+                            {processingPayment === b._id ? "Opening payment..." : "Pay Now"}
+                          </button>
+                        </div>
                       )}
 
                       {/* Admin Review Note / Rejection Reason / Cancellation Reason */}
@@ -531,12 +664,10 @@ const DharamshalaPage = () => {
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {filteredDharamshalas.map((dharamshala) => {
-                  const lowestMemberPrice = Math.min(
-                    ...(dharamshala.roomTypes?.map((r) => r.memberPricePerNight) || [400])
-                  );
-                  const lowestNonMemberPrice = Math.min(
-                    ...(dharamshala.roomTypes?.map((r) => r.nonMemberPricePerNight) || [900])
-                  );
+                  const roomPrices = (dharamshala.roomTypes || [])
+                    .map(getDharamshalaPrice)
+                    .filter((price) => price !== null);
+                  const lowestPrice = roomPrices.length ? Math.min(...roomPrices) : null;
 
                   return (
                     <article
@@ -621,9 +752,7 @@ const DharamshalaPage = () => {
                                     {room.name}
                                   </span>
                                   <div className="text-right">
-                                    <span className="font-bold text-emerald-400">₹{room.memberPricePerNight}</span>
-                                    <span className="text-[10px] text-[var(--text-muted)]"> (Member) / </span>
-                                    <span className="text-[11px] text-[var(--text-secondary)]">₹{room.nonMemberPricePerNight}</span>
+                                    <span className="font-bold text-emerald-400">{formatDharamshalaPrice(getDharamshalaPrice(room))}</span>
                                   </div>
                                 </div>
                               ))}
@@ -639,12 +768,9 @@ const DharamshalaPage = () => {
                             </p>
                             <div className="flex items-baseline gap-1.5">
                               <span className="text-lg font-black text-emerald-400">
-                                ₹{lowestMemberPrice}
+                                {formatDharamshalaPrice(lowestPrice, "Contact for pricing")}
                               </span>
-                              <span className="text-xs text-[var(--text-secondary)]">/ night</span>
-                              <span className="text-[10px] text-[var(--text-muted)]">
-                                (Non-member: ₹{lowestNonMemberPrice})
-                              </span>
+                              {lowestPrice && <span className="text-xs text-[var(--text-secondary)]">/ night</span>}
                             </div>
                           </div>
 
@@ -791,10 +917,7 @@ const DharamshalaPage = () => {
                 <div className="pt-2 border-t border-[var(--border-subtle)] flex items-center justify-between gap-2">
                   <div>
                     <div className="text-xs font-bold text-emerald-400">
-                      ₹{room.memberPricePerNight} <span className="text-[9px] text-[var(--text-muted)] font-normal">/ Member</span>
-                    </div>
-                    <div className="text-[10px] sm:text-[11px] text-[var(--text-secondary)]">
-                      ₹{room.nonMemberPricePerNight} <span className="text-[9px] text-[var(--text-muted)] font-normal">/ Guest</span>
+                      {formatDharamshalaPrice(getDharamshalaPrice(room))} {getDharamshalaPrice(room) && <span className="text-[9px] text-[var(--text-muted)] font-normal">/ night</span>}
                     </div>
                   </div>
                   <button
@@ -934,7 +1057,7 @@ const DharamshalaPage = () => {
             <div className="flex justify-between pt-2 border-t border-[var(--border-subtle)]">
               <span className="font-bold text-[var(--text-primary)]">Total Amount:</span>
               <strong className="text-emerald-400 font-bold text-sm">
-                ₹{bookingSuccessData.booking?.totalAmount}
+                {formatDharamshalaPrice(bookingSuccessData.booking?.totalAmount, "Contact for pricing")}
               </strong>
             </div>
           </div>
@@ -954,24 +1077,18 @@ const DharamshalaPage = () => {
         </div>
       ) : (
         <form onSubmit={handleBookingSubmit} className="space-y-6">
-          {/* Membership Detection Callout */}
+          {/* Booking Information Callout */}
           <div
-            className={`rounded-xl p-3.5 border text-xs flex items-center justify-between ${
-              isMember
-                ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-                : "border-amber-500/30 bg-amber-500/10 text-amber-200"
-            }`}
+            className="rounded-xl p-3.5 border border-amber-500/30 bg-amber-500/10 text-amber-200 text-xs flex items-center justify-between"
           >
             <div className="flex items-center gap-2">
               <FiShield size={16} />
               <div>
                 <p className="font-bold">
-                  {isMember ? "Verified Samaj Member" : "Guest / Non-Member Booking"}
+                  Reservation Request
                 </p>
                 <p className="text-[11px] opacity-80">
-                  {isMember
-                    ? "Your member discount is automatically applied by the backend."
-                    : "Non-members are welcome to book at standard guest rates."}
+                  Standard room rates apply for all guests and requests are reviewed by the Dharamshala team.
                 </p>
               </div>
             </div>
@@ -980,7 +1097,7 @@ const DharamshalaPage = () => {
                 to="/login"
                 className="text-[11px] font-bold underline hover:opacity-80 shrink-0 ml-2"
               >
-                Member Login
+                Login
               </Link>
             )}
           </div>
@@ -993,7 +1110,7 @@ const DharamshalaPage = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               {bookingModalItem?.roomTypes?.map((room, rIdx) => {
                 const isSelected = selectedRoomType?.name === room.name;
-                const price = isMember ? room.memberPricePerNight : room.nonMemberPricePerNight;
+                const price = getDharamshalaPrice(room);
 
                 return (
                   <div
@@ -1010,7 +1127,7 @@ const DharamshalaPage = () => {
                         {room.name}
                       </span>
                       <span className="font-bold text-xs text-emerald-400">
-                        ₹{price}/night
+                        {formatDharamshalaPrice(price)}{price && "/night"}
                       </span>
                     </div>
                     <p className="text-[10px] text-[var(--text-muted)] mt-1">
@@ -1165,13 +1282,10 @@ const DharamshalaPage = () => {
           <div className="rounded-2xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)] p-4 space-y-2">
             <div className="flex justify-between items-center text-xs">
               <span className="text-[var(--text-muted)]">
-                Rate Per Night ({isMember ? "Member Tariff" : "Guest Tariff"}):
+                Rate Per Night:
               </span>
               <span className="font-semibold text-[var(--text-primary)]">
-                ₹
-                {isMember
-                  ? selectedRoomType?.memberPricePerNight
-                  : selectedRoomType?.nonMemberPricePerNight}
+                {formatDharamshalaPrice(getDharamshalaPrice(selectedRoomType))}
               </span>
             </div>
             <div className="flex justify-between items-center text-xs">
@@ -1185,7 +1299,7 @@ const DharamshalaPage = () => {
                 Total Estimated Amount:
               </span>
               <strong className="text-emerald-400 font-bold text-base">
-                ₹{calculateTotal()}
+                {calculateTotal() ? formatDharamshalaPrice(calculateTotal()) : "Contact for pricing"}
               </strong>
             </div>
           </div>

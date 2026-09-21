@@ -197,6 +197,66 @@ body {
   line-height: 1.6;
 }
 
+/* User-entered content must not change the width of its layout parent. */
+article,
+.ka-card,
+[role="dialog"] {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+article > *,
+.ka-card > *,
+[role="dialog"] > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+article h1,
+article h2,
+article h3,
+article h4,
+article p,
+.ka-card h1,
+.ka-card h2,
+.ka-card h3,
+.ka-card h4,
+.ka-card p {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+/* ======================================================
+   NAVBAR — DROPDOWN HOVER STATES (Opaque Surface)
+   ====================================================== */
+
+/* Dropdown item hover */
+.nav-dropdown-item:hover {
+  background: var(--surface-hover) !important;
+}
+
+/* Nav icon buttons (theme/lang toggle) */
+.nav-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+  background: transparent;
+  color: var(--text-soft);
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+  font-size: 14px;
+}
+.nav-icon-btn:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+  border-color: var(--border);
+}
+
 /* Typography styles */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
@@ -229,6 +289,61 @@ h1, h2, h3, h4, h5, h6 {
 /* ======================================================
    UTILITY CLASSES & ACCENTS
    ====================================================== */
+
+/* ── No Scrollbar — hide visible scrollbar while keeping scroll functionality ── */
+/* Used on all horizontal sliders/carousels site-wide */
+.no-scrollbar {
+  scrollbar-width: none;        /* Firefox */
+  -ms-overflow-style: none;     /* IE / Edge legacy */
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;                /* Chrome / Safari / Opera */
+}
+
+/* ── Subtle Scroll Reveal & Section Transitions ── */
+.scroll-reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.scroll-reveal.is-revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
+/* ── Traditional Heritage Thematic Story Divider ── */
+.heritage-story-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: rgba(217, 119, 6, 0.55);
+  margin: 1.5rem auto;
+  user-select: none;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+}
+.heritage-story-divider::before,
+.heritage-story-divider::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  max-width: 140px;
+  background: linear-gradient(90deg, transparent, rgba(217, 119, 6, 0.35));
+}
+.heritage-story-divider::after {
+  background: linear-gradient(270deg, transparent, rgba(217, 119, 6, 0.35));
+}
 
 /* Brand Gradient Text */
 .text-gradient {
@@ -559,12 +674,19 @@ h1, h2, h3, h4, h5, h6 {
 input:not([type="checkbox"]):not([type="radio"]),
 select,
 textarea {
+  min-width: 0;
+  max-width: 100%;
   background-color: var(--input-bg);
   color: var(--text-primary);
   border: 1px solid var(--input-border);
   border-radius: var(--radius-input);
   outline: none;
   transition: border-color 200ms ease, box-shadow 200ms ease;
+}
+
+textarea {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
 }
 
 input:focus,
@@ -789,3 +911,107 @@ textarea:focus {
 [data-theme="light"] .dashboard-shell .border-dashed {
   border-color: var(--dashboard-border-strong) !important;
 }
+
+/* ======================================================
+   SCROLL-REVEAL ANIMATION UTILITIES
+   Used by public pages (About, History, Faith, Heritage…)
+   ====================================================== */
+
+/* Base hidden state */
+.reveal {
+  opacity: 0;
+  transform: translateY(32px);
+  transition: opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1),
+              transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.reveal.reveal-left {
+  transform: translateX(-36px);
+}
+
+.reveal.reveal-right {
+  transform: translateX(36px);
+}
+
+.reveal.reveal-scale {
+  transform: scale(0.92);
+}
+
+/* Visible state — toggled by IntersectionObserver */
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* Stagger delays for grid children */
+.reveal-delay-1  { transition-delay: 0.05s; }
+.reveal-delay-2  { transition-delay: 0.10s; }
+.reveal-delay-3  { transition-delay: 0.15s; }
+.reveal-delay-4  { transition-delay: 0.20s; }
+.reveal-delay-5  { transition-delay: 0.25s; }
+.reveal-delay-6  { transition-delay: 0.30s; }
+.reveal-delay-7  { transition-delay: 0.35s; }
+.reveal-delay-8  { transition-delay: 0.40s; }
+.reveal-delay-9  { transition-delay: 0.45s; }
+.reveal-delay-10 { transition-delay: 0.50s; }
+.reveal-delay-11 { transition-delay: 0.55s; }
+.reveal-delay-12 { transition-delay: 0.60s; }
+
+/* Stat counter pulse */
+@keyframes statPop {
+  0%   { transform: scale(0.8); opacity: 0; }
+  60%  { transform: scale(1.06); opacity: 1; }
+  100% { transform: scale(1); }
+}
+.stat-pop {
+  animation: statPop 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Gradient text shimmer for hero headings */
+.gradient-text-brand {
+  background: var(--brand-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Timeline connector line */
+.timeline-line::before {
+  content: "";
+  position: absolute;
+  left: 20px;
+  top: 48px;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, var(--accent-primary), transparent);
+}
+
+/* Page section divider glow bar */
+.section-glow-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent-primary), transparent);
+  opacity: 0.35;
+  margin: 0 auto;
+  max-width: 320px;
+}
+
+/* Hero badge shimmer */
+@keyframes badgeShimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+.badge-shimmer {
+  background-size: 200% auto;
+  animation: badgeShimmer 3s linear infinite;
+}
+
+/* Hover lift for cards */
+.hover-lift {
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 40px -12px rgba(0, 223, 165, 0.18), 0 0 0 1px rgba(0, 223, 165, 0.2);
+}
+

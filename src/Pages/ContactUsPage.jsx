@@ -10,7 +10,7 @@ import {
 } from "react-icons/fi";
 import { FaWhatsapp } from "react-icons/fa";
 import ModernFooter from "../Components/Core/Home/ModernFooter";
-import { organizationInfo } from "../data/bairwaData";
+import { organizationInfo } from "../data/halbaData";
 import { useLanguage } from "../i18n/LanguageContext";
 
 const ContactUsPage = () => {
@@ -35,7 +35,7 @@ const ContactUsPage = () => {
     setTimeout(() => {
       toast.success(
         isHindi
-          ? "धन्यवाद! आपका संदेश प्रांतीय बैरवा प्रगति संस्था सचिवालय को भेज दिया गया है।"
+          ? "धन्यवाद! आपका संदेश आदिवासी हल्बा/हल्बी समाज कल्याण समिति, उज्जैन सचिवालय को भेज दिया गया है।"
           : "Thank you! Your message has been sent to the Sanstha Secretariat."
       );
       setForm({
@@ -102,7 +102,7 @@ const ContactUsPage = () => {
                     <h3 className="font-bold text-[var(--text-primary)] mb-0.5">
                       {isHindi ? "दूरभाष / मोबाइल" : "Helpline Phone"}
                     </h3>
-                    <a href="tel:+919928260244" className="font-mono font-bold text-emerald-400 hover:underline">
+                    <a href="tel:+919926018058" className="font-mono font-bold text-emerald-400 hover:underline">
                       {organizationInfo.headOffice.phone}
                     </a>
                   </div>
@@ -117,7 +117,7 @@ const ContactUsPage = () => {
                     <h3 className="font-bold text-[var(--text-primary)] mb-0.5">
                       {isHindi ? "ईमेल संपर्क" : "Email Address"}
                     </h3>
-                    <a href="mailto:contact@bairwasamaaj.com" className="text-[var(--text-secondary)] hover:text-emerald-400">
+                    <a href="mailto:contact@halbasamaaj.com" className="text-[var(--text-secondary)] hover:text-emerald-400">
                       {organizationInfo.headOffice.email}
                     </a>
                   </div>
@@ -140,15 +140,35 @@ const ContactUsPage = () => {
               </div>
 
               {/* WhatsApp Quick Helpline */}
-              <div className="pt-4 border-t border-[var(--border-subtle)]">
+              <div className="pt-4 border-t border-[var(--border-subtle)] space-y-3">
                 <a
-                  href="https://wa.me/919928260244"
+                  href="https://wa.me/919926018058"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="btn-whatsapp w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-bold"
                 >
                   <FaWhatsapp size={16} />
                   <span>{isHindi ? "व्हाट्सएप हेल्पलाइन चैट" : "WhatsApp Helpline"}</span>
+                </a>
+                {/* Facebook Official Page */}
+                <a
+                  href="https://www.facebook.com/halbahalbisamaj.ujjain"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl text-xs font-bold border border-blue-500/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                  <span>{isHindi ? "समाज फेसबुक पेज" : "Official Facebook Page"}</span>
+                </a>
+                {/* Google Maps */}
+                <a
+                  href="https://maps.google.com/maps?q=23.1780947%2C75.7605781&z=17&hl=en"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl text-xs font-bold border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-colors"
+                >
+                  <FiMapPin size={14} />
+                  <span>{isHindi ? "Google मैप्स पर देखें" : "View on Google Maps"}</span>
                 </a>
               </div>
             </div>
@@ -191,7 +211,7 @@ const ContactUsPage = () => {
                       required
                       value={form.phone}
                       onChange={(e) => handleChange("phone", e.target.value)}
-                      placeholder="+91 99282 60244"
+                      placeholder="+91 99260 18058"
                       className="ka-input !py-2.5 !text-xs"
                     />
                   </div>

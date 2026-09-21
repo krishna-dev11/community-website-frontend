@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { FaChevronLeft, FaChevronRight, FaSearch, FaSyncAlt } from "react-icons/fa";
-import { FiUsers } from "react-icons/fi";
+import { FiUsers, FiUser } from "react-icons/fi";
 import { useSelector } from "react-redux";
 import { apiConnector } from "../../../../services/apiConnector";
 import { profileEndpoints } from "../../../../services/apis";
@@ -15,6 +15,8 @@ const DirectoryField = ({ label, value }) => (
 
 const MemberDirectory = () => {
   const { token } = useSelector((state) => state.auth);
+  const { user } = useSelector((state) => state.profile);
+  const isAdmin = user?.accountType === "Admin" || (user?.roles || []).some((role) => ["SUPER_ADMIN", "Admin", "MODERATOR", "COMMUNITY_ADMIN"].includes(role));
   const [members, setMembers] = useState([]);
   const [meta, setMeta] = useState({ page: 1, pages: 1, total: 0 });
   const [loading, setLoading] = useState(true);
@@ -78,32 +80,38 @@ const MemberDirectory = () => {
             </div>
             <h1 className="heading-hero text-[var(--text-primary)]">Member <span className="text-gradient">Directory</span></h1>
             <p className="mt-2 max-w-2xl text-xs sm:text-sm text-[var(--text-secondary)] font-normal">
-              Search active members while respecting each member's field-level privacy settings.
+              {isAdmin
+                ? "Admin Directory: Manage and inspect Samaj members with complete profile details."
+                : "Search Samaj community members by name."}
             </p>
           </div>
 
-          <form onSubmit={submitSearch} className="grid gap-3 md:grid-cols-[1.3fr_0.8fr_0.8fr_auto]">
+          <form onSubmit={submitSearch} className={`grid gap-3 ${isAdmin ? "md:grid-cols-[1.3fr_0.8fr_0.8fr_auto]" : "sm:grid-cols-[1fr_auto]"}`}>
             <label className="flex h-11 min-w-0 items-center gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-4">
               <FaSearch className="text-[var(--text-muted)] shrink-0" size={13} />
               <input
                 value={filters.q}
                 onChange={(event) => updateFilter("q", event.target.value)}
-                placeholder="Search name, profession, city"
+                placeholder={isAdmin ? "Search name, profession, city" : "Search member by name..."}
                 className="min-w-0 flex-1 bg-transparent text-xs sm:text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] border-none shadow-none focus:ring-0"
               />
             </label>
-            <input
-              value={filters.city}
-              onChange={(event) => updateFilter("city", event.target.value)}
-              placeholder="City"
-              className="ka-input !h-11 !py-0"
-            />
-            <input
-              value={filters.profession}
-              onChange={(event) => updateFilter("profession", event.target.value)}
-              placeholder="Profession"
-              className="ka-input !h-11 !py-0"
-            />
+            {isAdmin && (
+              <>
+                <input
+                  value={filters.city}
+                  onChange={(event) => updateFilter("city", event.target.value)}
+                  placeholder="City"
+                  className="ka-input !h-11 !py-0"
+                />
+                <input
+                  value={filters.profession}
+                  onChange={(event) => updateFilter("profession", event.target.value)}
+                  placeholder="Profession"
+                  className="ka-input !h-11 !py-0"
+                />
+              </>
+            )}
             <button type="submit" className="btn-primary !h-11 !py-0 !px-5 !text-xs">
               <FaSyncAlt size={12} />
               <span>Search</span>
@@ -120,32 +128,45 @@ const MemberDirectory = () => {
         ) : members.length === 0 ? (
           <div className="ka-card border-dashed px-6 py-12 text-center">
             <p className="text-sm font-bold text-[var(--text-primary)]">No members found</p>
-            <p className="mt-1 text-xs text-[var(--text-muted)]">Try a broader search or clear one of the filters.</p>
+            <p className="mt-1 text-xs text-[var(--text-muted)]">Try searching with a different name.</p>
           </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className={`grid gap-4 ${isAdmin ? "md:grid-cols-2 xl:grid-cols-3" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"}`}>
             {members.map((member) => (
-              <article key={member._id} className="ka-card p-5">
-                <div className="flex items-center gap-3 border-b border-[var(--border-subtle)] pb-4">
-                  <img
-                    src={member.imageUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${member.firstName || "Member"}`}
-                    alt={`${member.firstName || "Member"} profile`}
-                    className="h-12 w-12 rounded-2xl border border-[var(--border-subtle)] object-cover shadow-sm"
-                  />
-                  <div className="min-w-0">
-                    <h2 className="truncate text-base font-bold text-[var(--text-primary)]">{member.firstName} {member.lastName}</h2>
-                    <p className="truncate text-xs text-[var(--accent-primary)] font-medium">{member.family?.familyName || "Independent Member"}</p>
-                  </div>
-                </div>
+              <article key={member._id} className="ka-card p-5 transition-all hover:border-[var(--border-strong)]">
+                {isAdmin ? (
+                  <>
+                    <div className="flex items-center gap-3 border-b border-[var(--border-subtle)] pb-4">
+                      <img
+                        src={member.imageUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${member.firstName || "Member"}`}
+                        alt={`${member.firstName || "Member"} profile`}
+                        className="h-12 w-12 rounded-2xl border border-[var(--border-subtle)] object-cover shadow-sm"
+                      />
+                      <div className="min-w-0">
+                        <h2 className="truncate text-base font-bold text-[var(--text-primary)]">{member.firstName} {member.lastName}</h2>
+                        <p className="truncate text-xs text-[var(--accent-primary)] font-medium">{member.family?.familyName || "Independent Member"}</p>
+                      </div>
+                    </div>
 
-                <div className="mt-4 grid grid-cols-2 gap-3.5">
-                  <DirectoryField label="City" value={member.profile?.currentCity} />
-                  <DirectoryField label="Profession" value={member.profile?.profession} />
-                  <DirectoryField label="Phone" value={member.profile?.contactNumber} />
-                  <DirectoryField label="Email" value={member.profile?.email} />
-                  <DirectoryField label="Gotra" value={member.profile?.gotra} />
-                  <DirectoryField label="Native" value={member.profile?.nativePlace} />
-                </div>
+                    <div className="mt-4 grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 gap-3.5">
+                      <DirectoryField label="City" value={member.profile?.currentCity} />
+                      <DirectoryField label="Profession" value={member.profile?.profession} />
+                      <DirectoryField label="Phone" value={member.profile?.contactNumber} />
+                      <DirectoryField label="Email" value={member.profile?.email} />
+                      <DirectoryField label="Gotra" value={member.profile?.gotra} />
+                      <DirectoryField label="Native" value={member.profile?.nativePlace} />
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center justify-center text-center py-4">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--surface-elevated)] border-2 border-[var(--accent-primary)]/30 text-[var(--accent-primary)] mb-3 shadow-inner">
+                      <FiUser size={30} />
+                    </div>
+                    <h2 className="text-base sm:text-lg font-bold text-[var(--text-primary)] truncate max-w-full">
+                      {member.firstName} {member.lastName}
+                    </h2>
+                  </div>
+                )}
               </article>
             ))}
           </div>

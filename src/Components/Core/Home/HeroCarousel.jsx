@@ -21,7 +21,7 @@ import { useLanguage } from "../../../i18n/LanguageContext";
 import { useTheme } from "../../../Utilities/useTheme";
 
 /**
- * Bairwa Samaj — Premium Home Hero
+ * Halba Samaj — Premium Home Hero
  * ---------------------------------------------------------------------------
  * This is a visual-first replacement for the old placeholder-based carousel.
  *
@@ -36,146 +36,148 @@ import { useTheme } from "../../../Utilities/useTheme";
 
 const WEB_IMAGES = {
   heritage:
-    "https://commons.wikimedia.org/wiki/Special:Redirect/file/Rajasthan_Fort.jpg",
+    "https://images.unsplash.com/photo-1609766857329-a1b4d081f9b3?auto=format&fit=crop&w=1600&q=85",
   heritageWide:
-    "https://commons.wikimedia.org/wiki/Special:Redirect/file/Jaigarh_Fort_Jaipur.jpg",
+    "https://images.unsplash.com/photo-1582510003544-4d00b7f74220?auto=format&fit=crop&w=1600&q=85",
   community:
-    "https://commons.wikimedia.org/wiki/Special:Redirect/file/Women_of_Rajasthan%2C_near_Jaipur%2C_India.jpg",
+    "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1600&q=85",
   communityWide:
-    "https://commons.wikimedia.org/wiki/Special:Redirect/file/Ladies_of_Rajasthan%2C_India.jpg",
+    "https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1600&q=85",
   education:
     "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=1600&q=85",
+  mandir:
+    "https://images.unsplash.com/photo-1624462966581-bc6d768cbce5?auto=format&fit=crop&w=1600&q=85",
 };
 
-const FALLBACK_IMAGE = "/balinathjimaharaj.jpg";
+const FALLBACK_IMAGE = WEB_IMAGES.heritage;
 
 const HERO_SLIDES = [
   {
-    id: "balinath",
+    id: "identity",
     theme: "amber",
-    image: "/balinathjimaharaj.jpg",
-    background: "/balinathjimaharaj.jpg",
-    imagePosition: "center 22%",
-    eyebrowHi: "परम पूज्य संत एवं पथ-प्रदर्शक",
-    eyebrowEn: "REVERED SPIRITUAL GUIDE & SOCIAL REFORMER",
-    titleHi: "महर्षि बालीनाथ जी महाराज",
-    titleEn: "Maharshi Balinath Ji Maharaj",
-    highlightHi: "मण्डावरी धाम • जीवन दर्शन एवं चेतना",
-    highlightEn: "Mandawari Dham • Sacred Teachings & Guidance",
+    image: WEB_IMAGES.heritage,
+    background: WEB_IMAGES.heritageWide,
+    imagePosition: "center",
+    eyebrowHi: "आदिवासी हल्बा/हल्बी समाज कल्याण समिति, उज्जैन",
+    eyebrowEn: "ADIVASI HALBA/HALBI SAMAJ KALYAN SAMITI, UJJAIN",
+    titleHi: "गर्व से कहो हम आदिवासी हैं,",
+    titleEn: '"GARV SE KAHO HUM ADIVASI HAI,',
+    highlightHi: "भारत के मूल निवासी हैं",
+    highlightEn: 'BHARAT KE MUL NIWASI HAI"',
     descriptionHi:
-      "शिक्षा, सामाजिक सुधार, आत्मसम्मान और स्वावलंबन की प्रेरणा देने वाली महान विरासत को नई पीढ़ी तक पहुंचाने का डिजिटल प्रयास।",
+      "14 मार्च 1979 को स्थापित एवं 10 दिसंबर 2004 से स्वतंत्र पंजीकृत। समाज के परिवारों के सर्वांगीण उत्थान, शैक्षणिक एवं स्वास्थ्य सहायता, सांस्कृतिक संवर्धन एवं उज्जैन धर्मशाला संचालन हेतु समर्पित अधिकृत मंच।",
     descriptionEn:
-      "A digital effort to carry forward a legacy of education, social reform, dignity and self-reliance for the next generation.",
-    primaryHi: "जीवन दर्शन देखें",
-    primaryEn: "Explore Life & Teachings",
-    primaryLink: "/balinath",
-    secondaryHi: "इतिहास एवं विरासत",
-    secondaryEn: "History & Heritage",
+      "Established in 1979 and independently registered in 2004. Dedicated to social upliftment, education, healthcare assistance, tribal cultural preservation, and management of Halba Samaj Dharamshala in Ujjain.",
+    primaryHi: "संस्था परिचय देखें",
+    primaryEn: "About Sanstha",
+    primaryLink: "/about",
+    secondaryHi: "समाज का इतिहास",
+    secondaryEn: "Community History",
     secondaryLink: "/history",
-    visualLabelHi: "पावन विरासत",
-    visualLabelEn: "SACRED HERITAGE",
-    visualTextHi: "आस्था • प्रेरणा • समाज सुधार",
-    visualTextEn: "Faith • Inspiration • Social Reform",
+    visualLabelHi: "मूल निवासी गौरव",
+    visualLabelEn: "TRIBAL HERITAGE",
+    visualTextHi: "एकता • शिक्षा • स्वाभिमान",
+    visualTextEn: "Unity • Education • Self-Respect",
     chips: [
-      ["आध्यात्मिक विरासत", "Spiritual Heritage", FiSun],
-      ["समाज सुधार", "Social Reform", FiShield],
-      ["शिक्षा प्रेरणा", "Education", FaGraduationCap],
+      ["संवैधानिक पहचान", "ST Constitutional Identity", FiShield],
+      ["मूल निवासी चेतना", "Tribal Consciousness", FiSun],
+      ["सामाजिक एकता", "Community Unity", FiUsers],
     ],
   },
   {
-    id: "institution",
+    id: "bastar-rebellion",
     theme: "emerald",
     image: WEB_IMAGES.heritageWide,
     background: WEB_IMAGES.heritage,
     imagePosition: "center",
-    eyebrowHi: "प्रांतीय बैरवा प्रगति संस्था, राजस्थान",
-    eyebrowEn: "PRANTIYA BAIRWA PRAGATI SANSTHA, RAJASTHAN",
-    titleHi: "एकता • शिक्षा • स्वाभिमान",
-    titleEn: "Unity • Education • Self-Respect",
-    highlightHi: "समाज के सर्वांगीण विकास के लिए डिजिटल मंच",
-    highlightEn: "A digital platform for comprehensive community development",
+    eyebrowHi: "बस्तर धरोहर एवं ऐतिहासिक जनजातीय प्रतिरोध",
+    eyebrowEn: "BASTAR HERITAGE & HISTORIC RESISTANCE",
+    titleHi: "हल्बा क्रांति (1774–1779)",
+    titleEn: "The Halba Rebellion (1774–1779)",
+    highlightHi: "अजमेर सिंह का नेतृत्व • डोंगर संघर्ष",
+    highlightEn: "Leadership of Ajmer Singh • Dongar Uprising",
     descriptionHi:
-      "युवा सशक्तिकरण, शिक्षा, परिवार कल्याण, सामाजिक सेवा और संगठनात्मक एकता को एक आधुनिक डिजिटल मंच से जोड़ने का प्रयास।",
+      "1774–1779 की हल्बा क्रांति बस्तर क्षेत्र में राजवंशीय उत्तराधिकार संघर्ष एवं बाहरी राजनीतिक प्रभाव के विस्तार के दौर में हुआ एक प्रमुख जन-विद्रोह था। यह छत्तीसगढ़ में जनजातीय प्रतिरोध की ऐतिहासिक स्मृति में अत्यंत महत्वपूर्ण स्थान रखता है।",
     descriptionEn:
-      "Connecting youth empowerment, education, family welfare, social service and organizational unity through one modern digital platform.",
-    primaryHi: "संस्था के बारे में",
-    primaryEn: "About the Sanstha",
-    primaryLink: "/about",
-    secondaryHi: "प्रदेश कार्यकारिणी",
-    secondaryEn: "Executive Committee",
-    secondaryLink: "/management-committee",
-    visualLabelHi: "संस्था का डिजिटल मंच",
-    visualLabelEn: "DIGITAL SAMAAJ PLATFORM",
-    visualTextHi: "सेवा • संगठन • अवसर • विरासत",
-    visualTextEn: "Service • Organization • Opportunity • Heritage",
+      "The Halba Rebellion of 1774–1779 was a major uprising in the Bastar region during a period of dynastic conflict and expanding external political influence. It occupies an important place in the historical memory of tribal resistance in Chhattisgarh.",
+    primaryHi: "हल्बा क्रांति विवरण",
+    primaryEn: "Explore Rebellion History",
+    primaryLink: "/halba-rebellion",
+    secondaryHi: "बस्तर एवं भाषा",
+    secondaryEn: "Bastar & Language",
+    secondaryLink: "/heritage",
+    visualLabelHi: "ऐतिहासिक शौर्य",
+    visualLabelEn: "HISTORIC VALOR",
+    visualTextHi: "खेतों से किलों तक की यात्रा",
+    visualTextEn: "From Fields to Regional Forts",
     chips: [
-      ["सदस्यता", "Membership", FiUsers],
-      ["कार्यकारिणी", "Committee", FiShield],
-      ["सामुदायिक सेवा", "Community Service", FaHandsHelping],
+      ["डोंगर क्रांति", "Dongar Uprising", FiShield],
+      ["हल्बी भाषा", "Halbi Lingua Franca", FiBookOpen],
+      ["कृषक विरासत", "Agricultural Roots", FaHandsHelping],
     ],
   },
   {
-    id: "education",
+    id: "dharamshala",
+    theme: "cyan",
+    image: WEB_IMAGES.mandir,
+    background: WEB_IMAGES.mandir,
+    imagePosition: "center",
+    eyebrowHi: "उज्जैन महाकाल एवं पवित्र क्षिप्रा दर्शनार्थी सुविधा",
+    eyebrowEn: "UJJAIN PILGRIM ACCOMMODATION FACILITY",
+    titleHi: "हल्बा समाज धर्मशाला, उज्जैन",
+    titleEn: "Halba Samaj Dharamshala, Ujjain",
+    highlightHi: "श्री विट्ठल मंदिर परिसर • नरसिंह घाट रोड",
+    highlightEn: "Shri Vitthal Mandir Campus • Narsingh Ghat Road",
+    descriptionHi:
+      "05 डबल कमरे (AC ₹1200 / Non-AC ₹800) एवं 01 विशाल सामुदायिक हॉल। सभी अतिथियों के लिए समान मानक दरें। कालिका माता मंदिर के पीछे, पवित्र क्षिप्रा तट के निकट शांत एवं सुरक्षित आवास।",
+    descriptionEn:
+      "05 double rooms (2 AC @ ₹1,200, 3 Non-AC @ ₹800) and 01 large community hall with standard pricing for all guests. Clean, peaceful pilgrim stay near Narsingh Ghat Road.",
+    primaryHi: "धर्मशाला बुकिंग विवरण",
+    primaryEn: "Dharamshala Details",
+    primaryLink: "/dharamshala",
+    secondaryHi: "मार्ग व संपर्क",
+    secondaryEn: "Route & Contact",
+    secondaryLink: "/contact",
+    visualLabelHi: "तीर्थ सेवा",
+    visualLabelEn: "PILGRIM SEVA",
+    visualTextHi: "पवित्र क्षिप्रा तट • विट्ठल मंदिर",
+    visualTextEn: "Sacred Shipra Ghats • Vitthal Mandir",
+    chips: [
+      ["AC / Non-AC रूम", "AC / Non-AC Rooms", FiMapPin],
+      ["मानक दरें", "Standard Rates", FiHeart],
+      ["विट्ठल मंदिर प्रांगण", "Vitthal Mandir Campus", FiSun],
+    ],
+  },
+  {
+    id: "six-pillars",
     theme: "sky",
     image: WEB_IMAGES.education,
-    background: WEB_IMAGES.education,
-    imagePosition: "center",
-    eyebrowHi: "शिक्षा प्रोत्साहन एवं प्रतिभा सम्मान",
-    eyebrowEn: "EDUCATION, CAREERS & TALENT",
-    titleHi: "शिक्षा से सशक्त समाज",
-    titleEn: "Education Builds a Stronger Community",
-    highlightHi: "छात्रवृत्ति • करियर • उपलब्धियां",
-    highlightEn: "Scholarships • Careers • Achievements",
-    descriptionHi:
-      "मेधावी विद्यार्थियों को छात्रवृत्ति, करियर मार्गदर्शन और समाज की प्रतिभाओं को सम्मान देने के लिए एक समर्पित डिजिटल स्थान।",
-    descriptionEn:
-      "A dedicated digital space for scholarships, career guidance and celebrating community achievements.",
-    primaryHi: "छात्रवृत्तियां देखें",
-    primaryEn: "Explore Scholarships",
-    primaryLink: "/scholarships",
-    secondaryHi: "उपलब्धियां देखें",
-    secondaryEn: "View Achievements",
-    secondaryLink: "/achievements",
-    visualLabelHi: "युवा शक्ति",
-    visualLabelEn: "YOUTH POWER",
-    visualTextHi: "ज्ञान से अवसर तक",
-    visualTextEn: "From learning to opportunity",
-    chips: [
-      ["छात्रवृत्ति", "Scholarships", FiStar],
-      ["रोजगार", "Jobs", FiBriefcase],
-      ["प्रतिभा सम्मान", "Achievements", FiStar],
-    ],
-  },
-  {
-    id: "community",
-    theme: "cyan",
-    image: WEB_IMAGES.community,
     background: WEB_IMAGES.communityWide,
-    imagePosition: "center 38%",
-    eyebrowHi: "समाज साथ है, हर पड़ाव पर",
-    eyebrowEn: "COMMUNITY SUPPORT, EVERY STEP",
-    titleHi: "सेवा, सुविधा और समुदाय",
-    titleEn: "Community, Care & Convenience",
-    highlightHi: "विवाह मंच • धर्मशाला • Community Support",
-    highlightEn: "Matrimonial • Dharamshala • Community Support",
+    imagePosition: "center",
+    eyebrowHi: "शिक्षा, स्वास्थ्य, शासकीय सहयोग व सामाजिक एकता",
+    eyebrowEn: "EDUCATION, HEALTHCARE & COMMUNITY WELFARE",
+    titleHi: "समिति के 6 मुख्य स्तंभ",
+    titleEn: "Six Pillars of Samiti Mission",
+    highlightHi: "शिक्षा • स्वास्थ्य • आर्थिक संबल • संस्कृति",
+    highlightEn: "Education • Health • Economic Aid • Culture",
     descriptionHi:
-      "सुरक्षित वैवाहिक मंच, धर्मशाला सुविधा, सामुदायिक सहयोग, चर्चा और मतदान जैसी सेवाएं एक ही डिजिटल अनुभव में।",
+      "विद्यार्थियों के लिए शैक्षणिक सहायता, शासकीय योजनाओं का समन्वय, ज़रूरतमंद परिवारों को आर्थिक सहयोग, कुरीतियों का निवारण और सामाजिक भाईचारे का सुदृढ़ीकरण।",
     descriptionEn:
-      "Verified matchmaking, Dharamshala facilities, community support, discussions and voting in one digital experience.",
-    primaryHi: "कम्युनिटी देखें",
-    primaryEn: "Explore Community",
-    primaryLink: "/dashboard/community",
-    secondaryHi: "धर्मशाला बुकिंग",
-    secondaryEn: "Dharamshala Booking",
-    secondaryLink: "/dharamshala",
-    visualLabelHi: "एक मंच • अनेक सुविधाएं",
-    visualLabelEn: "ONE PLATFORM • MANY SERVICES",
-    visualTextHi: "परिवार • सुविधा • सहयोग",
-    visualTextEn: "Family • Convenience • Support",
+      "Student scholarships, government tribal welfare coordination, healthcare assistance, economic support, and social unity across the community.",
+    primaryHi: "समिति के 6 स्तंभ देखें",
+    primaryEn: "View Six Pillars",
+    primaryLink: "/about",
+    secondaryHi: "वर्तमान कार्यकारिणी",
+    secondaryEn: "Current Committee",
+    secondaryLink: "/management-committee",
+    visualLabelHi: "समग्र उत्थान",
+    visualLabelEn: "COMMUNITY UPLIFTMENT",
+    visualTextHi: "विरासत से नई पीढ़ियों तक",
+    visualTextEn: "From Heritage to New Generations",
     chips: [
-      ["विवाह मंच", "Matrimonial", FiHeart],
-      ["धर्मशाला", "Dharamshala", FiMapPin],
-      ["Community Hub", "Community Hub", FiUsers],
+      ["शिक्षा सहायता", "Education Support", FaGraduationCap],
+      ["शासकीय समन्वय", "Govt. Coordination", FiShield],
+      ["भाईचारा", "Community Brotherhood", FiUsers],
     ],
   },
   {
@@ -488,7 +490,7 @@ const HeroCarousel = () => {
   return (
     <section
       className="relative w-full"
-      aria-label={t("बैरवा समाज डिजिटल मंच", "Bairwa Samaj Digital Platform")}
+      aria-label={t("हल्बा/हल्बी समाज डिजिटल मंच", "Halba Samaj Digital Platform")}
       aria-roledescription="carousel"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
@@ -502,7 +504,7 @@ const HeroCarousel = () => {
       {/* Outer premium frame */}
       <div
         className={[
-          "relative isolate overflow-hidden rounded-[30px] sm:rounded-[38px] lg:rounded-[44px]",
+          "relative isolate overflow-hidden rounded-[30px] sm:rounded-[8px] lg:rounded-[20px]",
           "border shadow-2xl transition-colors duration-500",
           backgroundClass,
         ].join(" ")}

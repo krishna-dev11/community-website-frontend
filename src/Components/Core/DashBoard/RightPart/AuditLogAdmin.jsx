@@ -100,10 +100,10 @@ const AuditLogAdmin = () => {
   };
 
   return (
-    <div className="relative min-h-screen w-full bg-[var(--bg)] text-[var(--text-primary)] p-4 md:p-8 transition-colors duration-300">
+    <div className="relative min-h-screen w-full bg-[var(--bg)] text-[var(--text-primary)] p-3 sm:p-6 md:p-8 transition-colors duration-300">
       <div className="absolute top-0 right-0 w-96 h-96 bg-[var(--accent-primary)]/5 blur-[120px] rounded-full pointer-events-none" />
 
-      <div className="relative z-10 max-w-7xl mx-auto flex flex-col gap-8">
+      <div className="relative z-10 max-w-7xl mx-auto flex flex-col gap-6 sm:gap-8">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[var(--border-subtle)] pb-6">
           <div>
@@ -119,16 +119,16 @@ const AuditLogAdmin = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 [&>*]:flex-1 sm:[&>*]:flex-none">
             <button
               onClick={exportCSV}
-              className="btn-secondary !py-2.5 !px-4 !text-xs cursor-pointer"
+              className="btn-secondary !py-2.5 !px-4 !text-xs cursor-pointer justify-center"
             >
               <FiDownload size={13} /> <span>Export CSV</span>
             </button>
             <button
               onClick={fetchLogs}
-              className="btn-primary !py-2.5 !px-5 !text-xs cursor-pointer"
+              className="btn-primary !py-2.5 !px-5 !text-xs cursor-pointer justify-center"
             >
               <FiRefreshCw size={13} className={loading ? "animate-spin" : ""} /> <span>Refresh</span>
             </button>
@@ -136,7 +136,7 @@ const AuditLogAdmin = () => {
         </div>
 
         {/* Filters Bar */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 ka-card p-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 ka-card p-3 sm:p-4">
           <div className="relative">
             <FiSearch className="absolute left-3.5 top-3.5 text-[var(--text-muted)]" size={16} />
             <input
@@ -165,7 +165,7 @@ const AuditLogAdmin = () => {
             />
           </div>
 
-          <div className="flex items-center justify-between px-3 text-xs text-[var(--text-secondary)]">
+          <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-1 px-1 sm:px-3 text-xs text-[var(--text-secondary)]">
             <span>
               Total Recorded Events: <strong className="text-[var(--text-primary)]">{total}</strong>
             </span>
@@ -295,30 +295,30 @@ const AuditLogAdmin = () => {
 
       {/* INSPECT LOG MODAL */}
       {selectedLog && (
-        <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/80 p-4 backdrop-blur-md">
-          <div className="relative w-full max-w-2xl rounded-3xl border border-white/10 bg-[var(--surface)] p-6 sm:p-8 shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/80 p-3 sm:p-4 backdrop-blur-md">
+          <div className="relative w-full max-w-2xl rounded-2xl sm:rounded-3xl border border-white/10 bg-[var(--surface)] p-4 sm:p-8 shadow-2xl max-h-[92dvh] overflow-y-auto">
             <button
               onClick={() => setSelectedLog(null)}
-              className="absolute right-5 top-5 flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
+              className="absolute right-3.5 top-3.5 sm:right-5 sm:top-5 flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
             >
               <FiX size={18} />
             </button>
 
-            <div className="flex items-center gap-3 mb-6">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-500/30 bg-emerald-500/10">
+            <div className="flex items-center gap-3 mb-6 pr-8">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-emerald-500/30 bg-emerald-500/10">
                 <FiInfo size={20} className="text-emerald-400" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <h2 className="text-base font-bold text-white">Audit Event Inspection</h2>
-                <p className="text-xs text-[var(--text-secondary)] font-mono">{selectedLog._id}</p>
+                <p className="text-xs text-[var(--text-secondary)] font-mono break-all">{selectedLog._id}</p>
               </div>
             </div>
 
             <div className="space-y-4 text-xs">
-              <div className="grid grid-cols-2 gap-4 bg-white/[0.02] border border-white/10 p-4 rounded-2xl">
+              <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 gap-3 sm:gap-4 bg-white/[0.02] border border-white/10 p-3 sm:p-4 rounded-2xl">
                 <div>
                   <span className="text-gray-500 block mb-1">Action</span>
-                  <span className="font-bold text-emerald-400">{selectedLog.action}</span>
+                  <span className="font-bold text-emerald-400 break-all">{selectedLog.action}</span>
                 </div>
                 <div>
                   <span className="text-gray-500 block mb-1">Target Type</span>
@@ -326,11 +326,11 @@ const AuditLogAdmin = () => {
                 </div>
                 <div>
                   <span className="text-gray-500 block mb-1">Target ID</span>
-                  <span className="font-mono text-gray-300">{selectedLog.target || selectedLog.targetId}</span>
+                  <span className="font-mono text-gray-300 break-all">{selectedLog.target || selectedLog.targetId}</span>
                 </div>
                 <div>
                   <span className="text-gray-500 block mb-1">IP Address</span>
-                  <span className="font-mono text-gray-300">{selectedLog.ipAddress || "Unknown"}</span>
+                  <span className="font-mono text-gray-300 break-all">{selectedLog.ipAddress || "Unknown"}</span>
                 </div>
               </div>
 
@@ -366,7 +366,7 @@ const AuditLogAdmin = () => {
             <div className="mt-6 pt-4 border-t border-white/10 flex justify-end">
               <button
                 onClick={() => setSelectedLog(null)}
-                className="px-5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs uppercase"
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs uppercase"
               >
                 Close
               </button>

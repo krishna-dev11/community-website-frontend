@@ -1,132 +1,78 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { FiSearch, FiLayers, FiCheckCircle, FiInfo } from "react-icons/fi";
-import { bairwaGotrasList } from "../data/bairwaData";
-import { useLanguage } from "../i18n/LanguageContext";
+import React, { useEffect } from "react";
+import { Link } from "react-router-dom";
+import { FiShield, FiInfo, FiFileText, FiCheckCircle, FiArrowRight } from "react-icons/fi";
 import ModernFooter from "../Components/Core/Home/ModernFooter";
+import { organizationInfo } from "../data/halbaData";
+import { useLanguage } from "../i18n/LanguageContext";
 
 const GotraDirectoryPage = () => {
-  const { t, isHindi } = useLanguage();
-  const [search, setSearch] = useState("");
-  const [selectedChar, setSelectedChar] = useState("ALL");
+  const { isHindi } = useLanguage();
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
-  const firstChars = useMemo(() => {
-    const chars = new Set();
-    bairwaGotrasList.forEach((g) => {
-      if (g.original) chars.add(g.original.charAt(0));
-    });
-    return ["ALL", ...Array.from(chars).sort()];
-  }, []);
-
-  const filteredGotras = useMemo(() => {
-    return bairwaGotrasList.filter((g) => {
-      const matchSearch =
-        !search ||
-        g.original.toLowerCase().includes(search.toLowerCase()) ||
-        g.prevalent.toLowerCase().includes(search.toLowerCase());
-      const matchChar = selectedChar === "ALL" || g.original.startsWith(selectedChar);
-      return matchSearch && matchChar;
-    });
-  }, [search, selectedChar]);
-
   return (
     <div className="relative min-h-screen w-full max-w-full overflow-x-hidden bg-[var(--bg)] text-[var(--text-primary)] transition-colors duration-300">
       {/* Hero Header */}
       <section className="relative pt-24 sm:pt-28 pb-10 sm:pb-14 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center">
-        <div className="inline-flex items-center gap-2 rounded-full border border-[var(--accent-primary)]/30 bg-[var(--accent-primary)]/10 px-3.5 py-1 text-xs font-bold text-[var(--accent-primary)] mb-3">
-          <FiLayers size={13} />
-          <span>{isHindi ? "प्रामाणिक सामाजिक गोत्र सूची (101 गोत्र)" : "Authentic Gotra Directory (101 Gotras)"}</span>
+        <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3.5 py-1 text-xs font-bold text-amber-300 mb-3">
+          <FiShield size={13} />
+          <span>{isHindi ? "कुल, गोत्र एवं वंशावली अधिकृत सूचना" : "Kinship, Clan & Gotra Notice"}</span>
         </div>
 
         <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-[var(--text-primary)] tracking-tight leading-tight">
-          {isHindi ? "बैरवा समाज के गोत्र" : "Bairwa Samaaj Gotra Directory"}
+          {isHindi ? "हल्बा/हल्बी समाज गोत्र एवं कुल निर्देशिका" : "Halba/Halbi Kinship & Clan Traditions"}
         </h1>
 
         <p className="mt-3 text-xs sm:text-base text-[var(--text-secondary)] leading-relaxed max-w-2xl mx-auto">
           {isHindi
-            ? "बैरवा समाज के 101 मूल एवं संशोधित / प्रचलित गोत्रों की प्रामाणिक, वर्णानुक्रम एवं खोज-योग्य निर्देशिका।"
-            : "Authentic, searchable alphabetical directory of 101 original and prevalent gotras of Bairwa Samaaj."}
+            ? "आदिवासी हल्बा/हल्बी समाज कल्याण समिति, उज्जैन की अधिकृत कुल एवं गोत्र सत्यापन व्यवस्था।"
+            : "Official Kinship and Gotra verification guidelines of Adivasi Halba/Halbi Samaj Kalyan Samiti, Ujjain."}
         </p>
-
-        {/* Search Input */}
-        <div className="mt-6 max-w-md mx-auto relative">
-          <FiSearch size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={isHindi ? "गोत्र का नाम खोजें (उदा. गोठवाल, बैण्डवाल, कुवाल)..." : "Search gotra name..."}
-            className="w-full rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] pl-11 pr-4 py-3 text-xs sm:text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] outline-none focus:border-[var(--accent-primary)] shadow-sm transition"
-          />
-        </div>
-
-        {/* Alphabet Filter Pills */}
-        <div className="mt-5 flex flex-wrap items-center justify-center gap-1.5 max-w-3xl mx-auto">
-          {firstChars.map((ch) => (
-            <button
-              key={ch}
-              type="button"
-              onClick={() => setSelectedChar(ch)}
-              className={`h-7 sm:h-8 px-2.5 sm:px-3 rounded-lg text-xs font-bold transition cursor-pointer ${
-                selectedChar === ch
-                  ? "bg-[var(--accent-primary)] text-black"
-                  : "bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:text-white border border-[var(--border-subtle)]"
-              }`}
-            >
-              {ch === "ALL" ? (isHindi ? "सभी" : "All") : ch}
-            </button>
-          ))}
-        </div>
       </section>
 
-      {/* Directory Grid / Table */}
-      <section className="py-8 sm:py-12 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto">
-        <div className="flex items-center justify-between mb-4 text-xs text-[var(--text-muted)]">
-          <span>{isHindi ? `कुल परिणाम: ${filteredGotras.length} गोत्र` : `Results: ${filteredGotras.length} gotras`}</span>
-          <span>{isHindi ? "मूल व प्रचलित स्वरूप" : "Original & Prevalent"}</span>
-        </div>
+      {/* Official Cautionary Advisory Box (Section 10 Compliance) */}
+      <section className="py-8 pb-20 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
+        <div className="ka-card p-6 sm:p-10 rounded-3xl border-2 border-amber-500/40 bg-gradient-to-br from-amber-500/10 via-[var(--surface-elevated)] to-[var(--surface)] shadow-lg space-y-6 text-center">
+          <div className="h-16 w-16 rounded-3xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 mx-auto">
+            <FiInfo size={30} />
+          </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {filteredGotras.map((gotra) => (
-            <div
-              key={gotra.id}
-              className="ka-card p-3.5 rounded-2xl border border-[var(--border-subtle)] hover:border-[var(--accent-primary)]/40 flex items-center justify-between transition-all"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)] text-[var(--accent-primary)] font-mono font-bold text-xs flex items-center justify-center shrink-0">
-                  {gotra.id}
-                </div>
-                <div>
-                  <h3 className="text-xs sm:text-sm font-bold text-[var(--text-primary)]">
-                    {gotra.original}
-                  </h3>
-                  {gotra.prevalent !== gotra.original && (
-                    <p className="text-[10px] text-[var(--text-muted)] mt-0.5">
-                      {isHindi ? "प्रचलित: " : "Prevalent: "}
-                      <span className="text-[var(--text-secondary)]">{gotra.prevalent}</span>
-                    </p>
-                  )}
-                </div>
-              </div>
-              <FiCheckCircle size={14} className="text-emerald-400 shrink-0" />
-            </div>
-          ))}
-        </div>
+          <div className="space-y-3">
+            <span className="text-xs font-black uppercase tracking-widest text-amber-400 block">
+              Official Samiti Advisory • Section 10
+            </span>
+            <h2 className="text-lg sm:text-2xl font-black text-[var(--text-primary)]">
+              {isHindi ? "गोत्र एवं कुल परंपरा संबंधी अधिकृत वक्तव्य" : "Official Clan & Gotra Policy"}
+            </h2>
+          </div>
 
-        {filteredGotras.length === 0 && (
-          <div className="text-center py-16 ka-card rounded-2xl border border-dashed border-[var(--border-subtle)]">
-            <FiInfo size={32} className="mx-auto text-[var(--text-faint)] mb-2" />
-            <p className="text-xs text-[var(--text-muted)]">
-              {isHindi ? "आपके खोज मापदंड से कोई गोत्र नहीं मिला।" : "No gotra found matching your search."}
+          {/* EXACT MANDATED CLIENT TEXT */}
+          <div className="p-6 rounded-2xl border-2 border-amber-500/50 bg-[var(--surface)] shadow-inner">
+            <p className="text-base sm:text-lg font-bold text-[var(--text-primary)] italic leading-relaxed">
+              “{isHindi ? organizationInfo.gotraAdvisoryTextHi : organizationInfo.gotraAdvisoryText}”
             </p>
           </div>
-        )}
+
+          <p className="text-xs text-[var(--text-secondary)] leading-relaxed max-w-2xl mx-auto">
+            {isHindi
+              ? "हल्बा/हल्बी समाज विभिन्न राज्यों (मध्य प्रदेश, छत्तीसगढ़, महाराष्ट्र एवं ओडिशा) में फैला हुआ है, जहाँ विभिन्न अंचलों में क्षेत्रीय कुल देवियों, टोटेम एवं उपनामों की विविधता पाई जाती है। इंटरनेट पर उपलब्ध असत्यापित सूचियों से बचने तथा आधिकारिक प्रामाणिकता सुनिश्चित करने हेतु समिति द्वारा अपने सत्यापित अभिलेखों के आधार पर ही सूची जारी की जाएगी।"
+              : "Due to regional variations across Central India, clan and kinship names vary significantly. To maintain authenticity and legal integrity, only Samiti-verified genealogical records will be published."}
+          </p>
+
+          <div className="pt-4 flex flex-wrap items-center justify-center gap-3">
+            <Link to="/membership" className="btn-primary text-xs">
+              <span>{isHindi ? "सदस्यता सत्यापन नियम देखें" : "Membership Verification"}</span>
+              <FiArrowRight size={14} />
+            </Link>
+            <Link to="/contact" className="btn-secondary text-xs">
+              <span>{isHindi ? "सचिवालय से संपर्क करें" : "Contact Secretariat"}</span>
+            </Link>
+          </div>
+        </div>
       </section>
 
-      {/* Footer */}
       <ModernFooter />
     </div>
   );

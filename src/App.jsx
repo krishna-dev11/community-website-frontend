@@ -26,7 +26,6 @@ import ContentAdmin from "./Components/Core/DashBoard/RightPart/ContentAdmin";
 import FinanceAdmin from "./Components/Core/DashBoard/RightPart/FinanceAdmin";
 import MatrimonialAdmin from "./Components/Core/DashBoard/RightPart/MatrimonialAdmin";
 import OpportunityAdmin from "./Components/Core/DashBoard/RightPart/OpportunityAdmin";
-import AuditLogAdmin from "./Components/Core/DashBoard/RightPart/AuditLogAdmin";
 import NotFound from "./Components/Common/NotFound";
 import AIGeminiChat from "./Components/Common/AIGeminiChat";
 import PublicResourcePage from "./Pages/PublicResourcePage";
@@ -40,6 +39,12 @@ import ManagementCommitteePage from "./Pages/ManagementCommitteePage";
 import BalinathPage from "./Pages/BalinathPage";
 import GotraDirectoryPage from "./Pages/GotraDirectoryPage";
 import HistoryPage from "./Pages/HistoryPage";
+import HeritageRebellionPage from "./Pages/HeritageRebellionPage";
+import CulturePage from "./Pages/CulturePage";
+import ReligionFaithPage from "./Pages/ReligionFaithPage";
+import ConstitutionalStatusPage from "./Pages/ConstitutionalStatusPage";
+import LivelihoodsPage from "./Pages/LivelihoodsPage";
+import MembershipPage from "./Pages/MembershipPage";
 
 // Initialize theme from localStorage before first React paint — prevents color flash
 initTheme();
@@ -58,13 +63,23 @@ function App() {
         <Route path="/about" element={<AboutPage />} />
         <Route path="/history" element={<HistoryPage />} />
         <Route path="/management-committee" element={<ManagementCommitteePage />} />
+        <Route path="/committee" element={<ManagementCommitteePage />} />
         <Route path="/balinath" element={<BalinathPage />} />
+        <Route path="/faith" element={<ReligionFaithPage />} />
         <Route path="/gotras" element={<GotraDirectoryPage />} />
+        <Route path="/gotra" element={<GotraDirectoryPage />} />
+        <Route path="/heritage" element={<HeritageRebellionPage />} />
+        <Route path="/halba-rebellion" element={<HeritageRebellionPage />} />
+        <Route path="/culture" element={<CulturePage />} />
+        <Route path="/constitutional-status" element={<ConstitutionalStatusPage />} />
+        <Route path="/livelihoods" element={<LivelihoodsPage />} />
+        <Route path="/membership" element={<MembershipPage />} />
         <Route path="/contact" element={<ContactUsPage />} />
         <Route path="/dharamshala" element={<DharamshalaPage />} />
         <Route path="/notices" element={<PublicResourcePage type="notices" />} />
         <Route path="/publications" element={<PublicResourcePage type="publications" />} />
         <Route path="/gallery" element={<PublicResourcePage type="gallery" />} />
+        <Route path="/videos" element={<PublicResourcePage type="videos" />} />
         <Route path="/jobs" element={<PublicResourcePage type="jobs" />} />
         <Route path="/scholarships" element={<PublicResourcePage type="scholarships" />} />
         <Route path="/achievements" element={<PublicResourcePage type="achievements" />} />
@@ -180,7 +195,6 @@ function App() {
           <Route path="/dashboard/admin/finance" element={<FinanceAdmin />} />
           <Route path="/dashboard/admin/matrimonial" element={<MatrimonialAdmin />} />
           <Route path="/dashboard/admin/opportunities" element={<OpportunityAdmin />} />
-          <Route path="/dashboard/admin/audit-logs" element={<AuditLogAdmin />} />
           <Route path="/dashboard/setting" element={<SettingIndex />} />
         </Route>
 

@@ -6,12 +6,12 @@ import DeleteAccount from './DeleteAccount';
 
 const SettingIndex = () => {
   return (
-    <div className="relative min-h-screen w-full bg-[var(--bg)] text-[var(--text-primary)] p-2 md:p-6 overflow-x-hidden transition-colors duration-300">
+    <div className="relative min-h-screen w-full bg-[var(--bg)] text-[var(--text-primary)] p-3 sm:p-6 overflow-x-hidden transition-colors duration-300">
       <div className="absolute top-[10%] left-[-5%] select-none pointer-events-none opacity-[0.02] z-0">
         <h1 className="text-[15rem] font-bold uppercase tracking-widest text-[var(--text-primary)]">Settings</h1>
       </div>
 
-      <div className="relative z-10 max-w-5xl mx-auto flex flex-col gap-8">
+      <div className="relative z-10 max-w-5xl mx-auto flex flex-col gap-6 sm:gap-8">
         <div className="flex flex-col gap-2">
           <nav className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
             <span>Home</span> <span className="text-[var(--accent-primary)]">/</span>

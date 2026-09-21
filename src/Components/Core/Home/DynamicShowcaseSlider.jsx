@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { FiAward, FiChevronLeft, FiChevronRight, FiHeart, FiUser } from "react-icons/fi";
+import { useLanguage } from "../../../i18n/LanguageContext";
 
 const formatAmount = (value) => {
   if (!value) return "Contribution received";
@@ -22,16 +23,16 @@ const ShowcaseCard = ({ item, type }) => {
     <article className="group flex h-full flex-col justify-between rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-3.5 shadow-md transition-all hover:border-[var(--accent-primary)]/40 hover:shadow-lg">
       <div className="relative aspect-[9/12] overflow-hidden rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] shadow-inner">
         {photoUrl ? (
-          <img src={photoUrl} alt={title} loading="lazy" className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-105" />
+          <img src={photoUrl} alt={title} loading="lazy" className="h-full w-full bg-white object-contain transition-transform duration-500 group-hover:scale-105" />
         ) : (
           <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-b from-[var(--surface-raised)] to-[var(--surface)] text-[var(--text-muted)]">
             <FiUser size={36} />
           </div>
         )}
-        <span className="absolute left-2 top-2 inline-flex max-w-[calc(100%-16px)] items-center gap-1 rounded-md border border-white/10 bg-black/70 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-300 backdrop-blur-md">
+        {/* <span className="absolute left-2 top-2 inline-flex max-w-[calc(100%-16px)] items-center gap-1 rounded-md border border-white/10 bg-black/70 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-300 backdrop-blur-md">
           <Icon size={9} />
           {isSupporter ? "Community Supporter" : "Samaj Pride"}
-        </span>
+        </span> */}
       </div>
 
       <div className="mt-3 min-w-0">
@@ -75,7 +76,78 @@ const DynamicShowcaseSlider = ({ title, subtitle, items = [], type, cta }) => {
     return () => slider.removeEventListener("scroll", onScroll);
   }, []);
 
-  if (!items.length) return null;
+  const { isHindi } = useLanguage();
+
+  if (!items.length) {
+    const isAchievements = type === "achievements";
+    const isSupporters = type === "supporters";
+    const EmptyIcon = isSupporters ? FiHeart : isAchievements ? FiAward : FiUser;
+    const badgeColor = isSupporters
+      ? "bg-rose-500/10 text-rose-500 border-rose-500/20"
+      : "bg-amber-500/10 text-amber-500 border-amber-500/20";
+    const btnColor = isSupporters
+      ? "bg-rose-600 hover:bg-rose-500 text-white"
+      : "bg-amber-600 hover:bg-amber-500 text-white";
+
+    return (
+      <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="text-xl font-black text-[var(--text-primary)] sm:text-3xl">{title}</h2>
+            <p className="mt-1 max-w-xl text-xs text-[var(--text-secondary)] sm:text-sm">{subtitle}</p>
+          </div>
+          {cta && (
+            <div className="flex items-center gap-2 self-start sm:self-auto">
+              <Link to={cta.to} className="btn-secondary !py-2 !px-4 !text-xs">
+                {cta.label}
+              </Link>
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-col items-center justify-center py-12 px-6 text-center rounded-2xl border border-dashed border-[var(--border-subtle)] bg-[var(--surface-elevated)]">
+          <div className={`flex h-12 w-12 items-center justify-center rounded-full border ${badgeColor} mb-3`}>
+            <EmptyIcon size={22} />
+          </div>
+          <p className="text-sm font-bold text-[var(--text-primary)]">
+            {isSupporters
+              ? isHindi
+                ? "वर्तमान में कोई दानदाता प्रविष्टि उपलब्ध नहीं है।"
+                : "No contributor records available right now."
+              : isAchievements
+              ? isHindi
+                ? "वर्तमान में कोई उपलब्धि प्रकाशित नहीं है।"
+                : "No achievements listed currently."
+              : isHindi
+              ? "वर्तमान में कोई प्रविष्टि उपलब्ध नहीं है।"
+              : "No records available right now."}
+          </p>
+          <p className="mt-1 text-xs text-[var(--text-muted)] max-w-md">
+            {isSupporters
+              ? isHindi
+                ? "समाज स्वास्थ्य सहायता एवं जनकल्याण अभियान में अपना सहयोग देकर इस गौरव सूची का हिस्सा बनें।"
+                : "Contribute to healthcare assistance and community welfare funds to be recognized here."
+              : isAchievements
+              ? isHindi
+                ? "समाज के प्रतिभाशाली सदस्य, विद्यार्थी व विशिष्ट व्यक्तित्व अपनी उपलब्धियां साझा कर सकते हैं।"
+                : "Community achievers, students, and professionals are invited to share their accomplishments."
+              : isHindi
+              ? "नई प्रविष्टियाँ प्रकाशित होते ही यहाँ प्रदर्शित की जाएंगी।"
+              : "New entries will appear here once published."}
+          </p>
+          {cta && (
+            <Link
+              to={cta.to}
+              className={`mt-4 inline-flex items-center gap-1.5 rounded-xl ${btnColor} px-4 py-2 text-xs font-bold shadow transition-colors`}
+            >
+              <span>{cta.label}</span>
+              <FiChevronRight size={13} />
+            </Link>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>

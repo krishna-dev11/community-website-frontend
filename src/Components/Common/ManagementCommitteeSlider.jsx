@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect } from "react";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import ManagementCommitteeCard from "./ManagementCommitteeCard";
-import { realCommitteeMembers } from "../../data/bairwaData";
+import { realCommitteeMembers } from "../../data/halbaData";
 import { useLanguage } from "../../i18n/LanguageContext";
 
 const ManagementCommitteeSlider = ({ members = [], title, subtitle }) => {

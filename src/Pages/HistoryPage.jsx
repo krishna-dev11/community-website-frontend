@@ -1,177 +1,282 @@
-import React, { useEffect, useState } from "react";
-import { FiBookOpen, FiClock, FiShield, FiHeart, FiAward, FiCheckCircle } from "react-icons/fi";
-import { organizationInfo, balinathData } from "../data/bairwaData";
-import { useLanguage } from "../i18n/LanguageContext";
+import React, { useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
+import {
+  FiBookOpen,
+  FiClock,
+  FiShield,
+  FiMapPin,
+  FiBarChart2,
+  FiArrowRight,
+  FiCheckCircle,
+  FiTrendingUp,
+} from "react-icons/fi";
 import ModernFooter from "../Components/Core/Home/ModernFooter";
+import { halbaHistoricalPhases, organizationInfo } from "../data/halbaData";
+import { useLanguage } from "../i18n/LanguageContext";
+import { useScrollReveal } from "../Utilities/useScrollReveal";
 
 const HistoryPage = () => {
   const { isHindi } = useLanguage();
-  const [activeSection, setActiveSection] = useState("01");
+  const pageRef = useRef(null);
+  useScrollReveal(pageRef);
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
-  const sections = [
+  const census = organizationInfo.census2011;
+
+  const historySections = [
     {
       id: "01",
-      titleHi: "01. परिचय एवं सामाजिक पहचान",
-      titleEn: "01. Introduction & Social Identity",
+      titleHi: "01. पहचान एवं भौगोलिक विस्तार",
+      titleEn: "01. Identity & Geographical Presence",
       contentHi:
-        "बैरवा समाज भारत का एक प्राचीन, स्वाभिमानी, श्रमशील एवं गौरवशाली समाज है। समाज की अधिकांश आबादी राजस्थान, मध्य प्रदेश, दिल्ली, उत्तर प्रदेश, हरियाणा एवं गुजरात में निवास करती है। प्रांतीय बैरवा प्रगति संस्था (पंजीकृत कार्यालय: सी-57, महेश नगर, जयपुर) समाज के सर्वांगीण उत्थान, शैक्षणिक प्रगति एवं सांस्कृतिक संरक्षण हेतु निरंतर कार्यरत है।",
+        "हल्बा (जिन्हें हल्बी भी लिखा जाता है) मध्य एवं पूर्वी भारत का एक ऐतिहासिक रूप से स्थापित अनुसूचित जनजाति समुदाय है। यह समुदाय मुख्य रूप से छत्तीसगढ़, महाराष्ट्र एवं मध्य प्रदेश में केंद्रित है। भारत सरकार की अनुसूचित जनजाति सूची में 'Halba, Halbi' प्रविष्टि सम्मिलित है।",
       contentEn:
-        "Bairwa Samaaj is an ancient, self-respecting, industrious, and proud community of India. The primary population resides in Rajasthan, Madhya Pradesh, Delhi, Uttar Pradesh, Haryana, and Gujarat. Prantiya Bairwa Pragati Sanstha (C-57, Mahesh Nagar, Jaipur) actively leads the community's educational, social, and cultural advancement.",
+        "Halba, also written Halbi, is a tribal community historically rooted in Central and Eastern India, most closely associated with Chhattisgarh, Maharashtra and Madhya Pradesh. The Government of India lists Halba/Halbi under the Scheduled Tribes Order.",
+      accentColor: "emerald",
     },
     {
       id: "02",
-      titleHi: "02. ऐतिहासिक पृष्ठभूमि व मान्यताएँ",
-      titleEn: "02. Historical Background & Heritage",
+      titleHi: "02. नाम का अर्थ एवं कृषक विरासत",
+      titleEn: "02. Meaning & Agricultural Roots",
       contentHi:
-        "उपलब्ध सामाजिक स्रोतों एवं मान्यताओं के अनुसार, बैरवा समाज का इतिहास अत्यंत समृद्ध रहा है। समाज ने समय-समय पर कृषि, शिल्प, समाज सुधार और राष्ट्र निर्माण में महत्वपूर्ण भूमिका निभाई है। समाज का मूल स्वभाव शांतिप्रिय, धर्मपरायण, अतिथि सत्कार करने वाला तथा स्वाभिमानी रहा है।",
+        "हल्बा नाम की सर्वविदित व्याख्या 'हल' (कृषि) से जुड़ी है, जो समुदाय की दीर्घकालीन कृषि परंपरा को दर्शाती है। रसेल व हीरालाल के ऐतिहासिक नृवंशविज्ञान में समुदाय की उत्पत्ति से जुड़ी विभिन्न मौखिक परंपराएं संकलित हैं।",
       contentEn:
-        "According to community historical records and traditions, Bairwa Samaaj possesses a rich heritage. The community has made foundational contributions to agriculture, craftsmanship, social reform, and nation-building with an innate ethos of self-respect and hospitality.",
+        "The name Halba is commonly associated with agricultural heritage ('Hal' / plough), reflecting centuries of farming traditions. Historical literature preserves multiple oral origin traditions regarding the community's early settlement.",
+      accentColor: "amber",
     },
     {
       id: "03",
-      titleHi: "03. महर्षि बालीनाथ जी महाराज का प्रभाव",
-      titleEn: "03. Legacy of Maharshi Balinath Ji",
+      titleHi: "03. प्रारंभिक गृहक्षेत्र एवं उपसमूह",
+      titleEn: "03. Early Homeland & Regional Subgroups",
       contentHi:
-        "परम पूज्य महर्षि बालीनाथ जी महाराज (जन्म: मण्डावरी, लालसोट, दौसा) बैरवा समाज के सर्वोच्च पूज्य संत एवं पथ-प्रदर्शक हैं। आपने समाज को कुरीतियों, बाल विवाह और अंधविश्वास से मुक्त कर शिक्षा, नशा मुक्ति, सदाचार और स्वावलंबन का पावन संदेश दिया। मण्डावरी धाम में स्थित आपकी समाधि समाज का परम पावन तीर्थ स्थल है।",
+        "ऐतिहासिक साहित्य के अनुसार हल्बा का आरंभिक गृहक्षेत्र दक्षिण रायपुर, कांकेर, बस्तर एवं सिहावा के आसपास रहा। आगे चलकर भंडारा व विदर्भ की ओर प्रसार हुआ। बस्तरिया, छत्तीसगढ़िया, मरेठिया, पेन्तिया जैसे उपसमूहों का उल्लेख मिलता है।",
       contentEn:
-        "Param Pujya Maharshi Balinath Ji Maharaj (Born in Mandawari, Lalsot, Dausa) is the revered spiritual guide and social reformer of Bairwa Samaaj. He guided the community away from superstition, child marriage, and intoxicants toward mass education, virtue, and self-reliance. Mandawari Dham is the sacred pilgrimage center of the community.",
+        "Ethnographic literature places an early Halba homeland around southern Raipur, Kanker, Bastar, and Sihawa, with later movement toward Bhandara and Berar (Maharashtra). Regional classifications record Bastaria, Chhattisgarhia, Marethia, Pentia, and related occupational groups.",
+      accentColor: "sky",
     },
     {
       id: "04",
-      titleHi: "04. बाबा साहेब और सामाजिक चेतना",
-      titleEn: "04. Dr. Ambedkar & Social Consciousness",
+      titleHi: "04. बस्तर से ऐतिहासिक जुड़ाव",
+      titleEn: "04. Historic Bond with Bastar",
       contentHi:
-        "बोधिसत्व भारत रत्न डॉ. बी. आर. अम्बेडकर का बैरवा समाज पर गहरा और अमिट प्रभाव है। बाबा साहेब के 'शिक्षित बनो, संगठित रहो, संघर्ष करो' के मूल मंत्र को समाज ने अपने जीवन में आत्मसात किया है। समाज में शिक्षा, समरसता, आत्मसम्मान और संविधानिक अधिकारों के प्रति चेतना निरंतर सशक्त हुई है।",
+        "बस्तर हल्बा ऐतिहासिक स्मृति का केंद्रीय स्तंभ है। यह क्षेत्र समाज के कृषक जीवन, रियासती सुरक्षा सेवा, हल्बी संपर्क भाषा और 1774–1779 की ऐतिहासिक हल्बा क्रांति से अभिन्न रूप से जुड़ा हुआ है।",
       contentEn:
-        "Bharat Ratna Dr. B. R. Ambedkar's ideals of social justice, constitutional equality, and human dignity have deeply guided Bairwa Samaaj. Embracing his call to 'Educate, Agitate, Organize', community members have achieved outstanding progress in higher education, administration, and public service.",
+        "Bastar occupies a central place in Halba historical memory — linked to the community's agricultural life, military traditions, language, and the 1774–1779 rebellion. Halbi functioned as a regional lingua franca across Bastar.",
+      accentColor: "purple",
     },
     {
       id: "05",
-      titleHi: "05. शिक्षा, रोजगार और आर्थिक प्रगति",
-      titleEn: "05. Education, Employment & Progress",
+      titleHi: "05. 1774–1779 हल्बा क्रांति (डोंगर संघर्ष)",
+      titleEn: "05. Halba Rebellion (1774–1779)",
       contentHi:
-        "विगत दशकों में बैरवा समाज के युवाओं ने सिविल सेवाओं, उच्च प्रशासनिक पदों, न्यायपालिका, चिकित्सा, अभियांत्रिकी, तकनीकी और व्यापार में उल्लेखनीय सफलताएँ अर्जित की हैं। समाज की बेटियों ने भी उच्च शिक्षा में उत्कृष्ट स्थान बनाकर समाज का नाम रोशन किया है।",
+        "1774–1779 की हल्बा क्रांति बस्तर क्षेत्र में राजवंशीय संघर्ष के दौर में हुआ एक प्रमुख जन-विद्रोह था। डोंगर के अजमेर सिंह के नेतृत्व में हल्बा सैनिकों व समुदाय ने निर्णायक भूमिका निभाई। यह छत्तीसगढ़ में जनजातीय प्रतिरोध की ऐतिहासिक स्मृति में अत्यंत महत्वपूर्ण स्थान रखता है।",
       contentEn:
-        "In recent decades, Bairwa youth have excelled in civil services, state administration, judiciary, medicine, engineering, technology, and entrepreneurship. Daughters of the community have earned academic distinctions and leadership roles.",
+        "The Halba Rebellion of 1774–1779 was a major uprising in the Bastar region during a period of dynastic conflict. Led by Ajmer Singh of Dongar, it occupies an important place in the historical memory of tribal resistance in Chhattisgarh.",
+      accentColor: "rose",
     },
     {
       id: "06",
-      titleHi: "06. विवाह एवं सामाजिक परंपराएँ",
-      titleEn: "06. Matrimonial & Social Customs",
+      titleHi: "06. आजीविका में बदलाव",
+      titleEn: "06. Livelihood Evolution",
       contentHi:
-        "समाज में विवाह संस्कार को पवित्र माना जाता है। प्रांतीय बैरवा प्रगति संस्था द्वारा प्रतिवर्ष युवक-युवती परिचय सम्मेलन एवं सामूहिक विवाह सम्मेलनों का सफल आयोजन किया जाता है, जिससे फिजूलखर्ची पर रोक लगी है और सैकड़ों परिवारों को योग्य जीवनसाथी प्राप्त हुए हैं।",
+        "पारंपरिक रूप से कृषि, सैन्य सेवा, वनोपज एवं बुनाई से जुड़े हल्बा समाज ने आधुनिक काल में व्यापक सामाजिक-आर्थिक विविधता अर्जित की है। आज समाज के युवा प्रशासनिक सेवाओं, उच्च शिक्षा, व्यापार एवं चिकित्सा में अग्रणी भूमिका निभा रहे हैं।",
       contentEn:
-        "Matrimony is regarded as a sacred union. Prantiya Bairwa Pragati Sanstha annually conducts large-scale youth introduction meets and mass marriage conferences to eliminate unnecessary expenditure and facilitate compatible alliances.",
-    },
-    {
-      id: "07",
-      titleHi: "07. सामाजिक सुधार एवं भविष्य की दिशा",
-      titleEn: "07. Social Reforms & Future Horizons",
-      contentHi:
-        "संस्था का संकल्प है कि समाज में शत-प्रतिशत साक्षरता हो, कुरीतियों और दहेज प्रथा का पूर्ण उन्मूलन हो, पर्यावरण संरक्षण व पौधारोपण को बढ़ावा मिले, और युवा पीढ़ी को प्रतियोगी परीक्षाओं व स्वरोजगार के सर्वोत्तम अवसर उपलब्ध हों।",
-      contentEn:
-        "The organization is resolute in achieving 100% literacy, eradicating dowry and superstition, promoting environmental conservation, and providing scholarship mentorship to every aspiring student.",
+        "Historically engaged in agriculture, militia service, weaving, and forest produce, the contemporary Halba community has diversified into public administration, higher education, technology, healthcare, and modern entrepreneurship.",
+      accentColor: "teal",
     },
   ];
 
+  const accentMap = {
+    emerald: { badge: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400", bar: "bg-emerald-500" },
+    amber: { badge: "border-amber-500/30 bg-amber-500/10 text-amber-400", bar: "bg-amber-500" },
+    sky: { badge: "border-sky-500/30 bg-sky-500/10 text-sky-400", bar: "bg-sky-500" },
+    purple: { badge: "border-purple-500/30 bg-purple-500/10 text-purple-400", bar: "bg-purple-500" },
+    rose: { badge: "border-rose-500/30 bg-rose-500/10 text-rose-400", bar: "bg-rose-400" },
+    teal: { badge: "border-teal-500/30 bg-teal-500/10 text-teal-400", bar: "bg-teal-500" },
+  };
+
+  const delayClasses = [
+    "reveal-delay-1","reveal-delay-2","reveal-delay-3","reveal-delay-4",
+    "reveal-delay-5","reveal-delay-6","reveal-delay-7","reveal-delay-8",
+  ];
+
   return (
-    <div className="relative min-h-screen w-full max-w-full overflow-x-hidden bg-[var(--bg)] text-[var(--text-primary)] transition-colors duration-300">
-      {/* Hero */}
-      <section className="relative pt-24 sm:pt-32 pb-12 sm:pb-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center">
-        <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3.5 py-1 text-xs font-bold text-amber-300 mb-3">
-          <FiBookOpen size={13} />
-          <span>{isHindi ? "सामाजिक इतिहास एवं सांस्कृतिक विरासत" : "Social History & Cultural Heritage"}</span>
+    <div
+      ref={pageRef}
+      className="relative min-h-screen w-full max-w-full overflow-x-hidden bg-[var(--bg)] text-[var(--text-primary)] transition-colors duration-300"
+    >
+      {/* ───────────────── HERO ───────────────── */}
+      <section className="relative pt-24 sm:pt-32 pb-14 px-4 sm:px-6 lg:px-8 overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[400px] rounded-full bg-amber-500/5 blur-[100px] pointer-events-none" />
+        <div className="relative max-w-4xl mx-auto text-center">
+          <div className="reveal inline-flex items-center gap-2 rounded-full border border-amber-500/40 bg-amber-500/10 px-4 py-1.5 text-xs font-bold text-amber-300 mb-5">
+            <FiBookOpen size={13} />
+            <span>{isHindi ? "प्रमाणित जनजातीय इतिहास व सामाजिक विकास" : "Verified Tribal History & Social Journey"}</span>
+          </div>
+
+          <h1 className="reveal text-2xl sm:text-4xl md:text-5xl font-black text-[var(--text-primary)] tracking-tight leading-tight mb-4">
+            {isHindi
+              ? <>आदिवासी हल्बा/<span className="gradient-text-brand">हल्बी समाज</span> का इतिहास</>
+              : <>History of the <span className="gradient-text-brand">Halba / Halbi</span> Community</>}
+          </h1>
+
+          <p className="reveal reveal-delay-1 text-xs sm:text-base text-[var(--text-secondary)] leading-relaxed max-w-3xl mx-auto font-normal">
+            {isHindi
+              ? "“गर्व से कहो हम आदिवासी हैं, भारत के मूल निवासी हैं” — मध्य भारत के वनांचलों से लेकर संवैधानिक मान्यता, 1774–1779 क्रांति एवं उज्जैन समिति की स्थापना तक।"
+              : "An authentic, documented history compiled from government census profiles, historical ethnography, constitutional records, and tribal research archives."}
+          </p>
+
+          {/* Quick Nav Badges */}
+          <div className="reveal reveal-delay-2 mt-7 flex flex-wrap items-center justify-center gap-2.5 text-xs">
+            {[
+              { to: "/heritage", hi: "बस्तर धरोहर एवं 1774 क्रांति", en: "Bastar Heritage & 1774 Rebellion" },
+              { to: "/culture", hi: "संस्कृति, दनकुल व पर्व", en: "Culture, Dankul & Festivals" },
+              { to: "/constitutional-status", hi: "संवैधानिक दर्जा", en: "Constitutional Status & Census" },
+              { to: "/about", hi: "उज्जैन समिति (1979-2025)", en: "Ujjain Samiti Journey" },
+            ].map((b, i) => (
+              <Link
+                key={i}
+                to={b.to}
+                className="px-3 py-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] hover:border-amber-500/40 hover:text-amber-300 text-[var(--text-secondary)] transition-colors"
+              >
+                {isHindi ? b.hi : b.en}
+              </Link>
+            ))}
+          </div>
         </div>
-
-        <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-[var(--text-primary)] tracking-tight leading-tight">
-          {isHindi ? "बैरवा समाज का इतिहास व परंपरा" : "History & Heritage of Bairwa Samaaj"}
-        </h1>
-
-        <p className="mt-3 text-xs sm:text-base text-[var(--text-secondary)] leading-relaxed max-w-3xl mx-auto">
-          {isHindi
-            ? "प्रांतीय बैरवा प्रगति संस्था, जयपुर द्वारा समाज के गौरवशाली इतिहास, संत परंपरा, सामाजिक उपलब्धियों एवं सुधार आंदोलनों का प्रामाणिक संकलन।"
-            : "An authentic compilation of the glorious history, spiritual traditions, achievements, and social reform movements of Bairwa Samaaj."}
-        </p>
       </section>
 
-      {/* Main Content Layout */}
-      <section className="py-8 sm:py-14 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto">
+      {/* ───────────────── MAIN NARRATIVE + SIDEBAR ───────────────── */}
+      <section className="py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-[var(--border-subtle)]">
         <div className="grid lg:grid-cols-12 gap-8 items-start">
-          {/* Sticky Navigation on Desktop */}
-          <aside className="lg:col-span-4 sticky top-24 hidden lg:block ka-card p-4 rounded-2xl border border-[var(--border-subtle)] space-y-1.5">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-3 px-2">
-              {isHindi ? "अध्याय सूची" : "Chapters"}
-            </p>
-            {sections.map((sec) => (
-              <a
-                key={sec.id}
-                href={`#sec-${sec.id}`}
-                onClick={() => setActiveSection(sec.id)}
-                className={`block rounded-xl px-3 py-2 text-xs font-semibold transition ${
-                  activeSection === sec.id
-                    ? "bg-[var(--accent-primary)] text-black font-bold"
-                    : "text-[var(--text-secondary)] hover:bg-[var(--surface-elevated)] hover:text-white"
-                }`}
-              >
-                {isHindi ? sec.titleHi : sec.titleEn}
-              </a>
-            ))}
-          </aside>
-
-          {/* Long-Form Chapters */}
-          <main className="lg:col-span-8 space-y-8">
-            {sections.map((sec) => (
-              <article
-                key={sec.id}
-                id={`sec-${sec.id}`}
-                className="ka-card p-6 sm:p-8 rounded-3xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] scroll-mt-24"
-              >
-                <div className="flex items-center gap-2 text-xs font-bold text-amber-400 mb-2">
-                  <FiClock size={12} />
-                  <span>{isHindi ? "अध्याय" : "Chapter"} {sec.id}</span>
-                </div>
-                <h2 className="text-lg sm:text-2xl font-black text-[var(--text-primary)] mb-4 leading-snug">
-                  {isHindi ? sec.titleHi : sec.titleEn}
-                </h2>
-                
-                {sec.id === "03" && (
-                  <div className="mb-6 flex justify-center sm:justify-start">
-                    <div className="w-48 sm:w-56 aspect-[9/16] rounded-2xl overflow-hidden border border-amber-500/30 bg-black shadow-lg">
-                      <img
-                        src="/balinathjimaharaj.jpg"
-                        alt="महर्षि बालीनाथ जी महाराज"
-                        className="w-full h-full object-cover object-top"
-                      />
-                    </div>
+          {/* Left: Narrative Blocks */}
+          <div className="lg:col-span-8 space-y-5">
+            {historySections.map((sec, idx) => {
+              const accent = accentMap[sec.accentColor] || accentMap.emerald;
+              return (
+                <div
+                  key={sec.id}
+                  className={`reveal ${delayClasses[idx % 8]} hover-lift ka-card p-6 sm:p-8 rounded-3xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] flex gap-4`}
+                >
+                  {/* Color bar */}
+                  <div className={`flex-shrink-0 w-1 rounded-full self-stretch ${accent.bar} opacity-70`} />
+                  <div className="space-y-3 min-w-0">
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wide border ${accent.badge}`}>
+                      {sec.id}
+                    </span>
+                    <h3 className="font-black text-base sm:text-lg text-[var(--text-primary)]">
+                      {isHindi ? sec.titleHi : sec.titleEn}
+                    </h3>
+                    <p className="text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed font-normal">
+                      {isHindi ? sec.contentHi : sec.contentEn}
+                    </p>
                   </div>
-                )}
+                </div>
+              );
+            })}
+          </div>
 
-                <p className="text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed font-normal whitespace-pre-line">
-                  {isHindi ? sec.contentHi : sec.contentEn}
-                </p>
-              </article>
-            ))}
-
-            {/* Respectful Callout Block */}
-            <div className="ka-card p-6 rounded-3xl border border-amber-500/20 bg-amber-500/5 text-xs text-[var(--text-secondary)] leading-relaxed">
-              <span className="font-bold text-amber-300 block mb-1">
-                {isHindi ? "संपादकीय टिप्पणी / Source Note:" : "Editorial & Source Note:"}
-              </span>
-              <p>
-                {isHindi
-                  ? "प्रस्तुत विवरण प्रांतीय बैरवा प्रगति संस्था एवं समाज में उपलब्ध ऐतिहासिक दस्तावेजों, स्मारिकाओं व सामाजिक मान्यताओं पर आधारित है।"
-                  : "This compilation is based on historical souvenirs, records, and authentic traditions documented by Prantiya Bairwa Pragati Sanstha, Jaipur."}
+          {/* Right: Sidebar */}
+          <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-24">
+            {/* Census Card */}
+            <div className="reveal ka-card p-6 rounded-3xl border border-emerald-500/30 bg-[var(--surface-elevated)] space-y-4">
+              <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs uppercase">
+                <FiBarChart2 size={15} />
+                <span>{isHindi ? "जनगणना 2011 आंकड़े" : "Census 2011 (Govt. Record)"}</span>
+              </div>
+              <h4 className="font-bold text-sm text-[var(--text-primary)]">
+                {isHindi ? "शासकीय सांख्यिकी प्रोफाइल" : "Statistical Profile of Halba ST"}
+              </h4>
+              <p className="text-[11px] text-[var(--text-muted)] italic">
+                {isHindi ? census.notesHi : census.notes}
               </p>
+              <div className="space-y-2 text-xs">
+                {[
+                  { label: isHindi ? "कुल ST जनसंख्या:" : "Total ST Population:", val: "6,50,631", color: "text-emerald-400 font-black" },
+                  { label: isHindi ? "मध्य प्रदेश:" : "Madhya Pradesh:", val: "14,438", color: "font-bold" },
+                  { label: isHindi ? "महाराष्ट्र:" : "Maharashtra:", val: "2,61,011", color: "font-bold" },
+                  { label: isHindi ? "छत्तीसगढ़:" : "Chhattisgarh:", val: "~3,75,182", color: "font-bold" },
+                  { label: isHindi ? "हल्बी मातृभाषा भाषी:" : "Halbi Speakers:", val: "7,66,297", color: "text-sky-400 font-bold" },
+                ].map((row, i) => (
+                  <div key={i} className="flex items-center justify-between p-2.5 rounded-xl bg-[var(--surface)] border border-[var(--border-subtle)]">
+                    <span className="text-[var(--text-secondary)]">{row.label}</span>
+                    <span className={`font-mono ${row.color} text-[var(--text-primary)]`}>{row.val}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </main>
+
+            {/* Subgroups Card */}
+            <div className="reveal reveal-delay-1 ka-card p-5 rounded-3xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-xs space-y-3">
+              <span className="font-bold text-[var(--text-primary)] block border-b border-[var(--border-subtle)] pb-2">
+                {isHindi ? "ऐतिहासिक क्षेत्रीय उपसमूह" : "Historical Regional Subgroups"}
+              </span>
+              <ul className="space-y-2 text-[var(--text-secondary)] text-[11px]">
+                {[
+                  ["बस्तरिया / बस्तरहा", "बस्तर सांस्कृतिक अंचल"],
+                  ["छत्तीसगढ़िया", "छत्तीसगढ़ के मैदानी भाग"],
+                  ["मरेठिया / मराठिया", "भंडारा व महाराष्ट्र"],
+                  ["पेन्तिया", "ओडिशा संबंधित आबादी"],
+                  ["बुनकर / तेलिया", "व्यावसायिक परंपराएं"],
+                ].map(([name, area], i) => (
+                  <li key={i} className="flex gap-2">
+                    <span className="text-[var(--accent-primary)] mt-0.5">•</span>
+                    <span><strong className="text-[var(--text-primary)]">{name}:</strong> {area}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Quick links */}
+            <div className="reveal reveal-delay-2 flex flex-col gap-2">
+              <Link to="/heritage" className="btn-primary text-xs justify-center">
+                <span>{isHindi ? "बस्तर धरोहर विस्तार से पढ़ें" : "Explore Bastar Heritage"}</span>
+                <FiArrowRight size={13} />
+              </Link>
+              <Link to="/constitutional-status" className="btn-secondary text-xs justify-center">
+                <span>{isHindi ? "संवैधानिक दर्जा" : "Constitutional Status"}</span>
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Footer */}
+      {/* ───────────────── 7 HISTORICAL PHASES ───────────────── */}
+      <section className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-[var(--border-subtle)]">
+        <div className="text-center max-w-3xl mx-auto mb-12">
+          <div className="reveal inline-flex items-center gap-2 rounded-full border border-sky-500/30 bg-sky-500/10 px-4 py-1.5 text-xs font-bold text-sky-400 mb-3">
+            <FiClock size={13} />
+            <span>{isHindi ? "इतिहास के 7 प्रमुख कालखंड" : "Seven Historical Phases"}</span>
+          </div>
+          <h2 className="reveal reveal-delay-1 text-xl sm:text-3xl font-black text-[var(--text-primary)]">
+            {isHindi ? "हल्बा/हल्बी समाज की विकास यात्रा के सात चरण" : "Seven Phases of Community Evolution"}
+          </h2>
+        </div>
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {halbaHistoricalPhases.map((phase, idx) => (
+            <div
+              key={idx}
+              className={`reveal ${delayClasses[idx % 8]} hover-lift ka-card p-5 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] flex flex-col gap-3 group`}
+            >
+              <span className="text-[10px] font-mono font-bold uppercase text-[var(--accent-primary)] px-2 py-0.5 rounded-md bg-[var(--accent-primary)]/10 self-start border border-[var(--accent-primary)]/20">
+                {phase.phase}
+              </span>
+              <h4 className="font-bold text-xs sm:text-sm text-[var(--text-primary)] group-hover:text-[var(--accent-primary)] transition-colors">
+                {phase.titleHi}
+              </h4>
+              <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed flex-1">
+                {phase.descHi}
+              </p>
+              <div className="h-0.5 w-full rounded-full bg-gradient-to-r from-[var(--accent-primary)]/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
+          ))}
+        </div>
+      </section>
+
       <ModernFooter />
     </div>
   );

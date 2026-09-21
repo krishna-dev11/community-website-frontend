@@ -10,28 +10,66 @@ import {
   FaRupeeSign,
   FaSyncAlt,
 } from "react-icons/fa";
+import { FiCheckCircle, FiClock, FiSearch } from "react-icons/fi";
 import { useSelector } from "react-redux";
 import { apiConnector } from "../../../../services/apiConnector";
 import { paymentEndpoints } from "../../../../services/apis";
 import FileUploadWithPreview from "../../../Common/FileUploadWithPreview";
 
+// ─── Module navigation tabs ────────────────────────────────────────────────
 const tabs = [
-  { key: "campaigns", label: "Campaigns", icon: FaDonate },
-  { key: "donations", label: "Donations", icon: FaRupeeSign },
+  { key: "campaigns",     label: "Campaigns",     icon: FaDonate            },
+  { key: "donations",     label: "Donations",     icon: FaRupeeSign         },
   { key: "contributions", label: "Contributions", icon: FaFileInvoiceDollar },
 ];
+
+// ─── Status configs per module ─────────────────────────────────────────────
+const MODULE_STATUS_CONFIG = {
+  campaigns: [
+    { key: "ACTIVE",   label: "Active Drives" },
+    { key: "DRAFT",    label: "Drafts"        },
+    { key: "PAUSED",   label: "Paused"        },
+    { key: "ARCHIVED", label: "Archived"      },
+    { key: "ALL",      label: "All"           },
+  ],
+  donations: [
+    { key: "SUCCESS",  label: "Successful" },
+    { key: "PENDING",  label: "Pending"    },
+    { key: "FAILED",   label: "Failed"     },
+    { key: "REFUNDED", label: "Refunded"   },
+    { key: "ALL",      label: "All"        },
+  ],
+  contributions: [
+    { key: "PENDING",  label: "Needs Payment" },
+    { key: "OVERDUE",  label: "Overdue"       },
+    { key: "PARTIAL",  label: "Partial"       },
+    { key: "PAID",     label: "Paid"          },
+    { key: "WAIVED",   label: "Waived"        },
+    { key: "ALL",      label: "All"           },
+  ],
+};
+
+const DONE_STATUSES = new Set([
+  "PAID", "WAIVED", "SUCCESS", "ARCHIVED", "REFUNDED",
+]);
+
+const MODULE_DEFAULT_STATUS = {
+  campaigns:     "ACTIVE",
+  donations:     "SUCCESS",
+  contributions: "PENDING",
+};
 
 const inputClass = "ka-input";
 const textareaClass = "ka-input !min-h-24 resize-none !py-3";
 
+// ─── Shared UI primitives ───────────────────────────────────────────────────
 const Button = ({ children, icon: Icon, tone = "neutral", className = "", ...props }) => {
   const toneClasses = {
     neutral: "btn-secondary !py-2 !px-4 !text-xs",
     success: "btn-primary !py-2 !px-5 !text-xs",
-    warning: "inline-flex items-center justify-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-400 font-bold text-xs uppercase tracking-wider px-4 py-2 transition-all hover:bg-amber-500/20 disabled:opacity-50 cursor-pointer",
-    danger: "inline-flex items-center justify-center gap-2 rounded-full border border-red-500/30 bg-red-500/10 text-red-400 font-bold text-xs uppercase tracking-wider px-4 py-2 transition-all hover:bg-red-500/20 disabled:opacity-50 cursor-pointer",
+    warning: "inline-flex items-center justify-center gap-2 rounded-full border border-amber-400/30 bg-amber-400/10 text-amber-300 font-bold text-xs uppercase tracking-wider px-4 py-2 transition-all hover:bg-amber-400/20 disabled:opacity-50 cursor-pointer",
+    danger:  "inline-flex items-center justify-center gap-2 rounded-full border border-red-400/30 bg-red-400/10 text-red-300 font-bold text-xs uppercase tracking-wider px-4 py-2 transition-all hover:bg-red-400/20 disabled:opacity-50 cursor-pointer",
   };
-
   return (
     <button
       {...props}
@@ -50,59 +88,166 @@ const Field = ({ label, children }) => (
   </label>
 );
 
-const Status = ({ value }) => (
-  <span className="inline-flex w-fit rounded-full border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">
-    {value || "UNKNOWN"}
-  </span>
-);
+const StatusBadge = ({ value }) => {
+  const colorMap = {
+    ACTIVE:   "border-emerald-400/40 bg-emerald-400/10 text-emerald-300",
+    SUCCESS:  "border-green-400/40 bg-green-400/10 text-green-300",
+    PAID:     "border-green-400/40 bg-green-400/10 text-green-300",
+    PENDING:  "border-amber-400/40 bg-amber-400/10 text-amber-300",
+    PARTIAL:  "border-sky-400/40 bg-sky-400/10 text-sky-300",
+    OVERDUE:  "border-red-400/40 bg-red-400/10 text-red-300",
+    FAILED:   "border-red-400/40 bg-red-400/10 text-red-300",
+    DRAFT:    "border-purple-400/40 bg-purple-400/10 text-purple-300",
+    PAUSED:   "border-orange-400/40 bg-orange-400/10 text-orange-300",
+    ARCHIVED: "border-gray-500/40 bg-gray-500/10 text-gray-400",
+    WAIVED:   "border-gray-500/40 bg-gray-500/10 text-gray-400",
+    REFUNDED: "border-indigo-400/40 bg-indigo-400/10 text-indigo-300",
+  };
+  return (
+    <span
+      className={`inline-flex w-fit shrink-0 rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+        colorMap[value] || "border-white/10 bg-white/5 text-gray-400"
+      }`}
+    >
+      {value || "UNKNOWN"}
+    </span>
+  );
+};
 
-const Empty = ({ text }) => (
-  <div className="rounded-2xl border border-dashed border-[var(--border-subtle)] bg-[var(--surface-raised)] px-5 py-8 text-center text-sm text-[var(--text-secondary)]">
-    {text}
+const SummaryCards = ({ data, config, customCards }) => {
+  if (customCards) {
+    return (
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {customCards.map((card) => (
+          <div key={card.label} className={`rounded-2xl border ${card.border} bg-[var(--surface-elevated)] px-4 py-3`}>
+            <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--text-muted)]">{card.label}</p>
+            <p className={`mt-0.5 text-xl font-black ${card.textColor}`}>{card.value}</p>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  const counts = {};
+  data.forEach((r) => { counts[r.status] = (counts[r.status] || 0) + 1; });
+
+  const actionKey = config[0]?.key;
+  const midKeys   = config.slice(1, -1).filter((c) => !DONE_STATUSES.has(c.key) && c.key !== "ALL").map((c) => c.key);
+  const doneKeys  = config.filter((c) => DONE_STATUSES.has(c.key)).map((c) => c.key);
+
+  const cards = [
+    { label: "Total",          value: data.length,                                                  textColor: "text-[var(--text-primary)]", border: "border-[var(--border-subtle)]" },
+    { label: "Needs Action",   value: actionKey ? (counts[actionKey] || 0) : 0,                     textColor: "text-amber-300",              border: "border-amber-400/20" },
+    { label: "In Progress/Mid", value: midKeys.reduce((s, k) => s + (counts[k] || 0), 0),          textColor: "text-sky-300",                border: "border-sky-400/20" },
+    { label: "Completed/Done", value: doneKeys.reduce((s, k) => s + (counts[k] || 0), 0),          textColor: "text-emerald-300",            border: "border-emerald-400/20" },
+  ];
+
+  return (
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      {cards.map((card) => (
+        <div key={card.label} className={`rounded-2xl border ${card.border} bg-[var(--surface-elevated)] px-4 py-3`}>
+          <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--text-muted)]">{card.label}</p>
+          <p className={`mt-0.5 text-2xl font-black ${card.textColor}`}>{card.value}</p>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const StatusTabBar = ({ data, config, activeKey, onChange }) => {
+  const counts = { ALL: data.length };
+  data.forEach((r) => { counts[r.status] = (counts[r.status] || 0) + 1; });
+
+  return (
+    <div
+      className="flex gap-1.5 overflow-x-auto pb-1"
+      style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+    >
+      {config.map((tab) => {
+        const count    = tab.key === "ALL" ? data.length : (counts[tab.key] || 0);
+        const isActive = activeKey === tab.key;
+        return (
+          <button
+            key={tab.key}
+            onClick={() => onChange(tab.key)}
+            className={`flex-shrink-0 h-8 rounded-full px-3.5 text-[10px] font-bold uppercase tracking-wider transition cursor-pointer whitespace-nowrap ${
+              isActive
+                ? "bg-[var(--accent-primary)] text-[#070707] shadow-sm"
+                : "border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+            }`}
+          >
+            {tab.label} ({count})
+          </button>
+        );
+      })}
+    </div>
+  );
+};
+
+const SearchBar = ({ value, onChange, placeholder = "Search..." }) => (
+  <div className="flex items-center gap-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-3">
+    <FiSearch size={13} className="text-[var(--text-muted)] shrink-0" />
+    <input
+      className="h-9 min-w-0 flex-1 border-none bg-transparent text-xs text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)]"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+    />
   </div>
 );
 
+const ModuleEmptyState = ({ statusKey, moduleLabel }) => {
+  const isActionable = !DONE_STATUSES.has(statusKey) && statusKey !== "ALL";
+  if (isActionable) {
+    return (
+      <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-emerald-500/20 bg-emerald-500/5 py-12 text-center">
+        <FiCheckCircle size={26} className="text-emerald-400" />
+        <p className="text-sm font-semibold text-emerald-300">All settled!</p>
+        <p className="text-xs text-[var(--text-muted)]">No pending {moduleLabel} require your attention.</p>
+      </div>
+    );
+  }
+  return (
+    <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-white/10 bg-white/[0.01] py-12 text-center">
+      <FiClock size={26} className="text-[var(--text-muted)]" />
+      <p className="text-sm font-semibold text-[var(--text-secondary)]">No records found</p>
+      <p className="text-xs text-[var(--text-muted)]">No {moduleLabel} matching this status.</p>
+    </div>
+  );
+};
+
 const money = (value) => `Rs. ${Number(value || 0).toLocaleString("en-IN")}`;
+const formatDate = (value) => value ? new Date(value).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "Not set";
 
-const formatDate = (value) => {
-  if (!value) return "Not set";
-  return new Date(value).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
-};
+const initialCampaign = { title: "", description: "", goalAmount: "", startDate: "", endDate: "", status: "ACTIVE" };
+const initialGenerate = { month: new Date().getMonth() + 1, year: new Date().getFullYear(), expectedAmount: "", dueDate: "" };
 
-const initialCampaign = {
-  title: "",
-  description: "",
-  goalAmount: "",
-  startDate: "",
-  endDate: "",
-  status: "DRAFT",
-};
-
-const initialGenerate = {
-  month: new Date().getMonth() + 1,
-  year: new Date().getFullYear(),
-  expectedAmount: "",
-  dueDate: "",
-};
-
+// ============================================================================
+//  FinanceAdmin Main Component
+// ============================================================================
 const FinanceAdmin = () => {
   const { token } = useSelector((state) => state.auth);
   const [activeTab, setActiveTab] = useState("campaigns");
-  const [loading, setLoading] = useState(false);
-  const [busyId, setBusyId] = useState(null);
-  const [campaigns, setCampaigns] = useState([]);
-  const [donations, setDonations] = useState([]);
+  const [loading, setLoading]     = useState(false);
+  const [busyId, setBusyId]       = useState(null);
+
+  const [campaigns, setCampaigns]         = useState([]);
+  const [donations, setDonations]         = useState([]);
   const [contributions, setContributions] = useState([]);
-  const [campaignForm, setCampaignForm] = useState(initialCampaign);
+
+  const [campaignForm, setCampaignForm]         = useState(initialCampaign);
   const [campaignCoverFile, setCampaignCoverFile] = useState(null);
-  const [generateForm, setGenerateForm] = useState(initialGenerate);
-  const [donationFilters, setDonationFilters] = useState({ status: "", campaign: "" });
-  const [contributionFilters, setContributionFilters] = useState({
-    status: "",
-    month: "",
-    year: new Date().getFullYear(),
+  const [generateForm, setGenerateForm]         = useState(initialGenerate);
+  const [paymentDrafts, setPaymentDrafts]       = useState({});
+
+  // ── Per-module status filters and search ──────────────────────────────────
+  const [statusFilters, setStatusFilters] = useState({ ...MODULE_DEFAULT_STATUS });
+  const [moduleSearch, setModuleSearch]   = useState({
+    campaigns: "", donations: "", contributions: "",
   });
-  const [paymentDrafts, setPaymentDrafts] = useState({});
+
+  const setFilter = (mod, key) => setStatusFilters((prev) => ({ ...prev, [mod]: key }));
+  const setSearch = (mod, val) => setModuleSearch((prev) => ({ ...prev, [mod]: val }));
 
   const authConfig = useMemo(
     () => ({
@@ -113,19 +258,17 @@ const FinanceAdmin = () => {
   );
 
   const loadCampaigns = async () => {
-    const response = await apiConnector("GET", paymentEndpoints.ADMIN_DONATION_CAMPAIGNS_API, null, authConfig, { limit: 30 });
+    const response = await apiConnector("GET", paymentEndpoints.ADMIN_DONATION_CAMPAIGNS_API, null, authConfig, { limit: 100 });
     setCampaigns(response.data?.data?.campaigns || []);
   };
 
   const loadDonations = async () => {
-    const params = Object.fromEntries(Object.entries({ ...donationFilters, limit: 50 }).filter(([, value]) => value !== ""));
-    const response = await apiConnector("GET", paymentEndpoints.DONATIONS_API, null, authConfig, params);
+    const response = await apiConnector("GET", paymentEndpoints.DONATIONS_API, null, authConfig, { limit: 100 });
     setDonations(response.data?.data?.donations || []);
   };
 
   const loadContributions = async () => {
-    const params = Object.fromEntries(Object.entries({ ...contributionFilters, limit: 50 }).filter(([, value]) => value !== ""));
-    const response = await apiConnector("GET", paymentEndpoints.CONTRIBUTIONS_API, null, authConfig, params);
+    const response = await apiConnector("GET", paymentEndpoints.CONTRIBUTIONS_API, null, authConfig, { limit: 100 });
     setContributions(response.data?.data?.contributions || []);
   };
 
@@ -135,7 +278,7 @@ const FinanceAdmin = () => {
       donations: loadDonations,
       contributions: loadContributions,
     }),
-    [authConfig, donationFilters, contributionFilters]
+    [authConfig]
   );
 
   const refreshActive = async () => {
@@ -164,18 +307,10 @@ const FinanceAdmin = () => {
       if (campaignForm.startDate) formData.append("startDate", campaignForm.startDate);
       if (campaignForm.endDate) formData.append("endDate", campaignForm.endDate);
       formData.append("status", campaignForm.status);
+      if (campaignCoverFile instanceof File) formData.append("coverImage", campaignCoverFile);
 
-      if (campaignCoverFile instanceof File) {
-        formData.append("coverImage", campaignCoverFile);
-      }
-
-      await apiConnector(
-        "POST",
-        paymentEndpoints.DONATION_CAMPAIGNS_API,
-        formData,
-        authConfig
-      );
-      toast.success("Campaign saved");
+      await apiConnector("POST", paymentEndpoints.DONATION_CAMPAIGNS_API, formData, authConfig);
+      toast.success("Campaign saved successfully");
       setCampaignForm(initialCampaign);
       setCampaignCoverFile(null);
       await loadCampaigns();
@@ -281,9 +416,64 @@ const FinanceAdmin = () => {
     }
   };
 
+  // ── Filtered data sets ────────────────────────────────────────────────────
+  const filteredCampaigns = useMemo(() => {
+    const statusKey = statusFilters.campaigns;
+    const query = (moduleSearch.campaigns || "").trim().toLowerCase();
+    return campaigns.filter((c) => {
+      const matchStatus = statusKey === "ALL" || c.status === statusKey;
+      const searchBlob  = `${c.title} ${c.description}`.toLowerCase();
+      return matchStatus && (!query || searchBlob.includes(query));
+    });
+  }, [campaigns, statusFilters.campaigns, moduleSearch.campaigns]);
+
+  const filteredDonations = useMemo(() => {
+    const statusKey = statusFilters.donations;
+    const query = (moduleSearch.donations || "").trim().toLowerCase();
+    return donations.filter((d) => {
+      const matchStatus = statusKey === "ALL" || d.status === statusKey;
+      const searchBlob  = [
+        d.donorName, d.donor?.firstName, d.donor?.lastName, d.donor?.email,
+        d.campaign?.title, d.receiptNumber, d.razorpayOrderId,
+      ].filter(Boolean).join(" ").toLowerCase();
+      return matchStatus && (!query || searchBlob.includes(query));
+    });
+  }, [donations, statusFilters.donations, moduleSearch.donations]);
+
+  const filteredContributions = useMemo(() => {
+    const statusKey = statusFilters.contributions;
+    const query = (moduleSearch.contributions || "").trim().toLowerCase();
+    return contributions.filter((c) => {
+      const matchStatus = statusKey === "ALL" || c.status === statusKey;
+      const searchBlob  = [
+        c.member?.firstName, c.member?.lastName, c.member?.email,
+        c.family?.familyName, `${c.month}/${c.year}`,
+      ].filter(Boolean).join(" ").toLowerCase();
+      return matchStatus && (!query || searchBlob.includes(query));
+    });
+  }, [contributions, statusFilters.contributions, moduleSearch.contributions]);
+
+  // Donation Stats custom summary
+  const donationStats = useMemo(() => {
+    const successTotal = donations
+      .filter((d) => d.status === "SUCCESS")
+      .reduce((s, d) => s + Number(d.amount || 0), 0);
+    const successCount = donations.filter((d) => d.status === "SUCCESS").length;
+    const pendingCount = donations.filter((d) => ["PENDING", "FAILED"].includes(d.status)).length;
+
+    return [
+      { label: "Total Transactions", value: donations.length, textColor: "text-[var(--text-primary)]", border: "border-[var(--border-subtle)]" },
+      { label: "Funds Collected",    value: money(successTotal), textColor: "text-emerald-300", border: "border-emerald-400/20" },
+      { label: "Successful",         value: successCount,      textColor: "text-green-300",   border: "border-green-400/20" },
+      { label: "Pending / Failed",   value: pendingCount,      textColor: "text-amber-300",   border: "border-amber-400/20" },
+    ];
+  }, [donations]);
+
   return (
     <div className="min-h-screen bg-[var(--bg)] px-3 py-6 text-[var(--text-primary)] md:px-6 transition-colors duration-300">
       <div className="mx-auto flex max-w-6xl flex-col gap-6">
+
+        {/* ── Header ──────────────────────────────────────────────────────── */}
         <div className="flex flex-col gap-4 border-b border-[var(--border-subtle)] pb-6">
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
@@ -291,14 +481,14 @@ const FinanceAdmin = () => {
                 <FaFileInvoiceDollar size={12} />
                 <span>Financial Ops</span>
               </div>
-              <h1 className="heading-hero text-[var(--text-primary)]">Finance <span className="text-gradient">Admin</span></h1>
+              <h1 className="heading-hero text-[var(--text-primary)]">
+                Finance <span className="text-gradient">Admin</span>
+              </h1>
               <p className="mt-2 max-w-2xl text-xs sm:text-sm text-[var(--text-secondary)] font-normal">
                 Manage donation campaigns, inspect payment status, and operate monthly member contributions.
               </p>
             </div>
-            <Button icon={FaSyncAlt} onClick={refreshActive} disabled={loading}>
-              Refresh
-            </Button>
+            <Button icon={FaSyncAlt} onClick={refreshActive} disabled={loading}>Refresh</Button>
           </div>
 
           <div className="flex flex-wrap gap-2">
@@ -323,236 +513,294 @@ const FinanceAdmin = () => {
           </div>
         </div>
 
+        {/* ── Content ─────────────────────────────────────────────────────── */}
         {loading ? (
           <div className="flex h-56 items-center justify-center">
-            <div className="h-10 w-10 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent" />
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-[var(--accent-primary)] border-t-transparent" />
           </div>
         ) : (
           <>
+            {/* ══════════════════════════════════════════════════════════════
+                CAMPAIGNS
+            ══════════════════════════════════════════════════════════════ */}
             {activeTab === "campaigns" && (
-              <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-                <form onSubmit={createCampaign} className="ka-card p-6 flex flex-col gap-4">
-                  <h2 className="text-base font-bold text-[var(--text-primary)]">Create Campaign</h2>
-                  <Field label="Title">
-                    <input className={inputClass} value={campaignForm.title} onChange={(event) => setCampaignForm((current) => ({ ...current, title: event.target.value }))} required />
-                  </Field>
-                  <Field label="Description">
-                    <textarea className={textareaClass} value={campaignForm.description} onChange={(event) => setCampaignForm((current) => ({ ...current, description: event.target.value }))} required />
-                  </Field>
+              <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
+                <form onSubmit={createCampaign} className="grid h-fit gap-4 rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-5">
+                  <h2 className="text-base font-bold text-[var(--text-primary)]">Launch Donation Campaign</h2>
+                  <Field label="Campaign Title *"><input className={inputClass} value={campaignForm.title} onChange={(e) => setCampaignForm((cur) => ({ ...cur, title: e.target.value }))} placeholder="e.g. Samaj Bhavan Renovation Drive" required /></Field>
+                  <Field label="Description *"><textarea className={textareaClass} value={campaignForm.description} onChange={(e) => setCampaignForm((cur) => ({ ...cur, description: e.target.value }))} placeholder="Purpose of this donation drive..." required /></Field>
                   <div className="grid gap-4 md:grid-cols-2">
-                    <Field label="Goal Amount">
-                      <input type="number" min="0" className={inputClass} value={campaignForm.goalAmount} onChange={(event) => setCampaignForm((current) => ({ ...current, goalAmount: event.target.value }))} />
-                    </Field>
+                    <Field label="Target Goal (Rs.)"><input type="number" min="0" className={inputClass} value={campaignForm.goalAmount} onChange={(e) => setCampaignForm((cur) => ({ ...cur, goalAmount: e.target.value }))} placeholder="500000" /></Field>
                     <Field label="Status">
-                      <select className={inputClass} value={campaignForm.status} onChange={(event) => setCampaignForm((current) => ({ ...current, status: event.target.value }))}>
-                        <option value="DRAFT">Draft</option>
+                      <select className={inputClass} value={campaignForm.status} onChange={(e) => setCampaignForm((cur) => ({ ...cur, status: e.target.value }))}>
                         <option value="ACTIVE">Active</option>
+                        <option value="DRAFT">Draft</option>
                         <option value="PAUSED">Paused</option>
                       </select>
                     </Field>
                   </div>
                   <div className="grid gap-4 md:grid-cols-2">
-                    <Field label="Start Date">
-                      <input type="date" className={inputClass} value={campaignForm.startDate} onChange={(event) => setCampaignForm((current) => ({ ...current, startDate: event.target.value }))} />
-                    </Field>
-                    <Field label="End Date">
-                      <input type="date" className={inputClass} value={campaignForm.endDate} onChange={(event) => setCampaignForm((current) => ({ ...current, endDate: event.target.value }))} />
-                    </Field>
+                    <Field label="Start Date"><input type="date" className={inputClass} value={campaignForm.startDate} onChange={(e) => setCampaignForm((cur) => ({ ...cur, startDate: e.target.value }))} /></Field>
+                    <Field label="End Date"><input type="date" className={inputClass} value={campaignForm.endDate} onChange={(e) => setCampaignForm((cur) => ({ ...cur, endDate: e.target.value }))} /></Field>
                   </div>
-                  <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-3.5">
-                    <FileUploadWithPreview
-                      label="Campaign Cover Image"
-                      required={false}
-                      accept="image/jpeg,image/jpg,image/png,image/webp"
-                      maxSizeMB={10}
-                      helperText="Banner photo for the donation drive"
-                      file={campaignCoverFile}
-                      onFileSelect={(file) => setCampaignCoverFile(file)}
-                    />
+                  <div className="rounded-2xl border border-white/10 bg-black/30 p-3.5">
+                    <FileUploadWithPreview label="Campaign Cover Image" required={false} accept="image/jpeg,image/jpg,image/png,image/webp" maxSizeMB={10} helperText="Drive banner image" file={campaignCoverFile} onFileSelect={(f) => setCampaignCoverFile(f)} />
                   </div>
                   <Button icon={FaPaperPlane} tone="success" disabled={busyId === "campaign"}>Save Campaign</Button>
                 </form>
 
-                <section className="grid gap-3">
-                  {campaigns.map((campaign) => {
-                    const progress = campaign.goalAmount
-                      ? Math.min(100, Math.round((Number(campaign.raisedAmount || 0) / Number(campaign.goalAmount)) * 100))
-                      : 0;
-                    return (
-                      <article key={campaign._id} className="ka-card p-5">
-                        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                          <div>
-                            <h3 className="font-bold text-[var(--text-primary)]">{campaign.title}</h3>
-                            <p className="mt-1 line-clamp-2 text-xs sm:text-sm text-[var(--text-secondary)]">{campaign.description}</p>
-                            <p className="mt-2 text-xs font-semibold text-[var(--accent-primary)]">{money(campaign.raisedAmount)} raised of {money(campaign.goalAmount)}</p>
-                          </div>
-                          <Status value={campaign.status} />
-                        </div>
-                        {campaign.goalAmount ? (
-                          <div className="mt-4 h-2 rounded-full overflow-hidden bg-[var(--surface-elevated)] border border-[var(--border-subtle)]">
-                            <div className="h-full bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] rounded-full transition-all" style={{ width: `${progress}%` }} />
-                          </div>
-                        ) : null}
-                        <Button icon={FaArchive} tone="danger" className="mt-4 w-full sm:w-auto" onClick={() => archiveCampaign(campaign._id)} disabled={busyId === campaign._id || campaign.status === "ARCHIVED"}>
-                          Archive
-                        </Button>
-                      </article>
-                    );
-                  })}
-                  {campaigns.length === 0 && <Empty text="No donation campaigns found." />}
+                <section className="grid content-start gap-3">
+                  <SummaryCards data={campaigns} config={MODULE_STATUS_CONFIG.campaigns} />
+                  <div className="flex flex-col gap-2">
+                    <StatusTabBar
+                      data={campaigns}
+                      config={MODULE_STATUS_CONFIG.campaigns}
+                      activeKey={statusFilters.campaigns}
+                      onChange={(k) => setFilter("campaigns", k)}
+                    />
+                    <SearchBar
+                      value={moduleSearch.campaigns}
+                      onChange={(v) => setSearch("campaigns", v)}
+                      placeholder="Search campaign title, description..."
+                    />
+                  </div>
+
+                  {filteredCampaigns.length === 0 ? (
+                    <ModuleEmptyState statusKey={statusFilters.campaigns} moduleLabel="campaigns" />
+                  ) : (
+                    <div className="grid gap-3">
+                      {filteredCampaigns.map((campaign) => {
+                        const progress = campaign.goalAmount
+                          ? Math.min(100, Math.round((Number(campaign.raisedAmount || 0) / Number(campaign.goalAmount)) * 100))
+                          : 0;
+                        const isDone = DONE_STATUSES.has(campaign.status);
+
+                        return (
+                          <article key={campaign._id} className={`rounded-2xl border p-4 sm:p-5 transition ${isDone ? "border-white/5 bg-white/[0.01] opacity-75" : "border-white/10 bg-white/[0.02]"}`}>
+                            <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center gap-2 mb-1">
+                                  <h3 className={`font-bold ${isDone ? "text-[var(--text-secondary)]" : "text-[var(--text-primary)]"}`}>{campaign.title}</h3>
+                                  <StatusBadge value={campaign.status} />
+                                </div>
+                                <p className="mt-1 line-clamp-2 text-xs text-gray-500">{campaign.description}</p>
+                                <p className="mt-2 text-xs font-semibold text-[var(--accent-primary)]">
+                                  {money(campaign.raisedAmount)} raised of {money(campaign.goalAmount)} ({progress}%)
+                                </p>
+                              </div>
+                            </div>
+
+                            {campaign.goalAmount ? (
+                              <div className="mt-3 h-2 rounded-full overflow-hidden bg-[var(--surface-elevated)] border border-[var(--border-subtle)]">
+                                <div className="h-full bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] rounded-full transition-all" style={{ width: `${progress}%` }} />
+                              </div>
+                            ) : null}
+
+                            {campaign.status !== "ARCHIVED" && (
+                              <div className="mt-4 border-t border-white/10 pt-3">
+                                <Button icon={FaArchive} tone="danger" onClick={() => archiveCampaign(campaign._id)} disabled={busyId === campaign._id}>
+                                  Archive Campaign
+                                </Button>
+                              </div>
+                            )}
+                          </article>
+                        );
+                      })}
+                    </div>
+                  )}
                 </section>
               </div>
             )}
 
+            {/* ══════════════════════════════════════════════════════════════
+                DONATIONS
+            ══════════════════════════════════════════════════════════════ */}
             {activeTab === "donations" && (
               <section className="grid gap-4">
-                <div className="ka-card p-4 grid gap-3 md:grid-cols-[220px_1fr_auto]">
-                  <select className={inputClass} value={donationFilters.status} onChange={(event) => setDonationFilters((current) => ({ ...current, status: event.target.value }))}>
-                    <option value="">All statuses</option>
-                    <option value="PENDING">Pending</option>
-                    <option value="SUCCESS">Success</option>
-                    <option value="FAILED">Failed</option>
-                    <option value="REFUNDED">Refunded</option>
-                  </select>
-                  <select className={inputClass} value={donationFilters.campaign} onChange={(event) => setDonationFilters((current) => ({ ...current, campaign: event.target.value }))}>
-                    <option value="">All campaigns</option>
-                    {campaigns.map((campaign) => <option key={campaign._id} value={campaign._id}>{campaign.title}</option>)}
-                  </select>
-                  <Button icon={FaSyncAlt} onClick={loadDonations}>Apply</Button>
+                <SummaryCards customCards={donationStats} />
+
+                <div className="flex flex-col gap-2">
+                  <StatusTabBar
+                    data={donations}
+                    config={MODULE_STATUS_CONFIG.donations}
+                    activeKey={statusFilters.donations}
+                    onChange={(k) => setFilter("donations", k)}
+                  />
+                  <SearchBar
+                    value={moduleSearch.donations}
+                    onChange={(v) => setSearch("donations", v)}
+                    placeholder="Search donor name, campaign, receipt or order ID..."
+                  />
                 </div>
 
-                <div className="grid gap-3">
-                  {donations.map((donation) => (
-                    <article key={donation._id} className="ka-card p-5">
-                      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                        <div>
-                          <h3 className="font-bold text-[var(--text-primary)]">{money(donation.amount)} {donation.anonymous ? "Anonymous donation" : "Donation"}</h3>
-                          <p className="mt-1 text-xs sm:text-sm text-[var(--text-secondary)]">{donation.campaign?.title || "General donation"} - {donation.receiptNumber || donation.razorpayOrderId}</p>
-                          <p className="mt-2 text-xs text-[var(--text-muted)]">{donation.donor?.firstName || donation.donorName || "Donor"} - {formatDate(donation.createdAt)}</p>
-                        </div>
-                        <Status value={donation.status} />
-                      </div>
-                    </article>
-                  ))}
-                  {donations.length === 0 && <Empty text="No donations found for the selected filters." />}
-                </div>
+                {filteredDonations.length === 0 ? (
+                  <ModuleEmptyState statusKey={statusFilters.donations} moduleLabel="donations" />
+                ) : (
+                  <div className="grid gap-3">
+                    {filteredDonations.map((donation) => {
+                      const isDone = DONE_STATUSES.has(donation.status);
+                      return (
+                        <article key={donation._id} className={`rounded-2xl border p-4 sm:p-5 transition ${isDone ? "border-white/5 bg-white/[0.01]" : "border-white/10 bg-white/[0.02]"}`}>
+                          <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                            <div>
+                              <div className="flex flex-wrap items-center gap-2 mb-1">
+                                <h3 className="font-bold text-base text-[var(--text-primary)]">
+                                  {money(donation.amount)}
+                                  <span className="text-xs font-normal text-gray-400 ml-2">
+                                    {donation.anonymous ? "(Anonymous Contribution)" : ""}
+                                  </span>
+                                </h3>
+                                <StatusBadge value={donation.status} />
+                              </div>
+                              <p className="text-xs text-[var(--text-secondary)] font-medium">
+                                Campaign: {donation.campaign?.title || "General Donation Fund"}
+                              </p>
+                              <p className="mt-1 text-xs text-gray-500">
+                                Donor: {donation.donor?.firstName ? `${donation.donor.firstName} ${donation.donor.lastName || ""}` : (donation.donorName || "Anonymous")} · {formatDate(donation.createdAt)}
+                              </p>
+                              <p className="mt-1 font-mono text-[11px] text-gray-600">
+                                Ref: {donation.receiptNumber || donation.razorpayOrderId || donation._id}
+                              </p>
+                            </div>
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                )}
               </section>
             )}
 
+            {/* ══════════════════════════════════════════════════════════════
+                CONTRIBUTIONS
+            ══════════════════════════════════════════════════════════════ */}
             {activeTab === "contributions" && (
               <div className="grid gap-5">
+                {/* Generation & Batch Operation Bar */}
                 <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
-                  <form onSubmit={generateContributions} className="ka-card p-6 flex flex-col gap-4">
+                  <form onSubmit={generateContributions} className="grid h-fit gap-3.5 rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-5">
                     <div className="flex items-center gap-2">
-                      <FaHandHoldingUsd className="text-[var(--accent-primary)]" size={16} />
-                      <h2 className="text-base font-bold text-[var(--text-primary)]">Generate Monthly Contributions</h2>
+                      <FaHandHoldingUsd className="text-emerald-400" size={14} />
+                      <h2 className="text-sm font-bold text-[var(--text-primary)]">Generate Monthly Contribution Dues</h2>
                     </div>
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <Field label="Month">
-                        <input type="number" min="1" max="12" className={inputClass} value={generateForm.month} onChange={(event) => setGenerateForm((current) => ({ ...current, month: event.target.value }))} required />
-                      </Field>
-                      <Field label="Year">
-                        <input type="number" className={inputClass} value={generateForm.year} onChange={(event) => setGenerateForm((current) => ({ ...current, year: event.target.value }))} required />
-                      </Field>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <Field label="Month (1-12)"><input type="number" min="1" max="12" className={inputClass} value={generateForm.month} onChange={(e) => setGenerateForm((cur) => ({ ...cur, month: e.target.value }))} required /></Field>
+                      <Field label="Year"><input type="number" className={inputClass} value={generateForm.year} onChange={(e) => setGenerateForm((cur) => ({ ...cur, year: e.target.value }))} required /></Field>
+                      <Field label="Amount Per Member"><input type="number" min="1" className={inputClass} value={generateForm.expectedAmount} onChange={(e) => setGenerateForm((cur) => ({ ...cur, expectedAmount: e.target.value }))} placeholder="100" required /></Field>
+                      <Field label="Payment Due Date"><input type="date" className={inputClass} value={generateForm.dueDate} onChange={(e) => setGenerateForm((cur) => ({ ...cur, dueDate: e.target.value }))} required /></Field>
                     </div>
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <Field label="Expected Amount">
-                        <input type="number" min="1" className={inputClass} value={generateForm.expectedAmount} onChange={(event) => setGenerateForm((current) => ({ ...current, expectedAmount: event.target.value }))} required />
-                      </Field>
-                      <Field label="Due Date">
-                        <input type="date" className={inputClass} value={generateForm.dueDate} onChange={(event) => setGenerateForm((current) => ({ ...current, dueDate: event.target.value }))} required />
-                      </Field>
-                    </div>
-                    <Button icon={FaPaperPlane} tone="success" disabled={busyId === "generate"}>Generate</Button>
+                    <Button icon={FaPaperPlane} tone="success" disabled={busyId === "generate"}>Generate Dues Batch</Button>
                   </form>
 
-                  <div className="ka-card p-6 flex flex-col gap-4">
-                    <div className="flex items-center gap-2">
-                      <FaMoneyBillWave className="text-[var(--accent-primary)]" size={16} />
-                      <h2 className="text-base font-bold text-[var(--text-primary)]">Contribution Filters</h2>
+                  <div className="flex flex-col justify-between rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-5">
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <FaMoneyBillWave className="text-amber-400" size={14} />
+                        <h2 className="text-sm font-bold text-[var(--text-primary)]">Overdue Scheduler & Batch Actions</h2>
+                      </div>
+                      <p className="text-xs text-gray-400 leading-relaxed">
+                        Scan all past-due pending contribution requests across the community and automatically transition unpaid records to <span className="font-semibold text-red-400">OVERDUE</span> status.
+                      </p>
                     </div>
-                    <div className="grid gap-4 md:grid-cols-3">
-                      <Field label="Status">
-                        <select className={inputClass} value={contributionFilters.status} onChange={(event) => setContributionFilters((current) => ({ ...current, status: event.target.value }))}>
-                          <option value="">All</option>
-                          <option value="PENDING">Pending</option>
-                          <option value="PARTIAL">Partial</option>
-                          <option value="PAID">Paid</option>
-                          <option value="OVERDUE">Overdue</option>
-                          <option value="WAIVED">Waived</option>
-                        </select>
-                      </Field>
-                      <Field label="Month">
-                        <input type="number" min="1" max="12" className={inputClass} value={contributionFilters.month} onChange={(event) => setContributionFilters((current) => ({ ...current, month: event.target.value }))} />
-                      </Field>
-                      <Field label="Year">
-                        <input type="number" className={inputClass} value={contributionFilters.year} onChange={(event) => setContributionFilters((current) => ({ ...current, year: event.target.value }))} />
-                      </Field>
-                    </div>
-                    <div className="grid gap-2 md:grid-cols-2 mt-2">
-                      <Button icon={FaSyncAlt} onClick={loadContributions}>Apply Filters</Button>
-                      <Button tone="warning" onClick={markOverdue} disabled={busyId === "overdue"}>Mark Overdue</Button>
+                    <div className="mt-4 pt-4 border-t border-white/10 flex justify-end">
+                      <Button tone="warning" onClick={markOverdue} disabled={busyId === "overdue"}>
+                        {busyId === "overdue" ? "Checking..." : "Trigger Mark Overdue Scan"}
+                      </Button>
                     </div>
                   </div>
                 </div>
 
+                {/* Status Tabs + Search + Cards */}
                 <section className="grid gap-3">
-                  {contributions.map((contribution) => {
-                    const remaining = Number(contribution.expectedAmount || 0) - Number(contribution.paidAmount || 0);
-                    const draft = paymentDrafts[contribution._id] || {};
-                    return (
-                      <article key={contribution._id} className="ka-card p-5">
-                        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                          <div>
-                            <h3 className="font-bold text-[var(--text-primary)]">
-                              {contribution.member?.firstName} {contribution.member?.lastName} - {contribution.month}/{contribution.year}
-                            </h3>
-                            <p className="mt-1 text-xs sm:text-sm text-[var(--text-secondary)]">
-                              Paid <span className="text-[var(--accent-primary)] font-semibold">{money(contribution.paidAmount)}</span> of {money(contribution.expectedAmount)} - due {formatDate(contribution.dueDate)}
-                            </p>
-                            <p className="mt-2 text-xs text-[var(--text-muted)]">{contribution.family?.familyName || "No family linked"}</p>
-                          </div>
-                          <Status value={contribution.status} />
-                        </div>
-                        <div className="mt-4 grid gap-3 border-t border-[var(--border-subtle)] pt-4 lg:grid-cols-[150px_170px_1fr_auto_auto]">
-                          <input
-                            type="number"
-                            min="1"
-                            max={remaining > 0 ? remaining : undefined}
-                            className={inputClass}
-                            value={draft.amount || ""}
-                            onChange={(event) => setPaymentDrafts((current) => ({ ...current, [contribution._id]: { ...current[contribution._id], amount: event.target.value } }))}
-                            placeholder={remaining > 0 ? String(remaining) : "0"}
-                            disabled={!["PENDING", "PARTIAL", "OVERDUE"].includes(contribution.status)}
-                          />
-                          <select
-                            className={inputClass}
-                            value={draft.mode || "CASH"}
-                            onChange={(event) => setPaymentDrafts((current) => ({ ...current, [contribution._id]: { ...current[contribution._id], mode: event.target.value } }))}
-                            disabled={!["PENDING", "PARTIAL", "OVERDUE"].includes(contribution.status)}
-                          >
-                            <option value="CASH">Cash</option>
-                            <option value="BANK_TRANSFER">Bank transfer</option>
-                            <option value="CHEQUE">Cheque</option>
-                            <option value="OTHER">Other</option>
-                          </select>
-                          <input
-                            className={inputClass}
-                            value={draft.note || ""}
-                            onChange={(event) => setPaymentDrafts((current) => ({ ...current, [contribution._id]: { ...current[contribution._id], note: event.target.value } }))}
-                            placeholder="Note or waiver reason"
-                          />
-                          <Button tone="success" onClick={() => recordOfflinePayment(contribution)} disabled={busyId === contribution._id || !["PENDING", "PARTIAL", "OVERDUE"].includes(contribution.status)}>
-                            Record
-                          </Button>
-                          <Button tone="warning" onClick={() => waiveContribution(contribution)} disabled={busyId === contribution._id || ["PAID", "WAIVED"].includes(contribution.status)}>
-                            Waive
-                          </Button>
-                        </div>
-                      </article>
-                    );
-                  })}
-                  {contributions.length === 0 && <Empty text="No contributions found for the selected filters." />}
+                  <SummaryCards data={contributions} config={MODULE_STATUS_CONFIG.contributions} />
+                  <div className="flex flex-col gap-2">
+                    <StatusTabBar
+                      data={contributions}
+                      config={MODULE_STATUS_CONFIG.contributions}
+                      activeKey={statusFilters.contributions}
+                      onChange={(k) => setFilter("contributions", k)}
+                    />
+                    <SearchBar
+                      value={moduleSearch.contributions}
+                      onChange={(v) => setSearch("contributions", v)}
+                      placeholder="Search member name, family, month/year..."
+                    />
+                  </div>
+
+                  {filteredContributions.length === 0 ? (
+                    <ModuleEmptyState statusKey={statusFilters.contributions} moduleLabel="member contributions" />
+                  ) : (
+                    <div className="grid gap-3">
+                      {filteredContributions.map((contribution) => {
+                        const remaining = Number(contribution.expectedAmount || 0) - Number(contribution.paidAmount || 0);
+                        const draft = paymentDrafts[contribution._id] || {};
+                        const isActionable = ["PENDING", "PARTIAL", "OVERDUE"].includes(contribution.status);
+
+                        return (
+                          <article key={contribution._id} className={`rounded-2xl border p-4 sm:p-5 transition ${!isActionable ? "border-white/5 bg-white/[0.01] opacity-80" : "border-white/10 bg-white/[0.02]"}`}>
+                            <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                              <div>
+                                <div className="flex flex-wrap items-center gap-2 mb-1">
+                                  <h3 className="font-bold text-base text-[var(--text-primary)]">
+                                    {contribution.member?.firstName} {contribution.member?.lastName}
+                                    <span className="text-xs font-normal text-gray-400 ml-2">
+                                      · {contribution.month}/{contribution.year} Period
+                                    </span>
+                                  </h3>
+                                  <StatusBadge value={contribution.status} />
+                                </div>
+                                <p className="text-xs text-[var(--text-secondary)]">
+                                  Paid <span className="text-emerald-400 font-bold">{money(contribution.paidAmount)}</span> of {money(contribution.expectedAmount)} · Due {formatDate(contribution.dueDate)}
+                                </p>
+                                <p className="mt-1 text-xs text-gray-500">
+                                  Family: {contribution.family?.familyName || "Direct Member"} · Contact: {contribution.member?.email || "No email"}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Context-aware: only show payment recording on actionable records */}
+                            {isActionable && (
+                              <div className="mt-4 grid gap-2.5 border-t border-white/10 pt-4 lg:grid-cols-[140px_160px_1fr_auto_auto]">
+                                <input
+                                  type="number"
+                                  min="1"
+                                  max={remaining > 0 ? remaining : undefined}
+                                  className={inputClass}
+                                  value={draft.amount || ""}
+                                  onChange={(e) => setPaymentDrafts((c) => ({ ...c, [contribution._id]: { ...c[contribution._id], amount: e.target.value } }))}
+                                  placeholder={remaining > 0 ? `Amount (${remaining})` : "Amount"}
+                                />
+                                <select
+                                  className={inputClass}
+                                  value={draft.mode || "CASH"}
+                                  onChange={(e) => setPaymentDrafts((c) => ({ ...c, [contribution._id]: { ...c[contribution._id], mode: e.target.value } }))}
+                                >
+                                  <option value="CASH">Cash</option>
+                                  <option value="BANK_TRANSFER">Bank Transfer / UPI</option>
+                                  <option value="CHEQUE">Cheque</option>
+                                  <option value="OTHER">Other</option>
+                                </select>
+                                <input
+                                  className={inputClass}
+                                  value={draft.note || ""}
+                                  onChange={(e) => setPaymentDrafts((c) => ({ ...c, [contribution._id]: { ...c[contribution._id], note: e.target.value } }))}
+                                  placeholder="Receipt note / Waiver reason"
+                                />
+                                <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-2 lg:contents">
+                                  <Button tone="success" onClick={() => recordOfflinePayment(contribution)} disabled={busyId === contribution._id} className="w-full sm:w-auto">
+                                    Record
+                                  </Button>
+                                  <Button tone="warning" onClick={() => waiveContribution(contribution)} disabled={busyId === contribution._id} className="w-full sm:w-auto">
+                                    Waive
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                          </article>
+                        );
+                      })}
+                    </div>
+                  )}
                 </section>
               </div>
             )}
