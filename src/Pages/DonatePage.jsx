@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import toast from "react-hot-toast";
-import { FiCheckCircle, FiCreditCard, FiHeart, FiLock, FiSearch } from "react-icons/fi";
+import { FiCheckCircle, FiCreditCard, FiHeart, FiLock, FiSearch, FiClock, FiAlertCircle, FiRefreshCw } from "react-icons/fi";
+import { FaHistory, FaRupeeSign, FaReceipt } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { apiConnector } from "../services/apiConnector";
@@ -49,6 +50,34 @@ const DonatePage = () => {
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
   const [error, setError] = useState("");
+
+  // ── Donation History (My Donations) ────────────────────────────────────────
+  const [myDonations, setMyDonations] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
+
+  const fetchMyDonations = useCallback(async () => {
+    if (!token) return;
+    setHistoryLoading(true);
+    try {
+      const authConfig = {
+        headers: { Authorization: `Bearer ${token}` },
+        withCredentials: true,
+      };
+      const res = await apiConnector("GET", paymentEndpoints.MY_DONATIONS_API, null, authConfig, { limit: 50 });
+      setMyDonations(res?.data?.data?.donations || []);
+      setHistoryLoaded(true);
+    } catch (err) {
+      console.error("Donation history fetch error:", err);
+      toast.error(err?.response?.data?.message || "Failed to load donation history.");
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    if (token) fetchMyDonations();
+  }, [token, fetchMyDonations]);
 
   const selectedCampaignData = useMemo(() => {
     return campaigns.find((campaign) => campaign._id === selectedCampaign);
@@ -427,6 +456,134 @@ const DonatePage = () => {
           </form>
         </aside>
       </section>
+
+      {/* ── My Donation History — only for logged-in members ─────────────── */}
+      {token && (
+        <section className="mx-auto mt-14 w-full max-w-7xl" id="my-donation-history">
+          {/* Section header */}
+          <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-[var(--border-subtle)] pb-5">
+            <div>
+              <div className="eyebrow-badge mb-2">
+                <FaHistory size={12} />
+                <span>{isHindi ? "मेरे दान का इतिहास" : "My Donation History"}</span>
+              </div>
+              <h2 className="text-xl sm:text-2xl font-bold text-[var(--text-primary)]">
+                {isHindi ? (
+                  <>मेरे <span className="text-gradient">दान का इतिहास</span></>
+                ) : (
+                  <>My <span className="text-gradient">Donation History</span></>
+                )}
+              </h2>
+              <p className="mt-1 text-xs text-[var(--text-secondary)]">
+                {isHindi
+                  ? "आपके सभी पिछले दानों की जानकारी यहाँ दिखाई जाती है।"
+                  : "A complete record of all your past contributions to Samaj campaigns."}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={fetchMyDonations}
+              disabled={historyLoading}
+              className="btn-secondary !py-2 !px-4 !text-xs flex items-center gap-2 self-start sm:self-auto"
+              id="refresh-donation-history-btn"
+            >
+              <FiRefreshCw size={12} className={historyLoading ? "animate-spin" : ""} />
+              <span>{isHindi ? "रीफ्रेश करें" : "Refresh"}</span>
+            </button>
+          </div>
+
+          {/* Loading state */}
+          {historyLoading && (
+            <div className="flex h-40 items-center justify-center">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-[var(--accent-primary)] border-t-transparent" />
+            </div>
+          )}
+
+          {/* Empty state */}
+          {!historyLoading && historyLoaded && myDonations.length === 0 && (
+            <div className="flex flex-col items-center gap-4 rounded-3xl border border-dashed border-[var(--border-subtle)] bg-[var(--surface)] py-16 text-center">
+              <FiHeart size={32} className="text-[var(--accent-primary)]/40" />
+              <p className="text-sm font-semibold text-[var(--text-secondary)]">
+                {isHindi ? "अभी तक कोई दान नहीं" : "No donations yet"}
+              </p>
+              <p className="text-xs text-[var(--text-muted)]">
+                {isHindi
+                  ? "जब आप कोई दान करेंगे, वह यहाँ दिखाई देगा।"
+                  : "When you make a donation, it will appear here."}
+              </p>
+            </div>
+          )}
+
+          {/* Donation list */}
+          {!historyLoading && myDonations.length > 0 && (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {myDonations.map((donation) => {
+                const statusStyles = {
+                  SUCCESS:  { badge: "border-emerald-400/40 bg-emerald-400/10 text-emerald-300", icon: <FiCheckCircle className="text-emerald-400" size={16} /> },
+                  PENDING:  { badge: "border-amber-400/40 bg-amber-400/10 text-amber-300",   icon: <FiClock className="text-amber-400" size={16} /> },
+                  FAILED:   { badge: "border-red-400/40 bg-red-400/10 text-red-300",         icon: <FiAlertCircle className="text-red-400" size={16} /> },
+                  REFUNDED: { badge: "border-indigo-400/40 bg-indigo-400/10 text-indigo-300", icon: <FiRefreshCw className="text-indigo-400" size={16} /> },
+                };
+                const s = statusStyles[donation.status] || statusStyles.PENDING;
+                const dateStr = donation.createdAt
+                  ? new Intl.DateTimeFormat("en-IN", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(donation.createdAt))
+                  : "—";
+                const campaignTitle = donation.campaign?.title || (isHindi ? "सामान्य दान कोष" : "General Donation Fund");
+
+                return (
+                  <article
+                    key={donation._id}
+                    className="ka-card p-4 sm:p-5 flex flex-col gap-3 transition hover:border-[var(--accent-primary)]/30"
+                  >
+                    {/* Top row — amount + status */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-1.5 text-xl font-black text-[var(--text-primary)]">
+                        <FaRupeeSign size={14} className="text-[var(--accent-primary)] mt-0.5" />
+                        <span>{Number(donation.amount || 0).toLocaleString("en-IN")}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        {s.icon}
+                        <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${s.badge}`}>
+                          {donation.status}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Campaign name */}
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-0.5">
+                        {isHindi ? "अभियान" : "Campaign"}
+                      </p>
+                      <p className="text-sm font-semibold text-[var(--text-primary)] leading-snug">
+                        {campaignTitle}
+                      </p>
+                    </div>
+
+                    {/* Date + receipt */}
+                    <div className="mt-auto pt-3 border-t border-[var(--border-subtle)] flex flex-col gap-1">
+                      <p className="text-xs text-[var(--text-muted)]">
+                        <span className="font-semibold text-[var(--text-secondary)]">{isHindi ? "तारीख:" : "Date:"}</span>{" "}
+                        {dateStr}
+                      </p>
+                      {donation.receiptNumber && (
+                        <p className="flex items-center gap-1 font-mono text-[11px] text-[var(--text-muted)]">
+                          <FaReceipt size={10} className="text-[var(--accent-primary)]" />
+                          {donation.receiptNumber}
+                        </p>
+                      )}
+                      {donation.note && (
+                        <p className="text-xs italic text-[var(--text-muted)] line-clamp-2">
+                          &ldquo;{donation.note}&rdquo;
+                        </p>
+                      )}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      )}
     </main>
   );
 };

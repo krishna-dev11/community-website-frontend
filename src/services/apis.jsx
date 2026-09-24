@@ -82,6 +82,8 @@ export const opportunityEndpoints = {
   ADMIN_JOBS_API: BASE_URL + "/opportunities/admin/jobs",
   UPDATE_JOB_API: (jobId) => BASE_URL + `/opportunities/jobs/${jobId}`,
   MODERATE_JOB_API: (jobId) => BASE_URL + `/opportunities/admin/jobs/${jobId}/moderate`,
+  MY_JOBS_API: BASE_URL + "/opportunities/me/jobs",
+  REPORT_JOB_API: (jobId) => BASE_URL + `/opportunities/jobs/${jobId}/report`,
   APPLY_JOB_API: (jobId) => BASE_URL + `/opportunities/jobs/${jobId}/applications`,
   JOB_APPLICATIONS_API: (jobId) => BASE_URL + `/opportunities/jobs/${jobId}/applications`,
   UPDATE_JOB_APPLICATION_STATUS_API: (applicationId) => BASE_URL + `/opportunities/job-applications/${applicationId}/status`,
@@ -108,11 +110,22 @@ export const paymentEndpoints = {
   MY_DONATIONS_API: BASE_URL + "/payments/me/donations",
   CONTRIBUTIONS_API: BASE_URL + "/payments/contributions",
   MY_CONTRIBUTIONS_API: BASE_URL + "/payments/me/contributions",
+  MY_CONTRIBUTIONS_SUMMARY_API: BASE_URL + "/payments/me/contributions/summary",
   MY_FINANCIAL_HISTORY_API: BASE_URL + "/payments/me/financial-history",
   CREATE_CONTRIBUTION_ORDER_API: (contributionId) => BASE_URL + `/payments/contributions/${contributionId}/orders`,
+  VERIFY_CONTRIBUTION_API: (contributionId) => BASE_URL + `/payments/contributions/${contributionId}/verify`,
+  CONTRIBUTION_RECEIPT_API: (contributionId) => BASE_URL + `/payments/contributions/${contributionId}/receipt`,
   GENERATE_CONTRIBUTIONS_API: BASE_URL + "/payments/contributions/generate",
+  CONTRIBUTION_CYCLES_API: BASE_URL + "/payments/contributions/cycles",
+  UPDATE_CYCLE_STATUS_API: (cycleId) => BASE_URL + `/payments/contributions/cycles/${cycleId}/status`,
+  CONTRIBUTIONS_DASHBOARD_SUMMARY_API: BASE_URL + "/payments/contributions/dashboard-summary",
+  EXPORT_CONTRIBUTIONS_API: BASE_URL + "/payments/contributions/export",
+  SEND_CONTRIBUTION_REMINDERS_API: BASE_URL + "/payments/contributions/reminders",
+  MEMBER_LEDGER_ADMIN_API: (memberId) => BASE_URL + `/payments/contributions/members/${memberId}/ledger`,
   MARK_OVERDUE_CONTRIBUTIONS_API: BASE_URL + "/payments/contributions/mark-overdue",
+  MANUAL_CONTRIBUTION_PAYMENT_API: (contributionId) => BASE_URL + `/payments/contributions/${contributionId}/payments/manual`,
   OFFLINE_CONTRIBUTION_PAYMENT_API: (contributionId) => BASE_URL + `/payments/contributions/${contributionId}/payments/offline`,
+  REVERSE_CONTRIBUTION_PAYMENT_API: (contributionId) => BASE_URL + `/payments/contributions/${contributionId}/reverse`,
   WAIVE_CONTRIBUTION_API: (contributionId) => BASE_URL + `/payments/contributions/${contributionId}/waive`,
 }
 
@@ -153,6 +166,7 @@ export const communityEndpoints = {
   MY_SHRADHANJALIS_API: BASE_URL + "/community/me/shradhanjalis",
   ADMIN_SHRADHANJALIS_API: BASE_URL + "/community/admin/shradhanjalis",
   REVIEW_SHRADHANJALI_API: (shradhanjaliId) => BASE_URL + `/community/shradhanjalis/${shradhanjaliId}/review`,
+  SHRADHANJALI_SUPPORTING_DOCUMENT_API: (shradhanjaliId) => BASE_URL + `/community/admin/shradhanjalis/${shradhanjaliId}/supporting-document`,
   MEMBERSHIP_CARD_API: BASE_URL + "/community/membership-cards/me",
   VERIFY_MEMBERSHIP_CARD_API: (memberId) => BASE_URL + `/community/membership-cards/${memberId}/verify`,
   PUBLISH_ISSUE_SOLUTION_API: (issueId) => BASE_URL + `/community/issues/${issueId}/publish-solution`,
@@ -172,6 +186,7 @@ export const matrimonialEndpoints = {
   PROFILE_API: (profileId) => BASE_URL + `/matrimonial/profiles/${profileId}`,
   EXPRESS_INTEREST_API: (profileId) => BASE_URL + `/matrimonial/profiles/${profileId}/interests`,
   MY_INTERESTS_API: BASE_URL + "/matrimonial/interests/me",
+  RECEIVED_INTEREST_PROFILE_API: (interestId) => BASE_URL + `/matrimonial/interests/${interestId}/profile`,
   RESPOND_INTEREST_API: (interestId) => BASE_URL + `/matrimonial/interests/${interestId}`,
   REQUEST_CONTACT_API: (interestId) => BASE_URL + `/matrimonial/interests/${interestId}/contact-requests`,
   MY_CONTACT_REQUESTS_API: BASE_URL + "/matrimonial/contact-requests/me",
@@ -270,4 +285,3 @@ export const TestimonialEndPoints = {
 export const InstallmentEndPoints = {
   ADD_INSTALLMENT : BASE_URL + "/enrollment/add-installment"
 }
-

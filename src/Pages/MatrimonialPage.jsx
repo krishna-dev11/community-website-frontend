@@ -41,6 +41,55 @@ const profileAge = (profile) => profile?.age || ageFromDate(profile?.dateOfBirth
 
 const formatProfileValue = (value) => value || "Not shared";
 
+const profileInitials = (name = "Profile") =>
+  String(name)
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "P";
+
+const formatProfileDate = (value) => {
+  if (!value) return "Not provided";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Not provided";
+  return date.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+};
+
+const normalizePhoneForLink = (phone = "") => String(phone).replace(/[^\d]/g, "");
+
+const ContactActionLinks = ({ phone }) => {
+  const digits = normalizePhoneForLink(phone);
+  if (!digits) return null;
+  const whatsappUrl = `https://wa.me/${digits}`;
+
+  return (
+    <div className="mt-3 flex flex-wrap gap-2">
+      <a className="btn-secondary !px-3 !py-2 !text-[11px]" href={whatsappUrl} target="_blank" rel="noopener noreferrer">
+        WhatsApp
+      </a>
+      <a className="btn-secondary !px-3 !py-2 !text-[11px]" href={`tel:${digits}`}>
+        Call
+      </a>
+      <a className="btn-secondary !px-3 !py-2 !text-[11px]" href={whatsappUrl} target="_blank" rel="noopener noreferrer">
+        WhatsApp Video
+      </a>
+    </div>
+  );
+};
+
+const ProtectedContactDetails = ({ contact }) => {
+  if (!contact) return null;
+  return (
+    <div className="mt-2 space-y-1 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-2 text-xs text-emerald-300">
+      {contact.phone ? <p className="flex items-center gap-2"><FiPhone size={13} /> {contact.phone}</p> : null}
+      {contact.email ? <p className="flex items-center gap-2"><FiMail size={13} /> {contact.email}</p> : null}
+      {contact.address ? <p className="flex items-center gap-2"><FiMapPin size={13} /> {contact.address}</p> : null}
+      <ContactActionLinks phone={contact.phone} />
+    </div>
+  );
+};
+
 const initialForm = {
   displayName: "",
   gender: "MALE",
@@ -167,6 +216,8 @@ const MatrimonialPage = () => {
   const [messageDrafts, setMessageDrafts] = useState({});
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [profileDetailLoading, setProfileDetailLoading] = useState(false);
+  const [interestProfileModal, setInterestProfileModal] = useState(null);
+  const [interestProfileLoading, setInterestProfileLoading] = useState(false);
   const [protectedContactUnlocked, setProtectedContactUnlocked] = useState(false);
   const [interestSentIds, setInterestSentIds] = useState([]);
 
@@ -177,6 +228,14 @@ const MatrimonialPage = () => {
     }),
     [token]
   );
+
+  const selectedProfileContactApproved = useMemo(() => {
+    if (!selectedProfile?._id) return false;
+    return contacts.sent?.some((request) => {
+      const targetId = request.targetProfile?._id || request.targetProfile;
+      return request.status === "APPROVED" && String(targetId) === String(selectedProfile._id);
+    });
+  }, [contacts.sent, selectedProfile?._id]);
 
   const loadMine = async () => {
     try {
@@ -243,7 +302,7 @@ const MatrimonialPage = () => {
   }, [activeTab]);
 
   useEffect(() => {
-    const modalOpen = Boolean(selectedProfile || profileDetailLoading);
+    const modalOpen = Boolean(selectedProfile || profileDetailLoading || interestProfileModal || interestProfileLoading);
     if (!modalOpen) return undefined;
 
     const previousOverflow = document.body.style.overflow;
@@ -251,7 +310,7 @@ const MatrimonialPage = () => {
     return () => {
       document.body.style.overflow = previousOverflow;
     };
-  }, [selectedProfile, profileDetailLoading]);
+  }, [selectedProfile, profileDetailLoading, interestProfileModal, interestProfileLoading]);
 
   const updateForm = (key, value) => setForm((current) => ({ ...current, [key]: value }));
 
@@ -260,6 +319,7 @@ const MatrimonialPage = () => {
     setProtectedContactUnlocked(false);
     setSelectedProfile(null);
     try {
+      await loadContacts().catch(() => {});
       const response = await apiConnector("GET", matrimonialEndpoints.PROFILE_API(profileId), null, authConfig);
       setSelectedProfile(response.data?.data?.profile || null);
       setProtectedContactUnlocked(Boolean(response.data?.data?.protectedContactUnlocked));
@@ -267,6 +327,22 @@ const MatrimonialPage = () => {
       toast.error(error.response?.data?.message || "Unable to load profile details");
     } finally {
       setProfileDetailLoading(false);
+    }
+  };
+
+  const openReceivedInterestProfile = async (interest) => {
+    setInterestProfileLoading(true);
+    setInterestProfileModal(null);
+    try {
+      const response = await apiConnector("GET", matrimonialEndpoints.RECEIVED_INTEREST_PROFILE_API(interest._id), null, authConfig);
+      setInterestProfileModal({
+        interest: response.data?.data?.interest || interest,
+        profile: response.data?.data?.profile || interest.fromProfile,
+      });
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Unable to load sender profile");
+    } finally {
+      setInterestProfileLoading(false);
     }
   };
 
@@ -736,23 +812,60 @@ const MatrimonialPage = () => {
                 <section className="ka-card p-5">
                   <h2 className="text-base font-bold text-[var(--text-primary)] mb-4">Received Interests</h2>
                   <div className="grid gap-3">
-                    {interests.received?.map((interest) => (
-                      <article key={interest._id} className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-4">
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <h3 className="font-bold text-sm text-[var(--text-primary)]">{interest.fromProfile?.displayName || "Profile"}</h3>
-                            <p className="mt-1 text-xs text-[var(--text-secondary)]">{interest.message || "Expressed interest in your profile"}</p>
+                    {interests.received?.map((interest) => {
+                      const sender = interest.fromProfile;
+                      const photoUrl = sender?.photos?.[0]?.url;
+                      const summary = [
+                        profileAge(sender) ? `${profileAge(sender)} yrs` : null,
+                        sender?.height,
+                        sender?.currentCity,
+                      ].filter(Boolean).join(" · ");
+
+                      return (
+                        <article key={interest._id} className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-4">
+                          <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                            <div className="flex aspect-[4/5] w-full shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] p-2 sm:w-24 md:w-28">
+                              {photoUrl ? (
+                                <img src={photoUrl} alt={sender?.displayName || "Matrimonial profile"} className="h-full w-full object-contain" />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center rounded-xl bg-[var(--surface-raised)] text-lg font-black text-[var(--accent-primary)]">
+                                  {profileInitials(sender?.displayName)}
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                  <h3 className="break-words font-bold text-sm text-[var(--text-primary)]">{sender?.displayName || "Profile"}</h3>
+                                  {summary ? <p className="mt-1 text-xs font-semibold text-[var(--accent-primary)]">{summary}</p> : null}
+                                  <div className="mt-2 grid gap-1 text-xs text-[var(--text-secondary)]">
+                                    <p>{sender?.education || "Education not provided"}</p>
+                                    <p>{sender?.profession || "Profession not provided"}</p>
+                                    <p>{sender?.gotra || "Gotra not provided"}</p>
+                                  </div>
+                                  <p className="mt-2 break-words text-xs text-[var(--text-secondary)]">{interest.message || "Expressed interest in your profile"}</p>
+                                  <p className="mt-1 text-[11px] text-[var(--text-muted)]">Requested: {formatProfileDate(interest.createdAt)}</p>
+                                </div>
+                                <Status value={interest.status} />
+                              </div>
+
+                              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                                <Button type="button" icon={FiEye} onClick={() => openReceivedInterestProfile(interest)} disabled={interestProfileLoading}>
+                                  View Full Profile
+                                </Button>
+                                {interest.status === "PENDING" ? (
+                                  <>
+                                    <Button tone="success" onClick={() => respondInterest(interest._id, "ACCEPT")} disabled={busyId === interest._id}>Accept</Button>
+                                    <Button tone="danger" onClick={() => respondInterest(interest._id, "REJECT")} disabled={busyId === interest._id}>Reject</Button>
+                                  </>
+                                ) : null}
+                              </div>
+                            </div>
                           </div>
-                          <Status value={interest.status} />
-                        </div>
-                        {interest.status === "PENDING" ? (
-                          <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                            <Button tone="success" onClick={() => respondInterest(interest._id, "ACCEPT")} disabled={busyId === interest._id}>Accept</Button>
-                            <Button tone="danger" onClick={() => respondInterest(interest._id, "REJECT")} disabled={busyId === interest._id}>Reject</Button>
-                          </div>
-                        ) : null}
-                      </article>
-                    ))}
+                        </article>
+                      );
+                    })}
                     {interests.received?.length === 0 ? (
                       <p className="text-xs text-[var(--text-muted)] py-4 text-center">No received interests.</p>
                     ) : null}
@@ -762,27 +875,50 @@ const MatrimonialPage = () => {
                 <section className="ka-card p-5">
                   <h2 className="text-base font-bold text-[var(--text-primary)] mb-4">Sent Interests</h2>
                   <div className="grid gap-3">
-                    {interests.sent?.map((interest) => (
-                      <article key={interest._id} className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-4">
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <h3 className="font-bold text-sm text-[var(--text-primary)]">{interest.toProfile?.displayName || "Profile"}</h3>
-                            <p className="mt-1 text-xs text-[var(--text-secondary)]">{interest.message || "Interest expressed"}</p>
+                    {interests.sent?.map((interest) => {
+                      const recipient = interest.toProfile;
+                      const photoUrl = recipient?.photos?.[0]?.url;
+
+                      return (
+                        <article key={interest._id} className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-4">
+                          <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                            <div className="flex aspect-[4/5] w-full shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] p-2 sm:w-24 md:w-28">
+                              {photoUrl ? (
+                                <img
+                                  src={photoUrl}
+                                  alt={recipient?.displayName || "Matrimonial profile"}
+                                  className="h-full w-full object-contain"
+                                />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center rounded-xl bg-[var(--surface-raised)] text-lg font-black text-[var(--accent-primary)]">
+                                  {profileInitials(recipient?.displayName)}
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                  <h3 className="break-words font-bold text-sm text-[var(--text-primary)]">{recipient?.displayName || "Profile"}</h3>
+                                  <p className="mt-1 break-words text-xs text-[var(--text-secondary)]">{interest.message || "Interest expressed"}</p>
+                                </div>
+                                <Status value={interest.status} />
+                              </div>
+                              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                                {interest.status === "ACCEPTED" ? (
+                                  <Button icon={FiShield} tone="success" onClick={() => requestContact(interest._id)} disabled={busyId === `contact-${interest._id}`}>
+                                    Request Phone/Email
+                                  </Button>
+                                ) : null}
+                                {["PENDING", "ACCEPTED"].includes(interest.status) ? (
+                                  <Button tone="danger" onClick={() => respondInterest(interest._id, "WITHDRAW")} disabled={busyId === interest._id}>Withdraw</Button>
+                                ) : null}
+                              </div>
+                            </div>
                           </div>
-                          <Status value={interest.status} />
-                        </div>
-                        <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                          {interest.status === "ACCEPTED" ? (
-                            <Button icon={FiShield} tone="success" onClick={() => requestContact(interest._id)} disabled={busyId === `contact-${interest._id}`}>
-                              Request Phone/Email
-                            </Button>
-                          ) : null}
-                          {["PENDING", "ACCEPTED"].includes(interest.status) ? (
-                            <Button tone="danger" onClick={() => respondInterest(interest._id, "WITHDRAW")} disabled={busyId === interest._id}>Withdraw</Button>
-                          ) : null}
-                        </div>
-                      </article>
-                    ))}
+                        </article>
+                      );
+                    })}
                     {interests.sent?.length === 0 ? (
                       <p className="text-xs text-[var(--text-muted)] py-4 text-center">No sent interests.</p>
                     ) : null}
@@ -799,13 +935,14 @@ const MatrimonialPage = () => {
                             <h3 className="font-bold text-sm text-[var(--text-primary)]">{request.requesterProfile?.displayName || "Member"}</h3>
                             <p className="mt-1 text-xs text-[var(--text-secondary)]">Requested phone and email access</p>
                             {request.status === "APPROVED" && request.requesterProfile?.protectedContact ? (
-                              <div className="mt-2 text-xs font-mono text-[var(--accent-primary)] space-y-1">
-                                <p>📞 {request.requesterProfile.protectedContact.phone || "No phone"}</p>
-                                <p>✉️ {request.requesterProfile.protectedContact.email || "No email"}</p>
-                                {request.requesterProfile.protectedContact.address && (
-                                  <p>📍 {request.requesterProfile.protectedContact.address}</p>
-                                )}
-                              </div>
+                              <ProtectedContactDetails contact={request.requesterProfile.protectedContact} />
+                            ) : request.status === "APPROVED" ? (
+                              <p className="mt-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-2 text-xs text-emerald-300">
+                                Approved. Contact details are not provided by this member.
+                              </p>
+                            ) : null}
+                            {request.status === "APPROVED" && request.targetProfile?.protectedContact?.phone ? (
+                              <ContactActionLinks phone={request.targetProfile.protectedContact.phone} />
                             ) : null}
                           </div>
                           <Status value={request.status} />
@@ -825,6 +962,9 @@ const MatrimonialPage = () => {
                           <div>
                             <h3 className="font-bold text-sm text-[var(--text-primary)]">{request.targetProfile?.displayName || "Profile"}</h3>
                             <p className="mt-1 text-xs text-[var(--text-secondary)]">Contact Request: {request.status}</p>
+                            {request.status === "APPROVED" && request.targetProfile?.protectedContact?.phone ? (
+                              <ContactActionLinks phone={request.targetProfile.protectedContact.phone} />
+                            ) : null}
                             {request.status === "APPROVED" && request.targetProfile?.protectedContact ? (
                               <div className="mt-2 text-xs font-mono text-[var(--accent-primary)] space-y-1">
                                 <p>📞 {request.targetProfile.protectedContact.phone || "No phone"}</p>
@@ -950,11 +1090,13 @@ const MatrimonialPage = () => {
                       <FiShield size={16} />
                       <span>Protected Contact</span>
                     </div>
-                    {protectedContactUnlocked && selectedProfile?.protectedContact ? (
+                    {protectedContactUnlocked && selectedProfileContactApproved && selectedProfile?.protectedContact ? (
                       <div className="mt-3 grid gap-2 text-xs text-[var(--text-secondary)]">
                         {selectedProfile.protectedContact.phone ? <p className="flex items-center gap-2"><FiPhone size={13} /> {selectedProfile.protectedContact.phone}</p> : null}
                         {selectedProfile.protectedContact.email ? <p className="flex items-center gap-2"><FiMail size={13} /> {selectedProfile.protectedContact.email}</p> : null}
                         {selectedProfile.protectedContact.address ? <p className="flex items-center gap-2"><FiMapPin size={13} /> {selectedProfile.protectedContact.address}</p> : null}
+                        {selectedProfile.guardian?.phone ? <p className="flex items-center gap-2"><FiPhone size={13} /> Guardian: {selectedProfile.guardian.phone}</p> : null}
+                        {selectedProfile.guardian?.email ? <p className="flex items-center gap-2"><FiMail size={13} /> Guardian: {selectedProfile.guardian.email}</p> : null}
                       </div>
                     ) : (
                       <p className="mt-2 text-xs leading-5 text-[var(--text-muted)]">
@@ -981,6 +1123,135 @@ const MatrimonialPage = () => {
                 </Button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+      {(interestProfileModal || interestProfileLoading) && (
+        <div className="fixed inset-0 z-[2300] flex items-center justify-center overflow-hidden bg-black/70 px-3 py-4 backdrop-blur-sm sm:px-4 sm:py-6">
+          <div className="ka-card flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden border border-[var(--border-strong)] bg-[var(--surface)] shadow-2xl">
+            <div className="flex shrink-0 items-start justify-between gap-4 border-b border-[var(--border-subtle)] bg-[var(--surface)] p-5 sm:p-6">
+              <div>
+                <p className="inline-flex rounded-full border border-[var(--accent-primary)]/30 bg-[var(--accent-primary)]/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-[var(--accent-primary)]">
+                  Received Interest Profile
+                </p>
+                <h2 className="mt-3 text-xl font-black text-[var(--text-primary)] sm:text-2xl">
+                  {interestProfileLoading ? "Loading Profile" : interestProfileModal?.profile?.displayName || "Matrimonial Profile"}
+                </h2>
+                {interestProfileModal?.interest ? (
+                  <p className="mt-1 text-xs font-semibold text-[var(--text-muted)]">
+                    Interest sent on {formatProfileDate(interestProfileModal.interest.createdAt)} · {interestProfileModal.interest.status}
+                  </p>
+                ) : null}
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setInterestProfileModal(null);
+                  setInterestProfileLoading(false);
+                }}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-primary)]"
+                aria-label="Close interest profile"
+              >
+                <FiX size={18} />
+              </button>
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-y-auto p-5 custom-scrollbar sm:p-6">
+              {interestProfileLoading ? (
+                <div className="flex min-h-80 items-center justify-center">
+                  <div className="h-10 w-10 animate-spin rounded-full border-4 border-[var(--accent-primary)] border-t-transparent" />
+                </div>
+              ) : (
+                <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
+                  <div>
+                    <div className="mx-auto flex aspect-[4/5] w-full max-w-[260px] items-center justify-center overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-2 lg:mx-0">
+                      {interestProfileModal?.profile?.photos?.[0]?.url ? (
+                        <img src={interestProfileModal.profile.photos[0].url} alt={interestProfileModal.profile.displayName} className="h-full w-full object-contain" />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center rounded-xl bg-[var(--surface-raised)] text-3xl font-black text-[var(--accent-primary)]">
+                          {profileInitials(interestProfileModal?.profile?.displayName)}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="min-w-0 space-y-5">
+                    <section className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-4">
+                      <h3 className="text-xs font-black uppercase tracking-wider text-[var(--accent-primary)]">Profile Header</h3>
+                      <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        {[
+                          ["Full Name", interestProfileModal?.profile?.displayName],
+                          ["Age", interestProfileModal?.profile?.age ? `${interestProfileModal.profile.age} yrs` : null],
+                          ["Date of Birth", formatProfileDate(interestProfileModal?.profile?.dateOfBirth)],
+                          ["Gender", interestProfileModal?.profile?.gender],
+                          ["Height", interestProfileModal?.profile?.height],
+                          ["Marital Status", interestProfileModal?.profile?.maritalStatus],
+                          ["Profile ID", interestProfileModal?.profile?._id],
+                          ["Verification", interestProfileModal?.profile?.status],
+                        ].map(([label, value]) => (
+                          <div key={label}>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">{label}</p>
+                            <p className="mt-1 break-words text-sm font-bold text-[var(--text-primary)]">{formatProfileValue(value)}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+
+                    {[
+                      {
+                        title: "Personal Details",
+                        rows: [
+                          ["Current City", interestProfileModal?.profile?.currentCity],
+                          ["Native Place", interestProfileModal?.profile?.nativePlace],
+                        ],
+                      },
+                      {
+                        title: "Community & Family",
+                        rows: [
+                          ["Gotra / Community", interestProfileModal?.profile?.gotra],
+                          ["Family Details", interestProfileModal?.profile?.familyDetails],
+                          ["Guardian", [interestProfileModal?.profile?.guardian?.name, interestProfileModal?.profile?.guardian?.relation].filter(Boolean).join(" - ")],
+                        ],
+                      },
+                      {
+                        title: "Education & Career",
+                        rows: [
+                          ["Education", interestProfileModal?.profile?.education],
+                          ["Profession", interestProfileModal?.profile?.profession],
+                          ["Annual Income", interestProfileModal?.profile?.annualIncome],
+                        ],
+                      },
+                    ].map((section) => (
+                      <section key={section.title} className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-4">
+                        <h3 className="text-xs font-black uppercase tracking-wider text-[var(--accent-primary)]">{section.title}</h3>
+                        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                          {section.rows.map(([label, value]) => (
+                            <div key={label}>
+                              <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">{label}</p>
+                              <p className="mt-1 whitespace-pre-line break-words text-sm font-semibold text-[var(--text-primary)]">{formatProfileValue(value)}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </section>
+                    ))}
+
+                    <section className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-4">
+                      <h3 className="text-xs font-black uppercase tracking-wider text-[var(--accent-primary)]">About Me</h3>
+                      <p className="mt-3 whitespace-pre-line break-words text-sm leading-6 text-[var(--text-secondary)]">{formatProfileValue(interestProfileModal?.profile?.about)}</p>
+                    </section>
+
+                    <section className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-4">
+                      <h3 className="text-xs font-black uppercase tracking-wider text-[var(--accent-primary)]">Partner Expectations</h3>
+                      <p className="mt-3 whitespace-pre-line break-words text-sm leading-6 text-[var(--text-secondary)]">{formatProfileValue(interestProfileModal?.profile?.expectations)}</p>
+                    </section>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex shrink-0 justify-end border-t border-[var(--border-subtle)] bg-[var(--surface)] p-4">
+              <Button type="button" onClick={() => setInterestProfileModal(null)}>Close</Button>
+            </div>
           </div>
         </div>
       )}

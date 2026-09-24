@@ -41,10 +41,9 @@ const SideBar = ({ isSidebarOpen, setIsSidebarOpen }) => {
 
       {/* Sidebar Container */}
       <div className={`
-        fixed md:static inset-y-0 left-0 z-50
-        ${isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
-        ${isSidebarOpen ? "w-[270px]" : "w-[75px]"} md:w-[18%] md:min-w-[240px]
-        h-[100dvh] bg-[var(--surface)] border-r border-[var(--border-subtle)] flex flex-col transition-all duration-300 ease-in-out
+        fixed md:static inset-y-0 left-0 z-50 shrink-0
+        ${isSidebarOpen ? "translate-x-0 w-[270px]" : "-translate-x-full md:translate-x-0 w-[270px] md:w-[240px] lg:w-[260px]"}
+        h-full bg-[var(--surface)] border-r border-[var(--border-subtle)] flex flex-col transition-all duration-300 ease-in-out
       `}>
         <div className="absolute bottom-[-10%] left-[-20%] w-[300px] h-[300px] bg-[var(--accent-primary)]/5 blur-[100px] rounded-full pointer-events-none" />
 
@@ -62,8 +61,8 @@ const SideBar = ({ isSidebarOpen, setIsSidebarOpen }) => {
           </div>
         )}
 
-        {/* Scrollable Navigation Area - generous top and bottom padding so upper items and bottom Finance section are 100% visible */}
-        <div className="flex flex-col text-[var(--text-primary)] pt-6 md:pt-20 pb-28 gap-y-4 flex-1 min-h-0 px-2.5 md:px-4 overflow-y-auto custom-scrollbar">
+        {/* Scrollable Navigation Area - Fixed top padding issue */}
+        <div className="flex flex-col text-[var(--text-primary)] py-4 md:py-6 pb-28 gap-y-4 flex-1 min-h-0 px-2.5 md:px-4 overflow-y-auto custom-scrollbar">
           {sidebarLinks.map((section, i) => {
             const accountAllowed = !section.accountTypes || section.accountTypes.includes(userAccountType);
             const roleAllowed = !section.roles || section.roles.some((role) => userRoles.includes(role) || role === userAccountType);

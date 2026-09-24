@@ -14,11 +14,11 @@ const HomeLiveTicker = () => {
   ];
 
   return (
-    <div className="w-full bg-gradient-to-r from-emerald-900 via-[#0a3522] to-amber-900/90 text-amber-100 py-2 px-3 sm:px-6 rounded-2xl border border-amber-500/30 shadow-md flex items-center gap-3 overflow-hidden text-xs">
+    <div className="w-full bg-[#fbfaf6] dark:bg-[#101b15] text-stone-700 dark:text-stone-300 py-1.5 px-3 sm:px-4 rounded-xl border border-stone-200/80 dark:border-stone-800 shadow-2xs flex items-center gap-2.5 overflow-hidden text-xs">
       {/* Ticker Badge */}
-      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500 text-emerald-950 font-black tracking-wider uppercase text-[10px] shrink-0 shadow-sm">
-        <FiBell className="animate-bounce" size={12} />
-        <span>{isHindi ? "ताज़ा सूचना" : "Live Notice"}</span>
+      <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-[#14532d] text-white font-bold tracking-wide uppercase text-[10px] shrink-0">
+        <FiBell size={11} />
+        <span>{isHindi ? "सूचना" : "Notice"}</span>
       </div>
 
       {/* Marquee Content */}
@@ -26,7 +26,7 @@ const HomeLiveTicker = () => {
         <div className="inline-flex items-center gap-8 animate-marquee">
           {updates.concat(updates).map((upd, i) => (
             <span key={i} className="inline-flex items-center gap-2 font-medium text-[11px] sm:text-xs">
-              <span className="text-amber-400 font-bold">❖</span>
+              <span className="text-amber-600 dark:text-amber-400 font-bold">❖</span>
               <span>{isHindi ? upd.textHi : upd.textEn}</span>
             </span>
           ))}
@@ -36,9 +36,9 @@ const HomeLiveTicker = () => {
       {/* Quick Helpline CTA */}
       <a
         href="tel:+919926018058"
-        className="hidden md:inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold shrink-0 transition-colors"
+        className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 text-[11px] font-medium shrink-0 transition-colors border border-stone-200 dark:border-stone-700"
       >
-        <FiPhoneCall size={11} className="text-amber-300" />
+        <FiPhoneCall size={11} className="text-amber-600 dark:text-amber-400" />
         <span>9926018058</span>
       </a>
     </div>

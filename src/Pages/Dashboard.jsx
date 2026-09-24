@@ -25,8 +25,8 @@ const Dashboard = () => {
 
       <SideBar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
 
-      <div className='flex-1 h-full border-l border-[var(--border-subtle)] bg-[var(--bg)] overflow-y-auto custom-scrollbar'>
-        <div className='mx-auto px-3 sm:px-6 md:px-10 pt-16 md:pt-10 pb-16 max-w-7xl'>
+      <div className='flex-1 min-w-0 h-full border-l border-[var(--border-subtle)] bg-[var(--bg)] overflow-y-auto overflow-x-hidden custom-scrollbar'>
+        <div className='mx-auto px-3 sm:px-6 md:px-8 pt-14 md:pt-6 pb-16 max-w-7xl w-full min-w-0'>
           <Outlet/>
         </div>
       </div>

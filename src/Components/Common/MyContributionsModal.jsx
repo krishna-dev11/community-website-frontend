@@ -137,12 +137,40 @@ const MyContributionsModal = ({ isOpen, onClose }) => {
         theme: {
           color: "#10b981",
         },
-        handler: () => {
-          toast.success("Payment submitted. Your status will update shortly!");
-          fetchContributions();
+        handler: async (response) => {
+          const verifyToastId = toast.loading("Verifying payment with Samaj server...");
+          try {
+            const verifyRes = await apiConnector(
+              "POST",
+              paymentEndpoints.VERIFY_CONTRIBUTION_API(contribution._id),
+              {
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                amount: dueAmount,
+              },
+              { Authorization: `Bearer ${token}` }
+            );
+            toast.dismiss(verifyToastId);
+            if (verifyRes?.data?.success) {
+              toast.success("Contribution recorded and verified successfully!");
+              fetchContributions();
+            } else {
+              toast.error(verifyRes?.data?.message || "Verification failed");
+            }
+          } catch (vErr) {
+            toast.dismiss(verifyToastId);
+            console.error("Payment verification failed:", vErr);
+            toast.error(vErr?.response?.data?.message || "Verification failed on server");
+          } finally {
+            setPayingId(null);
+          }
         },
         modal: {
-          ondismiss: () => toast("Payment cancelled."),
+          ondismiss: () => {
+            setPayingId(null);
+            toast("Payment cancelled.");
+          },
         },
       });
 

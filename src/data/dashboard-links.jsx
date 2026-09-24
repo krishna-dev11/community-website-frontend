@@ -13,6 +13,18 @@ export const sidebarLinks = [
         icon: "FaUser",
       },
       {
+        name: "My Dues",
+        nameHi: "मासिक अंशदान (Dues)",
+        path: "/dashboard/my-dues",
+        icon: "FaFileInvoiceDollar",
+      },
+      {
+        name: "My Job Posts",
+        nameHi: "मेरे जॉब पोस्ट",
+        path: "/dashboard/my-jobs",
+        icon: "FaBriefcase",
+      },
+      {
         name: "Member Directory",
         nameHi: "सदस्य निर्देशिका",
         path: "/dashboard/directory",

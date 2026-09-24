@@ -16,6 +16,8 @@ import OpenRoute from "./Components/Core/Auth/OpenRoute";
 import Dashboard from "./Pages/Dashboard";
 import PrivateRoute from "./Components/Core/Auth/PrivateRoute";
 import MyProfile from "./Components/Core/DashBoard/RightPart/MyProfile";
+import MyDues from "./Components/Core/DashBoard/RightPart/MyDues";
+import MyJobPosts from "./Components/Core/DashBoard/RightPart/MyJobPosts";
 import SettingIndex from "./Components/Core/DashBoard/RightPart/Settings/SettingIndex";
 import MemberDirectory from "./Components/Core/DashBoard/RightPart/MemberDirectory";
 import AdminRegistrationQueue from "./Components/Core/DashBoard/RightPart/AdminRegistrationQueue";
@@ -55,7 +57,7 @@ function App() {
     <div className="min-h-screen w-full max-w-full overflow-x-hidden" style={{ background: "var(--bg)", color: "var(--text)" }}>
 
       <NavBar />
-      <div><AIGeminiChat /></div>
+      {/* <div><AIGeminiChat /></div> */}
 
       <Routes>
         <Route path="*" element={<NotFound />} />
@@ -186,6 +188,8 @@ function App() {
           }
         >
           <Route path="/dashboard/my-profile" element={<MyProfile />} />
+          <Route path="/dashboard/my-dues" element={<MyDues />} />
+          <Route path="/dashboard/my-jobs" element={<MyJobPosts />} />
           <Route path="/dashboard/directory" element={<MemberDirectory />} />
           <Route path="/dashboard/family" element={<FamilyHub />} />
           <Route path="/dashboard/community" element={<CommunityHub />} />

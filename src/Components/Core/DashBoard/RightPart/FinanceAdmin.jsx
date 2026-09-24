@@ -15,12 +15,13 @@ import { useSelector } from "react-redux";
 import { apiConnector } from "../../../../services/apiConnector";
 import { paymentEndpoints } from "../../../../services/apis";
 import FileUploadWithPreview from "../../../Common/FileUploadWithPreview";
+import MonthlyContributionsAdmin from "./MonthlyContributionsAdmin";
 
 // ─── Module navigation tabs ────────────────────────────────────────────────
 const tabs = [
   { key: "campaigns",     label: "Campaigns",     icon: FaDonate            },
   { key: "donations",     label: "Donations",     icon: FaRupeeSign         },
-  { key: "contributions", label: "Contributions", icon: FaFileInvoiceDollar },
+  { key: "contributions", label: "Monthly Contributions", icon: FaFileInvoiceDollar },
 ];
 
 // ─── Status configs per module ─────────────────────────────────────────────
@@ -672,137 +673,10 @@ const FinanceAdmin = () => {
             )}
 
             {/* ══════════════════════════════════════════════════════════════
-                CONTRIBUTIONS
+                CONTRIBUTIONS (MONTHLY SAMaj CONTRIBUTIONS MANAGEMENT)
             ══════════════════════════════════════════════════════════════ */}
             {activeTab === "contributions" && (
-              <div className="grid gap-5">
-                {/* Generation & Batch Operation Bar */}
-                <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
-                  <form onSubmit={generateContributions} className="grid h-fit gap-3.5 rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-5">
-                    <div className="flex items-center gap-2">
-                      <FaHandHoldingUsd className="text-emerald-400" size={14} />
-                      <h2 className="text-sm font-bold text-[var(--text-primary)]">Generate Monthly Contribution Dues</h2>
-                    </div>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <Field label="Month (1-12)"><input type="number" min="1" max="12" className={inputClass} value={generateForm.month} onChange={(e) => setGenerateForm((cur) => ({ ...cur, month: e.target.value }))} required /></Field>
-                      <Field label="Year"><input type="number" className={inputClass} value={generateForm.year} onChange={(e) => setGenerateForm((cur) => ({ ...cur, year: e.target.value }))} required /></Field>
-                      <Field label="Amount Per Member"><input type="number" min="1" className={inputClass} value={generateForm.expectedAmount} onChange={(e) => setGenerateForm((cur) => ({ ...cur, expectedAmount: e.target.value }))} placeholder="100" required /></Field>
-                      <Field label="Payment Due Date"><input type="date" className={inputClass} value={generateForm.dueDate} onChange={(e) => setGenerateForm((cur) => ({ ...cur, dueDate: e.target.value }))} required /></Field>
-                    </div>
-                    <Button icon={FaPaperPlane} tone="success" disabled={busyId === "generate"}>Generate Dues Batch</Button>
-                  </form>
-
-                  <div className="flex flex-col justify-between rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-5">
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <FaMoneyBillWave className="text-amber-400" size={14} />
-                        <h2 className="text-sm font-bold text-[var(--text-primary)]">Overdue Scheduler & Batch Actions</h2>
-                      </div>
-                      <p className="text-xs text-gray-400 leading-relaxed">
-                        Scan all past-due pending contribution requests across the community and automatically transition unpaid records to <span className="font-semibold text-red-400">OVERDUE</span> status.
-                      </p>
-                    </div>
-                    <div className="mt-4 pt-4 border-t border-white/10 flex justify-end">
-                      <Button tone="warning" onClick={markOverdue} disabled={busyId === "overdue"}>
-                        {busyId === "overdue" ? "Checking..." : "Trigger Mark Overdue Scan"}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Status Tabs + Search + Cards */}
-                <section className="grid gap-3">
-                  <SummaryCards data={contributions} config={MODULE_STATUS_CONFIG.contributions} />
-                  <div className="flex flex-col gap-2">
-                    <StatusTabBar
-                      data={contributions}
-                      config={MODULE_STATUS_CONFIG.contributions}
-                      activeKey={statusFilters.contributions}
-                      onChange={(k) => setFilter("contributions", k)}
-                    />
-                    <SearchBar
-                      value={moduleSearch.contributions}
-                      onChange={(v) => setSearch("contributions", v)}
-                      placeholder="Search member name, family, month/year..."
-                    />
-                  </div>
-
-                  {filteredContributions.length === 0 ? (
-                    <ModuleEmptyState statusKey={statusFilters.contributions} moduleLabel="member contributions" />
-                  ) : (
-                    <div className="grid gap-3">
-                      {filteredContributions.map((contribution) => {
-                        const remaining = Number(contribution.expectedAmount || 0) - Number(contribution.paidAmount || 0);
-                        const draft = paymentDrafts[contribution._id] || {};
-                        const isActionable = ["PENDING", "PARTIAL", "OVERDUE"].includes(contribution.status);
-
-                        return (
-                          <article key={contribution._id} className={`rounded-2xl border p-4 sm:p-5 transition ${!isActionable ? "border-white/5 bg-white/[0.01] opacity-80" : "border-white/10 bg-white/[0.02]"}`}>
-                            <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-                              <div>
-                                <div className="flex flex-wrap items-center gap-2 mb-1">
-                                  <h3 className="font-bold text-base text-[var(--text-primary)]">
-                                    {contribution.member?.firstName} {contribution.member?.lastName}
-                                    <span className="text-xs font-normal text-gray-400 ml-2">
-                                      · {contribution.month}/{contribution.year} Period
-                                    </span>
-                                  </h3>
-                                  <StatusBadge value={contribution.status} />
-                                </div>
-                                <p className="text-xs text-[var(--text-secondary)]">
-                                  Paid <span className="text-emerald-400 font-bold">{money(contribution.paidAmount)}</span> of {money(contribution.expectedAmount)} · Due {formatDate(contribution.dueDate)}
-                                </p>
-                                <p className="mt-1 text-xs text-gray-500">
-                                  Family: {contribution.family?.familyName || "Direct Member"} · Contact: {contribution.member?.email || "No email"}
-                                </p>
-                              </div>
-                            </div>
-
-                            {/* Context-aware: only show payment recording on actionable records */}
-                            {isActionable && (
-                              <div className="mt-4 grid gap-2.5 border-t border-white/10 pt-4 lg:grid-cols-[140px_160px_1fr_auto_auto]">
-                                <input
-                                  type="number"
-                                  min="1"
-                                  max={remaining > 0 ? remaining : undefined}
-                                  className={inputClass}
-                                  value={draft.amount || ""}
-                                  onChange={(e) => setPaymentDrafts((c) => ({ ...c, [contribution._id]: { ...c[contribution._id], amount: e.target.value } }))}
-                                  placeholder={remaining > 0 ? `Amount (${remaining})` : "Amount"}
-                                />
-                                <select
-                                  className={inputClass}
-                                  value={draft.mode || "CASH"}
-                                  onChange={(e) => setPaymentDrafts((c) => ({ ...c, [contribution._id]: { ...c[contribution._id], mode: e.target.value } }))}
-                                >
-                                  <option value="CASH">Cash</option>
-                                  <option value="BANK_TRANSFER">Bank Transfer / UPI</option>
-                                  <option value="CHEQUE">Cheque</option>
-                                  <option value="OTHER">Other</option>
-                                </select>
-                                <input
-                                  className={inputClass}
-                                  value={draft.note || ""}
-                                  onChange={(e) => setPaymentDrafts((c) => ({ ...c, [contribution._id]: { ...c[contribution._id], note: e.target.value } }))}
-                                  placeholder="Receipt note / Waiver reason"
-                                />
-                                <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-2 lg:contents">
-                                  <Button tone="success" onClick={() => recordOfflinePayment(contribution)} disabled={busyId === contribution._id} className="w-full sm:w-auto">
-                                    Record
-                                  </Button>
-                                  <Button tone="warning" onClick={() => waiveContribution(contribution)} disabled={busyId === contribution._id} className="w-full sm:w-auto">
-                                    Waive
-                                  </Button>
-                                </div>
-                              </div>
-                            )}
-                          </article>
-                        );
-                      })}
-                    </div>
-                  )}
-                </section>
-              </div>
+              <MonthlyContributionsAdmin />
             )}
           </>
         )}

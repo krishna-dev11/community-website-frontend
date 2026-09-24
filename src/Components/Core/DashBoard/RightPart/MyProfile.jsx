@@ -107,8 +107,8 @@ const MyProfile = () => {
               <span>Digital ID</span>
             </button>
             <button 
-              onClick={() => setIsContribModalOpen(true)}
-              className="btn-secondary !py-2.5 !px-4 !text-xs justify-center"
+              onClick={() => navigate("/dashboard/my-dues")}
+              className="btn-secondary !py-2.5 !px-4 !text-xs justify-center cursor-pointer"
             >
               <FaRupeeSign size={12} />
               <span>My Dues</span>

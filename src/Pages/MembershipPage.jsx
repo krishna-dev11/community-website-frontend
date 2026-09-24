@@ -45,52 +45,125 @@ const MembershipPage = () => {
       </section>
 
       {/* 1. Mandatory 3 Documents Grid (Section 14) */}
-      <section className="py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-[var(--border-subtle)]">
-        <div className="text-center max-w-3xl mx-auto mb-10">
-          <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 block mb-1">
-            Section 14 • Official Verification
-          </span>
-          <h2 className="text-xl sm:text-3xl font-black text-[var(--text-primary)]">
-            {isHindi ? "अनिवार्य 3 दस्तावेज (Mandatory Documents)" : "3 Mandatory Documents Required"}
-          </h2>
-          <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-2">
-            {isHindi
-              ? "सदस्यता सत्यापन हेतु आवेदक द्वारा निम्नलिखित तीनों प्रमाण पत्र प्रस्तुत करना अनिवार्य है:"
-              : "For official membership verification, applicant must submit all three required proofs:"}
-          </p>
+<section className="py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-[var(--border-subtle)]">
+  <div className="text-center max-w-3xl mx-auto mb-10">
+    <h2 className="text-xl sm:text-3xl font-black text-[var(--text-primary)]">
+      {isHindi
+        ? "सदस्यता सत्यापन हेतु आवश्यक दस्तावेज"
+        : "Documents Required for Membership Verification"}
+    </h2>
+
+    <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-2">
+      {isHindi
+        ? "सदस्य पंजीकरण के समय पहचान एवं हल्बा जाति की पुष्टि हेतु निम्नलिखित दस्तावेज प्रस्तुत करना आवश्यक है:"
+        : "The following documents are required during member registration for identity and Halba community verification:"}
+    </p>
+  </div>
+
+  <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+
+    {/* Identity Proof */}
+    <div className="ka-card p-6 rounded-3xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)]">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="h-10 w-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-500 font-bold">
+          01
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6">
-          {(isHindi ? mem.mandatoryDocsHi : mem.mandatoryDocsEn).map((doc) => (
-            <div key={doc.id} className="ka-card p-6 rounded-3xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] space-y-3">
-              <div className="h-10 w-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold">
-                0{doc.id}
-              </div>
-              <h3 className="font-bold text-sm text-[var(--text-primary)]">
-                {doc.title}
-              </h3>
-              <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                {doc.desc}
-              </p>
-              {doc.id === 3 && (
-                <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-[11px] text-amber-300 font-medium">
-                  {isHindi
-                    ? "जाति प्रमाण के विकल्प: आधार कार्ड, हल्बा जाति प्रमाण-पत्र, SLC, जिला समिति द्वारा जारी प्रमाण पत्र, अथवा स्टांप पेपर पर स्व-घोषणा।"
-                    : "Accepted Caste Proofs: Aadhaar Card, Halba Caste Certificate, SLC, District Samiti certificate, or Stamp paper self-declaration."}
-                </div>
-              )}
-            </div>
-          ))}
+        <div>
+          <h3 className="font-bold text-sm sm:text-base text-[var(--text-primary)]">
+            {isHindi
+              ? "पहचान प्रमाण"
+              : "Identity Proof"}
+          </h3>
+
+          <p className="text-[11px] text-[var(--text-secondary)]">
+            {isHindi
+              ? "Identity Verification"
+              : "For Identity Verification"}
+          </p>
         </div>
-      </section>
+      </div>
+
+      <div className="p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/20">
+        <p className="text-sm font-semibold text-[var(--text-primary)]">
+          {isHindi
+            ? "✓ आधार कार्ड"
+            : "✓ Aadhaar Card"}
+        </p>
+      </div>
+    </div>
+
+    {/* Caste Proof */}
+    <div className="ka-card p-6 rounded-3xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)]">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="h-10 w-10 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-500 font-bold">
+          02
+        </div>
+
+        <div>
+          <h3 className="font-bold text-sm sm:text-base text-[var(--text-primary)]">
+            {isHindi
+              ? "हल्बा जाति का प्रमाण"
+              : "Halba Caste Proof"}
+          </h3>
+
+          <p className="text-[11px] text-[var(--text-secondary)]">
+            {isHindi
+              ? "निम्न में से कोई एक प्रमाण"
+              : "Any one of the following"}
+          </p>
+        </div>
+      </div>
+
+      <div className="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20">
+        <p className="text-xs sm:text-sm font-semibold text-[var(--text-primary)] mb-3">
+          {isHindi
+            ? "निम्न में से कोई एक दस्तावेज स्वीकार किया जाएगा:"
+            : "Any one of the following documents may be submitted:"}
+        </p>
+
+        <ul className="space-y-2 text-xs text-[var(--text-secondary)] leading-relaxed">
+          {isHindi ? (
+            <>
+              <li>• हल्बा जाति प्रमाण-पत्र (Caste Certificate)</li>
+              <li>• SLC (School Leaving Certificate)</li>
+              <li>• किसी भी जिले की समिति द्वारा जारी हल्बा जाति प्रमाण-पत्र</li>
+              <li>• स्टांप पेपर पर स्वयं का घोषणा-पत्र</li>
+            </>
+          ) : (
+            <>
+              <li>• Halba Caste Certificate</li>
+              <li>• SLC (School Leaving Certificate)</li>
+              <li>• Halba caste proof issued by a Samiti of any district</li>
+              <li>• Self-declaration on stamp paper</li>
+            </>
+          )}
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+  {/* Important Note */}
+  <div className="max-w-5xl mx-auto mt-6">
+    <div className="p-4 rounded-2xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)]">
+      <p className="text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed">
+        <span className="font-bold text-[var(--text-primary)]">
+          {isHindi ? "महत्वपूर्ण: " : "Important: "}
+        </span>
+
+        {isHindi
+          ? "सदस्यता सत्यापन के लिए आधार कार्ड एवं हल्बा जाति से संबंधित प्रमाण प्रस्तुत करना आवश्यक है।"
+          : "For membership verification, Aadhaar Card and a valid Halba community/caste proof are required."}
+      </p>
+    </div>
+  </div>
+</section>
 
       {/* 2. Donation & Contribution Rules (Section 15) */}
       <section className="py-12 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-[var(--border-subtle)]">
         <div className="grid lg:grid-cols-12 gap-8 items-center">
           <div className="lg:col-span-7 space-y-4">
-            <span className="text-xs font-bold uppercase tracking-wider text-amber-400 block">
-              Section 15 • Contribution & Seva Fund
-            </span>
             <h2 className="text-xl sm:text-3xl font-black text-[var(--text-primary)]">
               {isHindi ? "मासिक अंशदान एवं सहयोग नियम" : "Contribution Rules & Community Fund"}
             </h2>

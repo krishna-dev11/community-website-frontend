@@ -1,215 +1,123 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import {
-  FiArrowRight,
-  FiClock,
-  FiMapPin,
-  FiShield,
-  FiAward,
-  FiUsers,
-  FiSun,
-} from "react-icons/fi";
-import { GiTempleDoor } from "react-icons/gi";
+import { FiArrowRight, FiClock, FiMapPin, FiCheckCircle } from "react-icons/fi";
 import { useLanguage } from "../../../i18n/LanguageContext";
 
 const HomeHero = () => {
   const { isHindi } = useLanguage();
 
-  const heritageMilestones = [
-    {
-      year: "1979",
-      titleHi: "समाज की प्रारंभिक यात्रा",
-      titleEn: "Initial Journey",
-      subHi: "14 मार्च 1979 प्रथम अनौपचारिक बैठक",
-      subEn: "14 March 1979 First Meeting",
-    },
-    {
-      year: "1980",
-      titleHi: "इंदौर समिति से संबद्धता",
-      titleEn: "Indore Affiliation",
-      subHi: "25 वर्ष शाखा रूप में निरंतर समाज सेवा",
-      subEn: "Active Service as Branch Unit",
-    },
-    {
-      year: "2004",
-      titleHi: "स्वतंत्र समिति",
-      titleEn: "Independent Registration",
-      subHi: "10 दिसंबर 2004 अधिकृत पंजीयन",
-      subEn: "Registered on 10 Dec 2004",
-    },
-    {
-      year: "2013",
-      titleHi: "धर्मशाला एवं मंदिर प्राण-प्रतिष्ठा",
-      titleEn: "Dharamshala & Mandir",
-      subHi: "27 मई 2013 पावन लोकार्पण",
-      subEn: "Consecrated on 27 May 2013",
-    },
-  ];
-
   return (
-    <section className="relative w-full overflow-hidden rounded-3xl border-2 border-amber-500/30 bg-gradient-to-br from-[#062417] via-[#041d13] to-[#02100a] text-white shadow-2xl">
-      {/* Authentic Tribal Heritage Backdrop with Dark Classic Gradient */}
-      <div className="absolute inset-0 opacity-15 mix-blend-luminosity pointer-events-none overflow-hidden">
-        <img
-          src="/images/tribal_heritage.jpg"
-          alt="Tribal Community Art"
-          className="w-full h-full object-cover scale-105 animate-pulse duration-10000"
-        />
-      </div>
+    <section className="relative w-full rounded-2xl sm:rounded-3xl border border-stone-200/80 dark:border-stone-800 bg-[#FCFBF7] dark:bg-[#0c1611] text-stone-900 dark:text-stone-100 shadow-sm overflow-hidden border-t-4 border-t-[#14532d] dark:border-t-emerald-600">
+      <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12 py-8 sm:py-12 lg:py-14">
+        {/* Main Grid: Left Content, Right Authentic Image Card */}
+        <div className="grid lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+          
+          {/* LEFT SIDE — MAIN CONTENT */}
+          <div className="lg:col-span-7 space-y-5 text-left">
+            {/* Community Identification Tag */}
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-[#14532d]/10 dark:bg-emerald-950/60 border border-[#14532d]/20 dark:border-emerald-800/40 text-[#14532d] dark:text-emerald-300 text-xs sm:text-sm font-semibold">
+              <span className="text-amber-600 dark:text-amber-400">❖</span>
+              <span>Adivasi Halba/Halbi Samaj Kalyan Samiti, Ujjain</span>
+            </div>
 
-      {/* Decorative Traditional Indian Border Motif at Top */}
-      <div className="h-1.5 w-full bg-gradient-to-r from-amber-400 via-emerald-400 to-amber-500 shadow-sm" />
-
-      {/* Ambient Spiritual Lighting */}
-      <div className="absolute -top-24 -right-24 w-96 h-96 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
-
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 pt-8 sm:pt-12 pb-10 sm:pb-12">
-        {/* Top Auspicious Cultural Motto */}
-        <div className="flex items-center justify-center sm:justify-start gap-2 mb-6">
-          <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-500/15 px-4 py-1.5 text-xs sm:text-sm font-bold tracking-wide text-amber-300 shadow-sm">
-            <span className="text-amber-400">❖</span>
-            <span>Adivasi Halba/Halbi Samaj Kalyan Samiti, Ujjain</span>
-            <span className="text-amber-400">❖</span>
-          </div>
-        </div>
-
-        {/* Main Grid: Left Content, Right Visual Heritage Card */}
-        <div className="grid lg:grid-cols-12 gap-8 lg:gap-10 items-center">
-          <div className="lg:col-span-7 space-y-5 text-center sm:text-left">
-            {/* Tagline Heading */}
-            <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-5xl font-black tracking-tight leading-[1.25] text-white">
+            {/* Main Tagline */}
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-[2.6rem] font-extrabold tracking-tight text-[#0f2e1e] dark:text-stone-50 leading-[1.3] sm:leading-[1.32]">
               “गर्व से कहो हम आदिवासी हैं,
               <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-200 to-emerald-300">
+              <span className="text-[#14532d] dark:text-emerald-400">
                 भारत के मूल निवासी हैं”
               </span>
             </h1>
 
-            {/* Supporting Description */}
-            <p className="text-xs sm:text-sm md:text-base text-emerald-100/90 leading-relaxed font-normal max-w-2xl">
+            {/* Short Supporting Description */}
+            <p className="text-sm sm:text-base text-stone-600 dark:text-stone-300 leading-relaxed font-normal max-w-xl">
               {isHindi
-                ? "सामाजिक उत्थान, शिक्षा, स्वास्थ्य, सांस्कृतिक संरक्षण और समाज में एकता एवं भाईचारे के लिए समर्पित।"
+                ? "समाजिक उत्थान, शिक्षा, स्वास्थ्य, सांस्कृतिक संरक्षण और समाज में एकता एवं भाईचारे के लिए समर्पित।"
                 : "Dedicated to social upliftment, education, healthcare, cultural preservation, and fostering unity and brotherhood within the community."}
             </p>
 
-            {/* Classic Badges */}
-            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5 pt-1 text-[11px] font-bold">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-950/70 border border-emerald-500/40 text-emerald-300">
-                <FiShield className="text-amber-400" size={13} />
-                <span>संवैधानिक ST दर्जा</span>
+            {/* Simple Trust Points */}
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 pt-1 text-xs font-medium text-stone-600 dark:text-stone-400">
+              <span className="inline-flex items-center gap-1.5">
+                <FiCheckCircle className="text-[#14532d] dark:text-emerald-400 shrink-0" size={14} />
+                <span>{isHindi ? "संवैधानिक ST दर्जा" : "Constitutional ST Status"}</span>
               </span>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-950/70 border border-emerald-500/40 text-emerald-300">
-                <FiClock className="text-amber-400" size={13} />
-                <span>1979 से अनवरत सेवा</span>
+              <span className="inline-flex items-center gap-1.5">
+                <FiCheckCircle className="text-[#14532d] dark:text-emerald-400 shrink-0" size={14} />
+                <span>{isHindi ? "1979 से निरंतर सेवारत" : "Serving Continuously Since 1979"}</span>
               </span>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-950/70 border border-emerald-500/40 text-emerald-300">
-                <GiTempleDoor className="text-amber-400" size={13} />
-                <span>विट्ठल मंदिर व धर्मशाला धाम</span>
+              <span className="inline-flex items-center gap-1.5">
+                <FiCheckCircle className="text-[#14532d] dark:text-emerald-400 shrink-0" size={14} />
+                <span>{isHindi ? "उज्जैन केंद्रीय मुख्यालय" : "Central HQ, Ujjain"}</span>
               </span>
             </div>
 
-            {/* CTAs */}
-            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3.5 pt-3">
+            {/* Primary Actions: 3 Simple Rounded Buttons */}
+            <div className="flex flex-wrap items-center gap-3 pt-3">
               <Link
                 to="/about"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white text-xs sm:text-sm font-bold uppercase tracking-wider shadow-lg shadow-emerald-950/50 hover:scale-[1.02] active:scale-[0.98] transition-all border border-emerald-400/30"
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 sm:px-6 sm:py-3 rounded-lg bg-[#14532d] hover:bg-[#0f3f22] dark:bg-emerald-700 dark:hover:bg-emerald-600 text-white text-xs sm:text-sm font-semibold shadow-xs transition-colors"
               >
                 <span>{isHindi ? "हमारे बारे में" : "About Us"}</span>
-                <FiArrowRight size={16} />
+                <FiArrowRight size={15} />
               </Link>
 
               <Link
                 to="/history"
-                className="inline-flex items-center gap-2 px-5 py-3 rounded-xl border border-amber-400/40 hover:border-amber-300 bg-amber-500/10 hover:bg-amber-500/20 text-amber-200 text-xs sm:text-sm font-bold uppercase tracking-wider hover:scale-[1.02] active:scale-[0.98] transition-all"
+                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:px-5 sm:py-3 rounded-lg border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900/60 hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-800 dark:text-stone-200 text-xs sm:text-sm font-semibold shadow-xs transition-colors"
               >
-                <FiClock size={15} className="text-amber-300" />
+                <FiClock size={14} className="text-stone-500 dark:text-stone-400" />
                 <span>{isHindi ? "हमारा इतिहास" : "Our History"}</span>
               </Link>
 
               <Link
                 to="/dharamshala"
-                className="inline-flex items-center gap-2 px-5 py-3 rounded-xl border border-emerald-400/30 hover:border-emerald-400/50 bg-emerald-950/60 hover:bg-emerald-900/60 text-emerald-200 text-xs sm:text-sm font-bold uppercase tracking-wider transition-all"
+                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:px-5 sm:py-3 rounded-lg border border-amber-600/30 dark:border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 dark:text-amber-300 text-xs sm:text-sm font-semibold shadow-xs transition-colors"
               >
-                <FiMapPin size={15} className="text-emerald-400" />
+                <FiMapPin size={14} className="text-amber-700 dark:text-amber-400" />
                 <span>{isHindi ? "धर्मशाला" : "Dharamshala"}</span>
               </Link>
             </div>
           </div>
 
-          {/* Right Visual Heritage Card with Vitthal Mandir Image & Emblem */}
-          <div className="lg:col-span-5 flex justify-center">
-            <div className="group relative w-full max-w-sm rounded-3xl border-2 border-amber-500/30 bg-gradient-to-b from-[#0e3524] to-[#082015] p-5 shadow-2xl overflow-hidden hover:border-amber-400/50 transition-all duration-500">
-              {/* Image Preview with Classic Ornate Frame */}
-              <div className="relative aspect-[16/10] rounded-2xl overflow-hidden border border-amber-500/20 bg-black shadow-inner">
+          {/* RIGHT SIDE — IMAGE & CREDENTIALS */}
+          <div className="lg:col-span-5 flex justify-center lg:justify-end">
+            <div className="w-full max-w-md rounded-xl sm:rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-[#111e17] p-3 sm:p-4 shadow-sm">
+              {/* Photo Card */}
+              <div className="relative aspect-[16/11] rounded-lg sm:rounded-xl overflow-hidden border border-stone-100 dark:border-stone-800 bg-stone-100 dark:bg-stone-900">
                 <img
                   src="/images/vitthal_mandir.jpg"
-                  alt="Shri Vitthal Rukmani Mandir Ujjain"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  alt="श्री विट्ठल-रुक्मिणी मंदिर, उज्जैन"
+                  className="w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                <div className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full bg-black/70 backdrop-blur-md border border-amber-400/30 text-[10px] font-bold text-amber-300 flex items-center gap-1.5">
-                  <GiTempleDoor size={12} />
-                  <span>श्री विट्ठल-रुक्मिणी मंदिर, उज्जैन</span>
-                </div>
-                <div className="absolute bottom-2 inset-x-3 text-left">
-                  <span className="text-[10px] text-amber-200/90 font-medium">
-                    धर्मशाला परिसर • नरसिंह घाट रोड, उज्जैन
-                  </span>
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent px-3.5 py-2.5 text-white">
+                  <p className="text-xs sm:text-sm font-bold">श्री विट्ठल-रुक्मिणी मंदिर एवं धर्मशाला धाम</p>
+                  <p className="text-[11px] text-stone-200/90 font-medium">नरसिंह घाट रोड, उज्जैन (म.प्र.)</p>
                 </div>
               </div>
 
-              {/* Emblem & Registered Credentials */}
-              <div className="mt-4 pt-3 border-t border-amber-500/20 flex items-center gap-3.5">
-                <div className="w-14 h-14 rounded-2xl bg-amber-500/15 border border-amber-400/30 flex items-center justify-center p-2 shrink-0">
-                  <img
-                    src="/logo.png"
-                    alt="Samiti Logo"
-                    className="w-full h-full object-contain filter drop-shadow"
-                    onError={(e) => {
-                      e.currentTarget.style.display = "none";
-                    }}
-                  />
+              {/* Organization Details */}
+              <div className="mt-3.5 pt-3 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between text-xs">
+                <div className="space-y-0.5">
+                  <p className="text-[11px] font-bold text-[#14532d] dark:text-emerald-400">
+                    {isHindi ? "पंजीकृत सामाजिक संस्था" : "Registered Community Trust"}
+                  </p>
+                  <p className="text-[11px] text-stone-600 dark:text-stone-400">
+                    {isHindi ? "उज्जैन, मध्यप्रदेश" : "Ujjain, Madhya Pradesh"}
+                  </p>
                 </div>
-                <div className="min-w-0">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-amber-400 block">
-                    {isHindi ? "पंजीकृत सामाजिक संस्था" : "Registered Socio-Cultural Body"}
-                  </span>
-                  <h4 className="text-sm font-black text-white truncate">
-                    {isHindi ? "उज्जैन केंद्रीय मुख्यालय" : "Central Headquarters, Ujjain"}
-                  </h4>
-                  <p className="text-[11px] text-emerald-200/75 mt-0.5">
-                    {isHindi
-                      ? "पंजीयन: 10.12.2004 • स्थापना: 1979"
-                      : "Reg: 10.12.2004 • Estd. 1979"}
+                <div className="text-right space-y-0.5">
+                  <p className="text-[10px] text-stone-500 dark:text-stone-400 uppercase tracking-wide">
+                    {isHindi ? "पंजीकरण एवं स्थापना" : "Reg & Estd."}
+                  </p>
+                  <p className="text-[11px] font-semibold text-stone-800 dark:text-stone-200">
+                    10.12.2004 • Estd. 1979
                   </p>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Heritage Trust / Legacy Stats Row (4 Milestones) with Classic Styling */}
-        <div className="mt-8 sm:mt-10 pt-6 border-t border-amber-500/20 grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-          {heritageMilestones.map((item, idx) => (
-            <div
-              key={idx}
-              className="p-3.5 sm:p-4 rounded-2xl border border-amber-500/20 bg-black/30 backdrop-blur-md hover:bg-black/40 hover:border-amber-400/40 transition-all group"
-            >
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-xl sm:text-2xl font-black text-amber-300 group-hover:scale-105 transition-transform">
-                  {item.year}
-                </span>
-                <span className="text-amber-400/50 text-xs">❖</span>
-              </div>
-              <h4 className="text-xs sm:text-sm font-bold text-white mt-1 leading-snug">
-                {isHindi ? item.titleHi : item.titleEn}
-              </h4>
-              <p className="text-[10px] sm:text-[11px] text-emerald-100/75 mt-0.5 leading-tight font-normal">
-                {isHindi ? item.subHi : item.subEn}
-              </p>
-            </div>
-          ))}
         </div>
       </div>
     </section>

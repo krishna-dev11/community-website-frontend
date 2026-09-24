@@ -16,7 +16,7 @@ import {
   FaTimes,
   FaGlobe,
 } from "react-icons/fa";
-import { FiX, FiFileText, FiEye, FiSearch, FiCheckCircle, FiClock } from "react-icons/fi";
+import { FiX, FiFileText, FiEye, FiSearch, FiCheckCircle, FiClock, FiDownload } from "react-icons/fi";
 import { useSelector } from "react-redux";
 import { apiConnector } from "../../../../services/apiConnector";
 import { communityEndpoints } from "../../../../services/apis";
@@ -169,6 +169,21 @@ const StatusBadge = ({ value }) => {
 const formatDate = (value) => {
   if (!value) return "Not set";
   return new Date(value).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+};
+
+const formatFileSize = (bytes) => {
+  if (!bytes) return "Size not available";
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+};
+
+const documentTypeLabel = (doc = {}) => {
+  const value = `${doc.mimeType || ""} ${doc.name || ""}`.toLowerCase();
+  if (value.includes("pdf")) return "PDF";
+  if (value.includes("webp")) return "WEBP image";
+  if (value.includes("png")) return "PNG image";
+  if (value.includes("jpg") || value.includes("jpeg")) return "JPEG image";
+  return doc.mimeType || "Document";
 };
 
 // ─── Summary stat cards ──────────────────────────────────────────────────────
@@ -585,6 +600,44 @@ const CommunityAdmin = () => {
   };
 
   // ── Poll voters filter (unchanged) ────────────────────────────────────────
+  const fetchShradhanjaliDocument = async (item, { download = false } = {}) => {
+    const response = await apiConnector(
+      "GET",
+      communityEndpoints.SHRADHANJALI_SUPPORTING_DOCUMENT_API(item._id),
+      null,
+      authConfig,
+      download ? { download: "true" } : undefined
+    );
+    return response.data?.data;
+  };
+
+  const viewShradhanjaliDocument = async (item) => {
+    try {
+      const data = await fetchShradhanjaliDocument(item);
+      if (!data?.signedUrl) throw new Error("Missing document URL");
+      setViewingDoc({
+        url: data.signedUrl,
+        title: `${item.personName} - Supporting Document`,
+        sourceItem: item,
+      });
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Unable to open supporting document");
+    }
+  };
+
+  const downloadShradhanjaliDocument = async (item) => {
+    const tab = window.open("", "_blank", "noopener,noreferrer");
+    try {
+      const data = await fetchShradhanjaliDocument(item, { download: true });
+      if (!data?.signedUrl) throw new Error("Missing document URL");
+      if (tab) tab.location.href = data.signedUrl;
+      else window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      if (tab) tab.close();
+      toast.error(err.response?.data?.message || "Unable to download supporting document");
+    }
+  };
+
   const filteredPollVoters = (pollResults?.voters || []).filter((voter) => {
     const selectedLabels = (voter.selectedOptions || []).map((o) => o.label);
     const matchesOption  = pollResultFilter === "ALL" || selectedLabels.includes(pollResultFilter);
@@ -689,7 +742,7 @@ const CommunityAdmin = () => {
               {/* ════════════════════════════════════════════════════════════
                   ISSUES
               ════════════════════════════════════════════════════════════ */}
-              {activeTab === "issues" && (
+{activeTab === "issues" && (
                 <section className="grid gap-4">
                   <SummaryCards data={issues} config={MODULE_STATUS_CONFIG.issues} />
 
@@ -727,7 +780,16 @@ const CommunityAdmin = () => {
                                   </h2>
                                   <StatusBadge value={issue.status} />
                                 </div>
-                                <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">{issue.description}</p>
+                                {/* line-clamp-2 hata diya hai taaki description poora dikhe */}
+                                <p className="text-xs text-gray-400 leading-relaxed break-words">{issue.description}</p>
+                                
+                                {/* Agar rejection ya koi special reason hai toh use yahan poora dikhane ke liye */}
+                                {issue.reason && (
+                                  <p className="mt-1.5 text-xs text-red-400 bg-red-500/10 p-2 rounded-lg border border-red-500/20">
+                                    <strong className="font-semibold">Reason:</strong> {issue.reason}
+                                  </p>
+                                )}
+
                                 <p className="mt-1 text-[11px] text-gray-600">
                                   {issue.category || "General"} · {issue.priority} · {formatDate(issue.createdAt)}
                                 </p>
@@ -1122,9 +1184,8 @@ const CommunityAdmin = () => {
                           <article key={achievement._id} className={`rounded-2xl border p-5 transition ${isDone ? "border-white/5 bg-white/[0.01] opacity-75" : "border-white/10 bg-white/[0.02]"}`}>
                             <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
                               {photoUrl && (
-                                <div className="relative w-16 h-24 shrink-0 overflow-hidden rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] shadow-md">
-                                  <img src={photoUrl} alt={achievement.title} className="h-full w-full object-cover" />
-                                  <span className="absolute bottom-1 right-1 rounded bg-black/70 px-1 py-0.5 text-[8px] font-bold text-white uppercase">9:16</span>
+                                <div className="relative flex aspect-[4/5] w-full shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-2 shadow-md sm:w-24">
+                                  <img src={photoUrl} alt={achievement.title} className="h-full w-full object-contain" />
                                 </div>
                               )}
                               <div className="min-w-0 flex-1">
@@ -1199,6 +1260,7 @@ const CommunityAdmin = () => {
                     <div className="grid gap-3">
                       {filteredShradhanjalis.map((item) => {
                         const isDone = DONE_STATUSES.has(item.status);
+                        const supportingDocument = item.supportingDocument;
                         return (
                           <article key={item._id} className={`rounded-2xl border p-5 transition ${isDone ? "border-white/5 bg-white/[0.01] opacity-75" : "border-white/10 bg-white/[0.02]"}`}>
                             <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
@@ -1212,6 +1274,31 @@ const CommunityAdmin = () => {
                                 </div>
                                 <p className="text-xs text-gray-500">Passed on {formatDate(item.dateOfPassing)}</p>
                                 <p className="mt-1 line-clamp-2 text-xs text-gray-600">{item.message}</p>
+                                <div className="mt-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)]/60 p-3">
+                                  {supportingDocument?.publicId || supportingDocument?.url ? (
+                                    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                                      <div className="min-w-0">
+                                        <p className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[var(--text-primary)]">
+                                          <FiFileText size={14} />
+                                          <span className="truncate">{supportingDocument.name || "Supporting Document"}</span>
+                                        </p>
+                                        <p className="mt-1 text-[11px] text-[var(--text-muted)]">
+                                          {documentTypeLabel(supportingDocument)} · {formatFileSize(supportingDocument.size)} · Uploaded {formatDate(supportingDocument.uploadedAt || item.createdAt)}
+                                        </p>
+                                      </div>
+                                      <div className="flex flex-wrap gap-2">
+                                        <Button icon={FiEye} tone="neutral" onClick={() => viewShradhanjaliDocument(item)}>
+                                          View Supporting Document
+                                        </Button>
+                                        <Button icon={FiDownload} tone="neutral" onClick={() => downloadShradhanjaliDocument(item)}>
+                                          Download Document
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <p className="text-xs font-semibold text-[var(--text-muted)]">Supporting document not available</p>
+                                  )}
+                                </div>
                               </div>
                             </div>
 
@@ -1383,6 +1470,7 @@ const CommunityAdmin = () => {
         onClose={() => setViewingDoc(null)}
         url={viewingDoc?.url}
         title={viewingDoc?.title}
+        onDownload={viewingDoc?.sourceItem ? () => downloadShradhanjaliDocument(viewingDoc.sourceItem) : undefined}
       />
     </>
   );

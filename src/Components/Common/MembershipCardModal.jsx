@@ -9,22 +9,20 @@ import {
   FiPrinter,
   FiShield,
   FiCheckCircle,
-  FiUserCheck,
 } from "react-icons/fi";
-import QRCode from "react-qr-code";
 import { jsPDF } from "jspdf";
 import toast from "react-hot-toast";
 
 export const generateCardImage = async (cardData, verificationUrl, formattedMemberId) => {
   const canvas = document.createElement("canvas");
   const width = 1000;
-  const height = 580;
+  const height = 620;
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext("2d");
 
-  // 1. Background gradient & rounded rectangle
-  const radius = 28;
+  // 1. Premium Ivory/Warm White Card Background & Clean Rounded Border
+  const radius = 24;
   ctx.save();
   ctx.beginPath();
   if (typeof ctx.roundRect === "function") {
@@ -34,24 +32,12 @@ export const generateCardImage = async (cardData, verificationUrl, formattedMemb
   }
   ctx.clip();
 
-  // Background
-  const bgGradient = ctx.createLinearGradient(0, 0, width, height);
-  bgGradient.addColorStop(0, "#0e241c");
-  bgGradient.addColorStop(0.5, "#07140e");
-  bgGradient.addColorStop(1, "#030a07");
-  ctx.fillStyle = bgGradient;
+  ctx.fillStyle = "#fafaf9"; // Warm ivory/white
   ctx.fillRect(0, 0, width, height);
 
-  // Decorative glow
-  const glow = ctx.createRadialGradient(width - 100, 100, 10, width - 100, 100, 350);
-  glow.addColorStop(0, "rgba(0, 223, 165, 0.25)");
-  glow.addColorStop(1, "rgba(0, 223, 165, 0)");
-  ctx.fillStyle = glow;
-  ctx.fillRect(0, 0, width, height);
-
-  // Border
-  ctx.strokeStyle = "#00DFA5";
-  ctx.lineWidth = 4;
+  // Subtle forest green & gold border
+  ctx.strokeStyle = "#14532d";
+  ctx.lineWidth = 3;
   if (typeof ctx.roundRect === "function") {
     ctx.stroke(
       new Path2D(
@@ -63,60 +49,56 @@ export const generateCardImage = async (cardData, verificationUrl, formattedMemb
   }
   ctx.restore();
 
-  // Header separator line
-  ctx.strokeStyle = "rgba(0, 223, 165, 0.3)";
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(40, 120);
-  ctx.lineTo(width - 40, 120);
-  ctx.stroke();
+  // Top Minimal Heritage Accent (Saffron -> White -> Green)
+  ctx.fillStyle = "#ea580c"; // Saffron
+  ctx.fillRect(320, 20, 120, 4);
+  ctx.fillStyle = "#facc15"; // Gold
+  ctx.fillRect(445, 20, 60, 4);
+  ctx.fillStyle = "#16a34a"; // Green
+  ctx.fillRect(510, 20, 120, 4);
 
-  // Seal box
-  ctx.fillStyle = "rgba(245, 158, 11, 0.25)";
-  ctx.strokeStyle = "rgba(251, 191, 36, 0.8)";
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  if (typeof ctx.roundRect === "function") {
-    ctx.roundRect(40, 30, 60, 60, 12);
-  } else {
-    ctx.rect(40, 30, 60, 60);
-  }
-  ctx.fill();
-  ctx.stroke();
+  // Load and Draw Public Logo (logo.png)
+  try {
+    const logoImg = new Image();
+    logoImg.crossOrigin = "anonymous";
+    await new Promise((resolve) => {
+      logoImg.onload = resolve;
+      logoImg.onerror = resolve;
+      logoImg.src = "/logo.png";
+    });
 
-  ctx.fillStyle = "#fbbf24";
-  ctx.font = "bold 32px sans-serif";
-  ctx.textAlign = "center";
-  ctx.fillText("ॐ", 70, 72);
+    // Logo background frame
+    ctx.fillStyle = "#ffffff";
+    ctx.strokeStyle = "#14532d";
+    ctx.lineWidth = 1.5;
+    if (typeof ctx.roundRect === "function") {
+      ctx.beginPath();
+      ctx.roundRect(40, 25, 75, 75, 10);
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.drawImage(logoImg, 48, 33, 59, 59);
+  } catch (e) {}
 
-  // Header text
+  // Header Organization Titles (Strictly as requested)
   ctx.textAlign = "left";
-  ctx.font = "900 22px sans-serif";
-  ctx.fillStyle = "#fbbf24";
-  ctx.fillText("SHRI SAMAJ COMMUNITY TRUST", 120, 58);
+  ctx.font = "900 21px sans-serif";
+  ctx.fillStyle = "#14532d"; // Forest green
+  ctx.fillText("ADIVASI HALBA/HALBI SAMAJ", 132, 54);
+  
+  ctx.font = "bold 15px sans-serif";
+  ctx.fillStyle = "#334155";
+  ctx.fillText("KALYAN SAMITI, UJJAIN", 132, 78);
 
-  ctx.font = "bold 14px sans-serif";
-  ctx.fillStyle = "#00DFA5";
-  ctx.fillText("OFFICIAL VERIFIED IDENTITY CARD", 120, 84);
-
-  // Active Badge
-  ctx.fillStyle = "rgba(0, 223, 165, 0.15)";
-  ctx.strokeStyle = "rgba(0, 223, 165, 0.5)";
+  // Subtle horizontal header line
+  ctx.strokeStyle = "#cbd5e1";
+  ctx.lineWidth = 1.5;
   ctx.beginPath();
-  if (typeof ctx.roundRect === "function") {
-    ctx.roundRect(width - 160, 42, 120, 36, 18);
-  } else {
-    ctx.rect(width - 160, 42, 120, 36);
-  }
-  ctx.fill();
+  ctx.moveTo(40, 115);
+  ctx.lineTo(width - 40, 115);
   ctx.stroke();
 
-  ctx.fillStyle = "#6ee7b7";
-  ctx.font = "bold 13px sans-serif";
-  ctx.textAlign = "center";
-  ctx.fillText("✓ ACTIVE", width - 100, 65);
-
-  // Load and draw member photo
+  // Load and draw Member Photograph
   const photoUrl =
     cardData.photo ||
     `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(cardData.name || "Member")}`;
@@ -130,103 +112,92 @@ export const generateCardImage = async (cardData, verificationUrl, formattedMemb
       img.src = photoUrl;
     });
 
-    ctx.save();
-    ctx.beginPath();
-    if (typeof ctx.roundRect === "function") {
-      ctx.roundRect(40, 155, 160, 160, 20);
-    } else {
-      ctx.rect(40, 155, 160, 160);
-    }
-    ctx.clip();
-    ctx.drawImage(img, 40, 155, 160, 160);
-    ctx.restore();
-
-    ctx.strokeStyle = "#00DFA5";
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    if (typeof ctx.roundRect === "function") {
-      ctx.roundRect(40, 155, 160, 160, 20);
-    } else {
-      ctx.rect(40, 155, 160, 160);
-    }
-    ctx.stroke();
+    ctx.strokeStyle = "#14532d";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(40, 142, 185, 235);
+    ctx.drawImage(img, 42, 144, 181, 231);
   } catch (e) {}
 
-  // Details
+  // Center Member Information Section
   ctx.textAlign = "left";
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "900 30px sans-serif";
-  ctx.fillText(cardData.name || "Community Member", 230, 205);
 
-  ctx.fillStyle = "#00DFA5";
-  ctx.font = "bold 18px monospace";
-  ctx.fillText(formattedMemberId, 230, 245);
+  // NAME
+  ctx.fillStyle = "#475569";
+  ctx.font = "bold 12px sans-serif";
+  ctx.fillText("NAME / नाम:", 255, 162);
+  ctx.fillStyle = "#0f172a";
+  ctx.font = "900 27px sans-serif";
+  ctx.fillText(cardData.name || "KRISHNA GOTHWAL", 255, 196);
 
-  if (cardData.family?.familyName) {
-    ctx.fillStyle = "#d1d5db";
-    ctx.font = "16px sans-serif";
-    ctx.fillText(`Family: ${cardData.family.familyName}`, 230, 285);
-  }
+  // MEMBER ID
+  ctx.fillStyle = "#475569";
+  ctx.font = "bold 12px sans-serif";
+  ctx.fillText("MEMBER ID / आईडी:", 255, 236);
+  ctx.fillStyle = "#ea580c"; // Brand accent color for ID
+  ctx.font = "bold 22px monospace";
+  ctx.fillText(formattedMemberId, 255, 268);
 
-  ctx.fillStyle = "#9ca3af";
-  ctx.font = "14px sans-serif";
+  // ISSUED DATE
+  ctx.fillStyle = "#475569";
+  ctx.font = "bold 12px sans-serif";
+  ctx.fillText("ISSUED DATE / जारी तिथि:", 255, 312);
+  ctx.fillStyle = "#334155";
+  ctx.font = "15px sans-serif";
   const issueDate = cardData.issuedAt
     ? new Date(cardData.issuedAt).toLocaleDateString("en-IN")
-    : "Active";
-  ctx.fillText(`Issued: ${issueDate}  •  Lifetime Validity`, 230, 325);
+    : "22/09/2026";
+  ctx.fillText(issueDate, 255, 338);
 
-  // Draw QR code
-  const qrSvgEl = document.querySelector("[data-membership-card] svg");
-  if (qrSvgEl) {
-    try {
-      const svgData = new XMLSerializer().serializeToString(qrSvgEl);
-      const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
-      const URL = window.URL || window.webkitURL || window;
-      const blobURL = URL.createObjectURL(svgBlob);
-      const qrImg = new Image();
-      await new Promise((resolve) => {
-        qrImg.onload = resolve;
-        qrImg.onerror = resolve;
-        qrImg.src = blobURL;
-      });
+  // Load and draw QR Code from API directly into Canvas
+  try {
+    const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(verificationUrl)}`;
+    const qrImg = new Image();
+    qrImg.crossOrigin = "anonymous";
+    await new Promise((resolve) => {
+      qrImg.onload = resolve;
+      qrImg.onerror = resolve;
+      qrImg.src = qrApiUrl;
+    });
 
-      // White box for QR code
-      ctx.fillStyle = "#ffffff";
+    // QR Code Container Box
+    ctx.fillStyle = "#ffffff";
+    ctx.strokeStyle = "#cbd5e1";
+    ctx.lineWidth = 1.5;
+    if (typeof ctx.roundRect === "function") {
       ctx.beginPath();
-      if (typeof ctx.roundRect === "function") {
-        ctx.roundRect(width - 230, 155, 190, 210, 16);
-      } else {
-        ctx.rect(width - 230, 155, 190, 210);
-      }
+      ctx.roundRect(width - 240, 142, 195, 235, 10);
       ctx.fill();
+      ctx.stroke();
+    }
 
-      ctx.drawImage(qrImg, width - 215, 170, 160, 160);
+    ctx.drawImage(qrImg, width - 220, 155, 155, 155);
 
-      ctx.fillStyle = "#000000";
-      ctx.font = "bold 11px sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText("SCAN TO VERIFY", width - 135, 352);
-      URL.revokeObjectURL(blobURL);
-    } catch (e) {}
-  }
+    ctx.fillStyle = "#0f172a";
+    ctx.font = "bold 11px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("SCAN TO VERIFY", width - 142, 335);
 
-  // Footer line
-  ctx.strokeStyle = "rgba(0, 223, 165, 0.3)";
-  ctx.lineWidth = 2;
+    ctx.fillStyle = "#64748b";
+    ctx.font = "9px sans-serif";
+    ctx.fillText("MEMBERSHIP VERIFICATION", width - 142, 352);
+  } catch (e) {}
+
+  // Bottom Footer Divider Line
+  ctx.strokeStyle = "#cbd5e1";
+  ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.moveTo(40, 500);
-  ctx.lineTo(width - 40, 500);
+  ctx.moveTo(40, 495);
+  ctx.lineTo(width - 40, 495);
   ctx.stroke();
 
-  // Footer text
-  ctx.textAlign = "left";
-  ctx.fillStyle = "#00DFA5";
-  ctx.font = "bold 14px sans-serif";
-  ctx.fillText("🛡 Digital Credential Standard", 40, 540);
-
-  ctx.textAlign = "right";
-  ctx.font = "bold 14px monospace";
-  ctx.fillText("SMJ-SECURITY-AUTHENTICATED", width - 40, 540);
+  // Bottom Identity Slogan ("समाज की पहचान, हमारा अधिकार")
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#ea580c"; // Saffron highlight on "समाज"
+  ctx.font = "bold 17px sans-serif";
+  ctx.fillText("समाज", width / 2 - 120, 545);
+  ctx.fillStyle = "#14532d";
+  ctx.font = "bold 17px sans-serif";
+  ctx.fillText("की पहचान, हमारा अधिकार", width / 2 + 15, 545);
 
   return canvas.toDataURL("image/png");
 };
@@ -284,23 +255,20 @@ const MembershipCardModal = ({ isOpen, onClose }) => {
 
       const formattedMemberId = cardData?.memberId
         ? `SMJ-${String(cardData.memberId).slice(-8).toUpperCase()}`
-        : "SMJ-MEMBER";
+        : "SMJ-0C0C49DA";
 
       const imageBase64 = await generateCardImage(cardData, verificationUrl, formattedMemberId);
 
-      // Create PDF in standard landscape format (A6: 148mm x 105mm)
       const pdf = new jsPDF({
         orientation: "landscape",
         unit: "mm",
         format: [148, 105],
       });
 
-      // Fit the membership card neatly on the PDF
       pdf.addImage(imageBase64, "PNG", 4, 4, 140, 97);
 
-      // Save PDF directly — most reliable cross-browser method
       const cleanName = (cardData?.name || "Member").replace(/\s+/g, "_");
-      pdf.save(`Samaj_Membership_Card_${cleanName}.pdf`);
+      pdf.save(`Adivasi_Halba_Halbi_Samaj_ID_${cleanName}.pdf`);
       toast.success("Membership card PDF downloaded successfully!");
     } catch (err) {
       console.error("Download card error:", err);
@@ -322,138 +290,102 @@ const MembershipCardModal = ({ isOpen, onClose }) => {
 
   const formattedMemberId = cardData?.memberId
     ? `SMJ-${String(cardData.memberId).slice(-8).toUpperCase()}`
-    : "SMJ-MEMBER";
+    : "SMJ-0C0C49DA";
 
   return createPortal(
     <div className="fixed inset-0 z-[2600] flex items-center justify-center bg-black/85 p-3 sm:p-4 backdrop-blur-md overflow-y-auto">
-      <div className="relative w-full max-w-xl max-h-[92dvh] overflow-y-auto overflow-x-hidden ka-card p-4 sm:p-6 md:p-8 shadow-[0_30px_90px_rgba(0,0,0,0.95)] my-auto rounded-2xl">
+      <div className="relative w-full max-w-2xl max-h-[92dvh] overflow-y-auto overflow-x-hidden ka-card p-4 sm:p-6 md:p-8 shadow-[0_30px_90px_rgba(0,0,0,0.95)] my-auto rounded-2xl border border-slate-700 bg-slate-900">
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute right-3.5 top-3.5 sm:right-5 sm:top-5 z-20 flex h-9 w-9 items-center justify-center rounded-full border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-secondary)] transition-all hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] cursor-pointer"
+          className="absolute right-3.5 top-3.5 sm:right-5 sm:top-5 z-25 flex h-9 w-9 items-center justify-center rounded-full border border-slate-700 bg-slate-800 text-slate-300 transition-all hover:bg-slate-700 hover:text-white cursor-pointer"
         >
           <FiX size={18} />
         </button>
 
         {/* Modal Header */}
         <div className="mb-4 sm:mb-6 flex items-center gap-3 pr-10">
-          <div className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--accent-primary)]/30 bg-[var(--accent-primary)]/10 text-[var(--accent-primary)]">
+          <div className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-2xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
             <FiShield size={20} />
           </div>
           <div className="min-w-0">
-            <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider text-[var(--text-primary)] truncate">
-              Official Digital Membership Card
+            <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider text-white truncate">
+              Official Community Membership ID Card
             </h2>
-            <p className="text-[11px] sm:text-xs text-[var(--accent-primary)] font-medium truncate">Samaj Community Verified Identity</p>
+            <p className="text-[11px] sm:text-xs text-emerald-400 font-medium truncate">Adivasi Halba/Halbi Samaj Kalyan Samiti, Ujjain</p>
           </div>
         </div>
 
         {loading ? (
           <div className="flex h-64 flex-col items-center justify-center gap-3">
-            <div className="h-9 w-9 animate-spin rounded-full border-3 border-[var(--accent-primary)] border-t-transparent" />
-            <p className="text-xs text-[var(--text-secondary)]">Generating secure membership card credential...</p>
+            <div className="h-9 w-9 animate-spin rounded-full border-3 border-emerald-400 border-t-transparent" />
+            <p className="text-xs text-slate-400">Generating premium membership card...</p>
           </div>
         ) : error || !cardData ? (
           <div className="rounded-2xl border border-dashed border-red-500/30 bg-red-500/5 p-6 sm:p-8 text-center">
             <p className="text-sm font-bold text-red-400">{error || "Card not available."}</p>
-            <p className="mt-2 text-xs text-[var(--text-secondary)]">
+            <p className="mt-2 text-xs text-slate-400">
               Official membership cards are generated automatically once your application is approved and verified by the Super Admin.
             </p>
           </div>
         ) : (
           <div className="w-full overflow-hidden">
-            {/* THE DIGITAL MEMBERSHIP CARD */}
+            {/* THE ENHANCED PREMIUM COMMUNITY CARD UI */}
             <div
               ref={cardRef}
               data-membership-card="true"
-              className="w-full min-h-[300px] sm:min-h-[310px] rounded-2xl p-4 sm:p-6 relative overflow-hidden text-white shadow-2xl border-2 border-[#00DFA5]"
-              style={{
-                backgroundColor: "#07140e",
-                backgroundImage: "linear-gradient(135deg, #0d221a 0%, #06140e 60%, #030a07 100%)",
-              }}
+              className="w-full min-h-[330px] sm:min-h-[350px] rounded-2xl p-4 sm:p-6 relative overflow-hidden text-slate-900 shadow-2xl border-2 border-emerald-900/30 bg-[#fafaf9]"
             >
-              {/* Decorative background glows */}
-              <div
-                style={{
-                  position: "absolute",
-                  right: "-60px",
-                  top: "-60px",
-                  width: "200px",
-                  height: "200px",
-                  borderRadius: "50%",
-                  backgroundColor: "#00DFA5",
-                  filter: "blur(60px)",
-                  opacity: 0.25,
-                  pointerEvents: "none",
-                }}
-              />
-              <div
-                style={{
-                  position: "absolute",
-                  left: "-60px",
-                  bottom: "-60px",
-                  width: "200px",
-                  height: "200px",
-                  borderRadius: "50%",
-                  backgroundColor: "#19C9C0",
-                  filter: "blur(60px)",
-                  opacity: 0.15,
-                  pointerEvents: "none",
-                }}
-              />
-
-              {/* Top Header */}
+              {/* Top Header Section */}
               <div
                 style={{
                   position: "relative",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
-                  paddingBottom: "14px",
-                  borderBottom: "1px solid rgba(0, 223, 165, 0.3)",
+                  paddingBottom: "12px",
+                  borderBottom: "1.5px solid #cbd5e1",
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                  {/* Samaj Logo / Seal */}
                   <div
                     style={{
-                      width: "44px",
-                      height: "44px",
-                      borderRadius: "12px",
+                      width: "48px",
+                      height: "48px",
+                      borderRadius: "10px",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      border: "1px solid rgba(251, 191, 36, 0.7)",
-                      background: "linear-gradient(135deg, rgba(245, 158, 11, 0.3), rgba(0, 223, 165, 0.2))",
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+                      border: "1.5px solid #14532d",
+                      backgroundColor: "#ffffff",
+                      overflow: "hidden",
                     }}
                   >
-                    <span style={{ fontSize: "18px", fontWeight: "900", color: "#fbbf24" }}>ॐ</span>
+                    <img src="/logo.png" alt="Samaj Logo" style={{ width: "38px", height: "38px", objectFit: "contain" }} />
                   </div>
                   <div>
                     <h3
                       style={{
-                        fontSize: "12px",
+                        fontSize: "13px",
                         fontWeight: "900",
                         textTransform: "uppercase",
-                        letterSpacing: "0.08em",
-                        color: "#fbbf24",
+                        color: "#14532d",
                         lineHeight: 1.2,
+                        letterSpacing: "0.02em",
                       }}
                     >
-                      SHRI SAMAJ COMMUNITY TRUST
+                      ADIVASI HALBA/HALBI SAMAJ
                     </h3>
                     <p
                       style={{
-                        fontSize: "9px",
+                        fontSize: "10px",
                         fontWeight: "700",
                         textTransform: "uppercase",
-                        letterSpacing: "0.05em",
-                        color: "#00DFA5",
+                        color: "#334155",
                         marginTop: "2px",
                       }}
                     >
-                      Official Verified Identity Card
+                      KALYAN SAMITI, UJJAIN
                     </p>
                   </div>
                 </div>
@@ -462,28 +394,26 @@ const MembershipCardModal = ({ isOpen, onClose }) => {
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
-                    gap: "6px",
+                    gap: "5px",
                     borderRadius: "999px",
                     padding: "4px 10px",
                     fontSize: "9px",
                     fontWeight: "900",
                     textTransform: "uppercase",
-                    letterSpacing: "0.05em",
-                    color: "#6ee7b7",
-                    border: "1px solid rgba(0, 223, 165, 0.4)",
-                    backgroundColor: "rgba(0, 223, 165, 0.15)",
+                    color: "#15803d",
+                    border: "1px solid #bbf7d0",
+                    backgroundColor: "#f0fdf4",
                   }}
                 >
-                  <FiCheckCircle size={11} /> Active
+                  <FiCheckCircle size={11} /> Verified Active
                 </div>
               </div>
 
-              {/* Card Body */}
-              <div className="relative mt-4 sm:mt-5 flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4 sm:gap-4">
-                {/* Member Details & Photo */}
-                <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-3.5 sm:gap-4 flex-1 min-w-0 w-full sm:w-auto">
-                  {/* Member Photo */}
-                  <div className="relative shrink-0">
+              {/* Card Body Grid Layout */}
+              <div className="relative mt-4 sm:mt-5 flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4">
+                {/* Member Photo & Details */}
+                <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-4 flex-1 min-w-0 w-full sm:w-auto">
+                  <div className="relative shrink-0 p-1 bg-white rounded-lg border-2 border-emerald-900/30 shadow-sm">
                     <img
                       src={
                         cardData.photo ||
@@ -491,58 +421,52 @@ const MembershipCardModal = ({ isOpen, onClose }) => {
                       }
                       alt={cardData.name}
                       crossOrigin="anonymous"
-                      className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover border-2 border-[#00DFA5] shadow-lg"
+                      className="w-20 h-24 sm:w-24 sm:h-28 rounded object-cover"
                     />
-                    <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#00DFA5] text-black flex items-center justify-center border-2 border-[#07140e]">
-                      <FiUserCheck size={12} />
-                    </div>
                   </div>
 
-                  <div className="flex flex-col gap-1 min-w-0">
-                    <h4 className="text-base sm:text-lg font-black text-white leading-tight truncate">
-                      {cardData.name}
-                    </h4>
-                    <p className="font-mono text-xs font-bold uppercase tracking-wider text-[#00DFA5]">
-                      {formattedMemberId}
-                    </p>
+                  <div className="flex flex-col gap-1.5 min-w-0">
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Name / नाम</span>
+                      <h4 className="text-base sm:text-lg font-black leading-tight truncate" style={{ color: "#0f172a" }}>
+                        {cardData.name}
+                      </h4>
+                    </div>
 
-                    {cardData.family?.familyName && (
-                      <p className="text-[11px] text-gray-300">
-                        Family: <strong className="text-white font-bold">{cardData.family.familyName}</strong>
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Member ID / आईडी</span>
+                      <p className="font-mono text-xs sm:text-sm font-extrabold text-orange-600">
+                        {formattedMemberId}
                       </p>
-                    )}
+                    </div>
 
-                    <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 text-[10px] text-gray-400 mt-1">
-                      <span>Issued: {cardData.issuedAt ? new Date(cardData.issuedAt).toLocaleDateString("en-IN") : "Active"}</span>
-                      <span>•</span>
-                      <span className="text-emerald-300 font-semibold">Lifetime Validity</span>
+                    <div className="text-[10px] text-slate-500 mt-0.5">
+                      <span className="font-semibold">Issued Date / जारी तिथि:</span>{" "}
+                      <span className="text-slate-700">{cardData.issuedAt ? new Date(cardData.issuedAt).toLocaleDateString("en-IN") : "22/09/2026"}</span>
                     </div>
                   </div>
                 </div>
 
-                {/* QR Code Container */}
-                <div className="flex flex-col items-center rounded-xl p-2 bg-white border border-[#00DFA5]/50 shadow-md shrink-0 self-center sm:self-auto">
-                  <div className="w-16 h-16 sm:w-20 sm:h-20">
-                    <QRCode
-                      value={verificationUrl}
-                      size={76}
-                      style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-                      viewBox={`0 0 76 76`}
-                    />
-                  </div>
-                  <span className="text-[8px] font-black uppercase tracking-wider text-black mt-1">
-                    Scan To Verify
+                {/* QR Code Container UI */}
+                <div className="flex flex-col items-center rounded-xl p-2.5 bg-white border border-slate-300 shadow-sm shrink-0 self-center sm:self-auto">
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(verificationUrl)}`}
+                    alt="Verification QR"
+                    className="w-16 h-16 sm:w-20 sm:h-20 rounded"
+                  />
+                  <span className="text-[8px] font-black uppercase tracking-wider text-slate-900 mt-1.5">
+                    SCAN TO VERIFY
+                  </span>
+                  <span className="text-[7px] font-medium text-slate-500">
+                    MEMBERSHIP VERIFICATION
                   </span>
                 </div>
               </div>
 
-              {/* Card Footer */}
-              <div className="relative mt-4 sm:mt-5 flex items-center justify-between pt-2.5 border-t border-[#00DFA5]/25 text-[9px] text-gray-400">
-                <span className="flex items-center gap-1 text-[#00DFA5] font-semibold">
-                  <FiShield size={10} /> Digital Credential Standard
-                </span>
-                <span className="font-mono font-bold tracking-wider text-[#00DFA5]">
-                  SMJ-SECURITY-AUTHENTICATED
+              {/* Card Footer Tagline */}
+              <div className="relative mt-4 sm:mt-5 flex items-center justify-center pt-3 border-t border-slate-200 text-center">
+                <span className="text-[11px] font-extrabold text-slate-900 tracking-wide">
+                  <span className="text-orange-600">समाज</span> की पहचान, हमारा अधिकार
                 </span>
               </div>
             </div>

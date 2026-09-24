@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { FiX, FiDownload, FiExternalLink, FiFileText } from "react-icons/fi";
 
-const DocViewer = ({ isOpen, onClose, url, title = "Document Viewer" }) => {
+const DocViewer = ({ isOpen, onClose, url, title = "Document Viewer", onDownload }) => {
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === "Escape") onClose();
@@ -32,6 +32,11 @@ const DocViewer = ({ isOpen, onClose, url, title = "Document Viewer" }) => {
   };
 
   const handleDownload = () => {
+    if (onDownload) {
+      onDownload();
+      return;
+    }
+
     const downloadUrl = getDownloadUrl();
     const cleanTitle = (title || "Document").replace(/[^a-zA-Z0-9_-]/g, "_");
     const ext = isPdf ? ".pdf" : ".jpg";

@@ -9,14 +9,21 @@ import {
   FaSyncAlt,
   FaTimes,
   FaUserCheck,
+  FaWhatsapp,
+  FaPlus,
 } from "react-icons/fa";
-import { FiCheckCircle, FiClock, FiSearch } from "react-icons/fi";
+import { FiCheckCircle, FiClock, FiSearch, FiPhone, FiMail, FiX, FiPlus as FiPlusIcon, FiAlertCircle } from "react-icons/fi";
 import { useSelector } from "react-redux";
 import { apiConnector } from "../../../../services/apiConnector";
 import { opportunityEndpoints } from "../../../../services/apis";
 
-const inputClass = "ka-input";
-const textareaClass = "ka-input !min-h-24 resize-y !py-3";
+const inputClass = "ka-input !py-2.5 !px-3.5 !text-xs sm:!text-sm rounded-xl";
+const textareaClass = "ka-input !py-2.5 !px-3.5 !text-xs sm:!text-sm !min-h-24 resize-y rounded-xl";
+
+function cleanPhone(raw) {
+  if (!raw) return "";
+  return raw.replace(/[^0-9+]/g, "");
+}
 
 // ─── Module navigation tabs ────────────────────────────────────────────────
 const tabs = [
@@ -29,10 +36,13 @@ const tabs = [
 // ─── Status configs per module ─────────────────────────────────────────────
 const MODULE_STATUS_CONFIG = {
   jobs: [
-    { key: "PUBLISHED", label: "Active / Published" },
-    { key: "EXPIRED",   label: "Expired"            },
-    { key: "ARCHIVED",  label: "Archived"           },
-    { key: "ALL",       label: "All"                },
+    { key: "PENDING_MODERATION",  label: "Pending Review"    },
+    { key: "CHANGES_REQUESTED",   label: "Changes Requested" },
+    { key: "PUBLISHED",            label: "Published"         },
+    { key: "REJECTED",             label: "Rejected"          },
+    { key: "EXPIRED",              label: "Expired"           },
+    { key: "ARCHIVED",             label: "Archived"          },
+    { key: "ALL",                  label: "All"               },
   ],
   jobApps: [
     { key: "SUBMITTED",   label: "Needs Action" },
@@ -63,7 +73,7 @@ const DONE_STATUSES = new Set([
 ]);
 
 const MODULE_DEFAULT_STATUS = {
-  jobs:            "PUBLISHED",
+  jobs:            "PENDING_MODERATION",
   jobApps:         "SUBMITTED",
   scholarships:    "OPEN",
   scholarshipApps: "SUBMITTED",
@@ -97,18 +107,20 @@ const Field = ({ label, children }) => (
 
 const StatusBadge = ({ value }) => {
   const colorMap = {
-    SUBMITTED:    "border-amber-400/40 bg-amber-400/10 text-amber-300",
-    OPEN:         "border-emerald-400/40 bg-emerald-400/10 text-emerald-300",
-    PUBLISHED:    "border-emerald-400/40 bg-emerald-400/10 text-emerald-300",
-    UNDER_REVIEW: "border-sky-400/40 bg-sky-400/10 text-sky-300",
-    SHORTLISTED:  "border-teal-400/40 bg-teal-400/10 text-teal-300",
-    INTERVIEW:    "border-purple-400/40 bg-purple-400/10 text-purple-300",
-    SELECTED:     "border-green-400/40 bg-green-400/10 text-green-300",
-    APPROVED:     "border-green-400/40 bg-green-400/10 text-green-300",
-    REJECTED:     "border-red-400/40 bg-red-400/10 text-red-300",
-    EXPIRED:      "border-orange-400/40 bg-orange-400/10 text-orange-300",
-    DRAFT:        "border-purple-400/40 bg-purple-400/10 text-purple-300",
-    ARCHIVED:     "border-gray-500/40 bg-gray-500/10 text-gray-400",
+    SUBMITTED:         "border-amber-400/40 bg-amber-400/10 text-amber-300",
+    PENDING_MODERATION:"border-amber-400/40 bg-amber-400/10 text-amber-300",
+    CHANGES_REQUESTED: "border-orange-400/40 bg-orange-400/10 text-orange-300",
+    OPEN:              "border-emerald-400/40 bg-emerald-400/10 text-emerald-300",
+    PUBLISHED:         "border-emerald-400/40 bg-emerald-400/10 text-emerald-300",
+    UNDER_REVIEW:      "border-sky-400/40 bg-sky-400/10 text-sky-300",
+    SHORTLISTED:       "border-teal-400/40 bg-teal-400/10 text-teal-300",
+    INTERVIEW:         "border-purple-400/40 bg-purple-400/10 text-purple-300",
+    SELECTED:          "border-green-400/40 bg-green-400/10 text-green-300",
+    APPROVED:          "border-green-400/40 bg-green-400/10 text-green-300",
+    REJECTED:          "border-red-400/40 bg-red-400/10 text-red-300",
+    EXPIRED:           "border-orange-400/40 bg-orange-400/10 text-orange-300",
+    DRAFT:             "border-purple-400/40 bg-purple-400/10 text-purple-300",
+    ARCHIVED:          "border-gray-500/40 bg-gray-500/10 text-gray-400",
   };
   return (
     <span
@@ -245,6 +257,8 @@ const OpportunityAdmin = () => {
   const [scholarshipDocumentFile, setScholarshipDocumentFile] = useState(null);
   const [editingScholarshipId, setEditingScholarshipId]   = useState(null);
   const [drafts, setDrafts]                               = useState({});
+  const [showJobForm, setShowJobForm]                     = useState(false);
+  const [showScholarshipForm, setShowScholarshipForm]     = useState(false);
 
   // ── Per-module status filters and search ──────────────────────────────────
   const [statusFilters, setStatusFilters] = useState({ ...MODULE_DEFAULT_STATUS });
@@ -334,6 +348,7 @@ const OpportunityAdmin = () => {
       await apiConnector("POST", opportunityEndpoints.JOBS_API, jobForm, authConfig);
       toast.success("Job saved successfully");
       setJobForm(initialJob);
+      setShowJobForm(false);
       await loadJobs();
     } catch (error) {
       toast.error(error.response?.data?.message || "Unable to save job");
@@ -398,6 +413,7 @@ const OpportunityAdmin = () => {
       setScholarshipForm(initialScholarship);
       setScholarshipDocumentFile(null);
       setEditingScholarshipId(null);
+      setShowScholarshipForm(false);
       await loadScholarships();
     } catch (error) {
       toast.error(error.response?.data?.message || "Unable to save scholarship");
@@ -499,8 +515,8 @@ const OpportunityAdmin = () => {
   }, [scholarshipApplications, statusFilters.scholarshipApps, moduleSearch.scholarshipApps]);
 
   return (
-    <div className="min-h-screen bg-[var(--bg)] px-3 py-6 text-[var(--text-primary)] md:px-6 transition-colors duration-300">
-      <div className="mx-auto flex max-w-6xl flex-col gap-6">
+    <div className="w-full min-w-0 flex flex-col gap-6 text-[var(--text-primary)]">
+      <div className="flex flex-col gap-6 w-full min-w-0">
 
         {/* ── Header ──────────────────────────────────────────────────────── */}
         <div className="flex flex-col gap-4 border-b border-[var(--border-subtle)] pb-6">
@@ -508,16 +524,45 @@ const OpportunityAdmin = () => {
             <div>
               <div className="eyebrow-badge mb-2">
                 <FaBriefcase size={12} />
-                <span>Careers & Grants</span>
+                <span>Careers &amp; Grants</span>
               </div>
               <h1 className="heading-hero text-[var(--text-primary)]">
-                Jobs & <span className="text-gradient">Scholarships</span>
+                Jobs &amp; <span className="text-gradient">Scholarships</span>
               </h1>
               <p className="mt-2 max-w-2xl text-xs sm:text-sm text-[var(--text-secondary)] font-normal">
                 Moderate career posts, review applications, and manage education-support scholarships.
               </p>
             </div>
-            <Button icon={FaSyncAlt} onClick={refreshActive} disabled={loading}>Refresh</Button>
+
+            {/* Header Actions */}
+            <div className="flex flex-wrap items-center gap-2">
+              {activeTab === "jobs" && (
+                <button
+                  type="button"
+                  onClick={() => setShowJobForm((p) => !p)}
+                  className="btn-primary !py-2 !px-4 !text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer shadow-sm"
+                >
+                  {showJobForm ? <FiX size={14} /> : <FiPlusIcon size={14} />}
+                  <span>{showJobForm ? "Close Form" : "+ Post Career Listing"}</span>
+                </button>
+              )}
+              {activeTab === "scholarships" && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingScholarshipId(null);
+                    setScholarshipForm(initialScholarship);
+                    setScholarshipDocumentFile(null);
+                    setShowScholarshipForm((p) => !p);
+                  }}
+                  className="btn-primary !py-2 !px-4 !text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer shadow-sm"
+                >
+                  {showScholarshipForm ? <FiX size={14} /> : <FiPlusIcon size={14} />}
+                  <span>{showScholarshipForm ? "Close Form" : "+ Create Scholarship"}</span>
+                </button>
+              )}
+              <Button icon={FaSyncAlt} onClick={refreshActive} disabled={loading}>Refresh</Button>
+            </div>
           </div>
 
           <div className="flex flex-wrap gap-2">
@@ -553,37 +598,110 @@ const OpportunityAdmin = () => {
                 JOBS MODULE
             ══════════════════════════════════════════════════════════════ */}
             {activeTab === "jobs" && (
-              <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
-                {/* Create Job form */}
-                <form onSubmit={createJob} className="grid h-fit gap-4 rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-5">
-                  <h2 className="text-base font-bold text-[var(--text-primary)]">Post New Career Listing</h2>
-                  <Field label="Job Title *"><input className={inputClass} value={jobForm.title} onChange={(e) => setJobForm((cur) => ({ ...cur, title: e.target.value }))} placeholder="e.g. Senior Software Engineer" required /></Field>
-                  <Field label="Company / Organization *"><input className={inputClass} value={jobForm.companyName} onChange={(e) => setJobForm((cur) => ({ ...cur, companyName: e.target.value }))} placeholder="e.g. Acme Tech" required /></Field>
-                  <Field label="Job Description *"><textarea className={textareaClass} value={jobForm.description} onChange={(e) => setJobForm((cur) => ({ ...cur, description: e.target.value }))} placeholder="Role responsibilities, benefits, and requirements..." required /></Field>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <Field label="Location"><input className={inputClass} value={jobForm.location} onChange={(e) => setJobForm((cur) => ({ ...cur, location: e.target.value }))} placeholder="e.g. Indore, MP" /></Field>
-                    <Field label="Employment Type">
-                      <select className={inputClass} value={jobForm.employmentType} onChange={(e) => setJobForm((cur) => ({ ...cur, employmentType: e.target.value }))}>
-                        <option value="FULL_TIME">Full time</option>
-                        <option value="PART_TIME">Part time</option>
-                        <option value="CONTRACT">Contract</option>
-                        <option value="INTERNSHIP">Internship</option>
-                        <option value="REMOTE">Remote</option>
-                        <option value="OTHER">Other</option>
-                      </select>
-                    </Field>
-                    <Field label="Salary / CTC"><input className={inputClass} value={jobForm.salaryRange} onChange={(e) => setJobForm((cur) => ({ ...cur, salaryRange: e.target.value }))} placeholder="e.g. 6 - 8 LPA" /></Field>
-                    <Field label="Experience Required"><input className={inputClass} value={jobForm.experienceRequired} onChange={(e) => setJobForm((cur) => ({ ...cur, experienceRequired: e.target.value }))} placeholder="e.g. 2+ years" /></Field>
-                    <Field label="Skills Required"><input className={inputClass} value={jobForm.skills} onChange={(e) => setJobForm((cur) => ({ ...cur, skills: e.target.value }))} placeholder="React, Node, Python..." /></Field>
-                    <Field label="Expires At"><input type="date" className={inputClass} value={jobForm.expiresAt} onChange={(e) => setJobForm((cur) => ({ ...cur, expiresAt: e.target.value }))} /></Field>
-                  </div>
-                  <Button icon={FaPaperPlane} tone="success" disabled={busyId === "job"}>Save & Post Job</Button>
-                </form>
+              <div className="flex flex-col gap-6 w-full min-w-0">
+                {/* Collapsible / Toggleable Job Form */}
+                {showJobForm && (
+                  <form onSubmit={createJob} className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-4 sm:p-6 shadow-xl space-y-4 w-full min-w-0">
+                    <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
+                      <div>
+                        <h2 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">Post New Career Listing</h2>
+                        <p className="text-xs text-[var(--text-muted)]">Add a community job opportunity directly as Administrator</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowJobForm(false)}
+                        className="flex h-8 w-8 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
+                      >
+                        <FiX size={16} />
+                      </button>
+                    </div>
+
+                    <div className="grid gap-3.5 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      <div className="sm:col-span-2">
+                        <Field label="Job Title *">
+                          <input className={inputClass} value={jobForm.title} onChange={(e) => setJobForm((cur) => ({ ...cur, title: e.target.value }))} placeholder="e.g. Senior Software Engineer" required />
+                        </Field>
+                      </div>
+                      <div>
+                        <Field label="Company / Organization *">
+                          <input className={inputClass} value={jobForm.companyName} onChange={(e) => setJobForm((cur) => ({ ...cur, companyName: e.target.value }))} placeholder="e.g. Acme Tech" required />
+                        </Field>
+                      </div>
+                      <div className="sm:col-span-2 lg:col-span-3">
+                        <Field label="Job Description *">
+                          <textarea className={textareaClass} value={jobForm.description} onChange={(e) => setJobForm((cur) => ({ ...cur, description: e.target.value }))} placeholder="Role responsibilities, benefits, and requirements..." required />
+                        </Field>
+                      </div>
+                      <div>
+                        <Field label="Location">
+                          <input className={inputClass} value={jobForm.location} onChange={(e) => setJobForm((cur) => ({ ...cur, location: e.target.value }))} placeholder="e.g. Indore, MP" />
+                        </Field>
+                      </div>
+                      <div>
+                        <Field label="Employment Type">
+                          <select className={inputClass} value={jobForm.employmentType} onChange={(e) => setJobForm((cur) => ({ ...cur, employmentType: e.target.value }))}>
+                            <option value="FULL_TIME">Full time</option>
+                            <option value="PART_TIME">Part time</option>
+                            <option value="CONTRACT">Contract</option>
+                            <option value="INTERNSHIP">Internship</option>
+                            <option value="REMOTE">Remote</option>
+                            <option value="OTHER">Other</option>
+                          </select>
+                        </Field>
+                      </div>
+                      <div>
+                        <Field label="Salary / CTC">
+                          <input className={inputClass} value={jobForm.salaryRange} onChange={(e) => setJobForm((cur) => ({ ...cur, salaryRange: e.target.value }))} placeholder="e.g. 6 - 8 LPA" />
+                        </Field>
+                      </div>
+                      <div>
+                        <Field label="Experience Required">
+                          <input className={inputClass} value={jobForm.experienceRequired} onChange={(e) => setJobForm((cur) => ({ ...cur, experienceRequired: e.target.value }))} placeholder="e.g. 2+ years" />
+                        </Field>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <Field label="Skills Required">
+                          <input className={inputClass} value={jobForm.skills} onChange={(e) => setJobForm((cur) => ({ ...cur, skills: e.target.value }))} placeholder="React, Node, Python (comma separated)" />
+                        </Field>
+                      </div>
+                      <div>
+                        <Field label="Expires At">
+                          <input type="date" className={inputClass} value={jobForm.expiresAt} onChange={(e) => setJobForm((cur) => ({ ...cur, expiresAt: e.target.value }))} />
+                        </Field>
+                      </div>
+                    </div>
+
+                    {/* Contact details */}
+                    <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] p-3.5 space-y-3">
+                      <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--accent-primary)]">Job Provider Contact Details</p>
+                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        <Field label="Contact Person">
+                          <input className={inputClass} value={jobForm.contactPersonName || ""} onChange={(e) => setJobForm((cur) => ({ ...cur, contactPersonName: e.target.value }))} placeholder="Name" />
+                        </Field>
+                        <Field label="Contact Phone">
+                          <input className={inputClass} value={jobForm.contactPhone || ""} onChange={(e) => setJobForm((cur) => ({ ...cur, contactPhone: e.target.value }))} placeholder="Phone number" />
+                        </Field>
+                        <Field label="Contact Email">
+                          <input className={inputClass} value={jobForm.contactEmail || ""} onChange={(e) => setJobForm((cur) => ({ ...cur, contactEmail: e.target.value }))} placeholder="Email address" />
+                        </Field>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-3 pt-2">
+                      <Button icon={FaPaperPlane} tone="success" disabled={busyId === "job"}>
+                        Save &amp; Post Job
+                      </Button>
+                      <Button type="button" onClick={() => setShowJobForm(false)}>
+                        Cancel
+                      </Button>
+                    </div>
+                  </form>
+                )}
 
                 {/* Jobs Roster with Tabs + Search */}
-                <section className="grid content-start gap-3">
+                <section className="flex flex-col gap-4 w-full min-w-0">
                   <SummaryCards data={jobs} config={MODULE_STATUS_CONFIG.jobs} />
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-2 w-full min-w-0">
                     <StatusTabBar
                       data={jobs}
                       config={MODULE_STATUS_CONFIG.jobs}
@@ -593,46 +711,195 @@ const OpportunityAdmin = () => {
                     <SearchBar
                       value={moduleSearch.jobs}
                       onChange={(v) => setSearch("jobs", v)}
-                      placeholder="Search title, company, location, skills..."
+                      placeholder="Search title, company, location, skills, contact..."
                     />
                   </div>
 
                   {filteredJobs.length === 0 ? (
                     <ModuleEmptyState statusKey={statusFilters.jobs} moduleLabel="job listings" />
                   ) : (
-                    <div className="grid gap-3">
+                    <div className="grid gap-4 w-full min-w-0">
                       {filteredJobs.map((job) => {
                         const isDone = DONE_STATUSES.has(job.status);
+                        const isMemberJob = job.createdByRole === "MEMBER";
+                        const needsAction = job.status === "PENDING_MODERATION" || job.status === "CHANGES_REQUESTED";
+                        const phone = job.contactPhone || "";
+                        const phoneClean = cleanPhone(phone);
+                        const email = job.contactEmail || "";
+                        const waNum = job.contactWhatsApp || phone;
+                        const waClean = cleanPhone(waNum);
+
                         return (
                           <article
                             key={job._id}
-                            className={`rounded-2xl border p-4 sm:p-5 transition ${
-                              isDone ? "border-white/5 bg-white/[0.01] opacity-75" : "border-white/10 bg-white/[0.02]"
+                            className={`rounded-2xl border p-4 sm:p-5 md:p-6 transition shadow-sm ${
+                              needsAction
+                                ? "border-amber-400/40 bg-amber-400/5 shadow-amber-500/5"
+                                : isDone
+                                  ? "border-[var(--border-subtle)] bg-[var(--surface-elevated)] opacity-75"
+                                  : "border-[var(--border-subtle)] bg-[var(--surface-elevated)]"
                             }`}
                           >
-                            <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-                              <div className="min-w-0 flex-1">
-                                <div className="flex flex-wrap items-center gap-2 mb-1">
-                                  <h3 className={`font-bold ${isDone ? "text-[var(--text-secondary)]" : "text-[var(--text-primary)]"}`}>{job.title}</h3>
+                            <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                              <div className="min-w-0 flex-1 space-y-2">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <h3 className={`text-base sm:text-lg font-bold break-words ${isDone ? "text-[var(--text-secondary)]" : "text-[var(--text-primary)]"}`}>
+                                    {job.title}
+                                  </h3>
                                   <StatusBadge value={job.status} />
+                                  {isMemberJob && (
+                                    <span className="rounded-full border border-violet-400/30 bg-violet-400/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-violet-300">
+                                      Member Post
+                                    </span>
+                                  )}
                                 </div>
-                                <p className="text-xs text-gray-400">{job.companyName} · {job.location || "Location not set"} · {job.employmentType}</p>
-                                <p className="mt-1 line-clamp-2 text-xs text-gray-500">{job.description}</p>
-                                {job.salaryRange && <p className="mt-1 text-xs font-semibold text-emerald-400">💰 {job.salaryRange}</p>}
+                                <p className="text-xs sm:text-sm font-semibold text-[var(--text-secondary)] break-words">
+                                  {job.companyName} {job.location ? `· 📍 ${job.location}` : ""} · 💼 {job.employmentType?.replace("_", " ")}
+                                </p>
+                                {job.salaryRange && (
+                                  <p className="inline-block text-xs sm:text-sm font-bold text-emerald-400">
+                                    💰 {job.salaryRange}
+                                  </p>
+                                )}
+                                <p className="text-xs sm:text-sm leading-relaxed text-[var(--text-secondary)] break-words whitespace-pre-line">
+                                  {job.description}
+                                </p>
+                                {job.skills?.length > 0 && (
+                                  <div className="flex flex-wrap gap-1.5 pt-1">
+                                    {job.skills.map((s) => (
+                                      <span key={s} className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface)] px-2.5 py-0.5 text-[11px] text-[var(--text-secondary)] font-medium">
+                                        {s}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {/* Provider contact — visible to admin for review */}
+                                {(job.contactPersonName || job.contactPhone || job.contactEmail) && (
+                                  <div className="mt-3 rounded-xl border border-violet-500/25 bg-violet-500/10 p-3.5 space-y-2">
+                                    <div className="flex items-center justify-between">
+                                      <p className="text-[10px] font-bold uppercase tracking-wider text-violet-400">
+                                        Job Provider Contact (Admin View)
+                                      </p>
+                                      {job.preferredContactMethod && job.preferredContactMethod !== "ANY" && (
+                                        <span className="text-[10px] text-violet-300 font-medium">Prefers: {job.preferredContactMethod}</span>
+                                      )}
+                                    </div>
+                                    <div className="grid gap-2 sm:grid-cols-3 text-xs">
+                                      {job.contactPersonName && (
+                                        <div>
+                                          <span className="text-[10px] uppercase text-[var(--text-muted)] block">Contact Person</span>
+                                          <span className="font-semibold text-[var(--text-primary)]">{job.contactPersonName}</span>
+                                        </div>
+                                      )}
+                                      {job.contactPhone && (
+                                        <div>
+                                          <span className="text-[10px] uppercase text-[var(--text-muted)] block">Phone</span>
+                                          <span className="font-semibold text-[var(--text-primary)]">{job.contactPhone}</span>
+                                        </div>
+                                      )}
+                                      {job.contactEmail && (
+                                        <div>
+                                          <span className="text-[10px] uppercase text-[var(--text-muted)] block">Email</span>
+                                          <span className="font-semibold text-[var(--text-primary)]">{job.contactEmail}</span>
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {/* Action Links */}
+                                    <div className="flex flex-wrap gap-2 pt-1">
+                                      {phoneClean && (
+                                        <a
+                                          href={`tel:${phoneClean.startsWith("+") ? phoneClean : `+91${phoneClean}`}`}
+                                          className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-bold text-emerald-300 hover:bg-emerald-500/20 transition-colors"
+                                        >
+                                          <FiPhone size={11} /> Call
+                                        </a>
+                                      )}
+                                      {waClean && (
+                                        <a
+                                          href={`https://wa.me/${waClean.startsWith("+") ? waClean.replace("+", "") : `91${waClean}`}`}
+                                          target="_blank" rel="noreferrer"
+                                          className="inline-flex items-center gap-1.5 rounded-lg border border-green-500/30 bg-green-500/10 px-2.5 py-1 text-[11px] font-bold text-green-300 hover:bg-green-500/20 transition-colors"
+                                        >
+                                          <FaWhatsapp size={11} /> WhatsApp
+                                        </a>
+                                      )}
+                                      {email && (
+                                        <a
+                                          href={`mailto:${email}`}
+                                          className="inline-flex items-center gap-1.5 rounded-lg border border-sky-500/30 bg-sky-500/10 px-2.5 py-1 text-[11px] font-bold text-sky-300 hover:bg-sky-500/20 transition-colors"
+                                        >
+                                          <FiMail size={11} /> Email
+                                        </a>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Admin notes */}
+                                {job.reviewNote && (
+                                  <div className="rounded-xl border border-orange-400/25 bg-orange-400/10 px-3.5 py-2 text-xs text-orange-300">
+                                    <span className="font-bold">Changes Requested: </span>{job.reviewNote}
+                                  </div>
+                                )}
+                                {job.moderationReason && job.status === "REJECTED" && (
+                                  <div className="rounded-xl border border-red-400/25 bg-red-400/10 px-3.5 py-2 text-xs text-red-300">
+                                    <span className="font-bold">Rejection Reason: </span>{job.moderationReason}
+                                  </div>
+                                )}
+
+                                {job.submittedAt && (
+                                  <p className="text-[10px] text-[var(--text-muted)]">
+                                    Submitted: {new Date(job.submittedAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                                  </p>
+                                )}
                               </div>
                             </div>
 
-                            <div className="mt-4 grid gap-2 border-t border-white/10 pt-4 lg:grid-cols-[1fr_auto]">
-                              {draftInput(job._id, "Moderation reason")}
+                            <div className="mt-4 grid gap-2.5 border-t border-[var(--border-subtle)] pt-4">
+                              {draftInput(job._id, needsAction ? "Review note / rejection reason (required for Reject & Changes)" : "Moderation reason")}
                               <div className="flex flex-wrap gap-2 [&>*]:flex-1 sm:[&>*]:flex-none">
                                 {job.status !== "PUBLISHED" && (
-                                  <Button tone="success" onClick={() => moderateJob(job._id, "PUBLISH")} disabled={busyId === job._id}>Publish</Button>
+                                  <Button
+                                    tone="success"
+                                    onClick={() => {
+                                      if (window.confirm(`Approve and publish "${job.title}"? It will become visible to all job seekers.`)) {
+                                        moderateJob(job._id, "PUBLISH");
+                                      }
+                                    }}
+                                    disabled={busyId === job._id}
+                                  >
+                                    Approve &amp; Publish
+                                  </Button>
+                                )}
+                                {needsAction && (
+                                  <Button
+                                    tone="warning"
+                                    onClick={() => moderateJob(job._id, "REQUEST_CHANGES")}
+                                    disabled={busyId === job._id}
+                                  >
+                                    Request Changes
+                                  </Button>
+                                )}
+                                {(needsAction || job.status === "PUBLISHED") && (
+                                  <Button
+                                    tone="danger"
+                                    onClick={() => moderateJob(job._id, "REJECT")}
+                                    disabled={busyId === job._id}
+                                  >
+                                    Reject
+                                  </Button>
                                 )}
                                 {job.status === "PUBLISHED" && (
-                                  <Button tone="warning" onClick={() => moderateJob(job._id, "EXPIRE")} disabled={busyId === job._id}>Expire</Button>
+                                  <Button tone="warning" onClick={() => moderateJob(job._id, "EXPIRE")} disabled={busyId === job._id}>
+                                    Expire
+                                  </Button>
                                 )}
                                 {job.status !== "ARCHIVED" && (
-                                  <Button icon={FaArchive} tone="danger" onClick={() => moderateJob(job._id, "ARCHIVE")} disabled={busyId === job._id}>Archive</Button>
+                                  <Button icon={FaArchive} tone="danger" onClick={() => moderateJob(job._id, "ARCHIVE")} disabled={busyId === job._id}>
+                                    Archive
+                                  </Button>
                                 )}
                               </div>
                             </div>
@@ -762,58 +1029,109 @@ const OpportunityAdmin = () => {
                 SCHOLARSHIPS MODULE
             ══════════════════════════════════════════════════════════════ */}
             {activeTab === "scholarships" && (
-              <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
-                {/* Create / Edit Scholarship Form */}
-                <form onSubmit={createScholarship} className="grid h-fit gap-4 rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-5">
-                  <h2 className="text-base font-bold text-[var(--text-primary)]">
-                    {editingScholarshipId ? "Edit Scholarship" : "Create Education Scholarship"}
-                  </h2>
-                  <Field label="Scholarship Title *"><input className={inputClass} value={scholarshipForm.title} onChange={(e) => setScholarshipForm((cur) => ({ ...cur, title: e.target.value }))} placeholder="e.g. Higher Education Merit Scholarship" required /></Field>
-                  <Field label="Description *"><textarea className={textareaClass} value={scholarshipForm.description} onChange={(e) => setScholarshipForm((cur) => ({ ...cur, description: e.target.value }))} placeholder="Program objectives, selection criteria..." required /></Field>
-                  <Field label="Eligibility Criteria"><textarea className={textareaClass} value={scholarshipForm.eligibility} onChange={(e) => setScholarshipForm((cur) => ({ ...cur, eligibility: e.target.value }))} placeholder="Minimum 75% in 12th standard, enrolled in recognized university..." /></Field>
-                  <div className="grid gap-4 md:grid-cols-3">
-                    <Field label="Grant Amount (Rs.)"><input type="number" className={inputClass} value={scholarshipForm.amount} onChange={(e) => setScholarshipForm((cur) => ({ ...cur, amount: e.target.value }))} placeholder="25000" /></Field>
-                    <Field label="Seats Available"><input type="number" className={inputClass} value={scholarshipForm.seats} onChange={(e) => setScholarshipForm((cur) => ({ ...cur, seats: e.target.value }))} placeholder="10" /></Field>
-                    <Field label="Deadline *"><input type="date" className={inputClass} value={scholarshipForm.applicationDeadline} onChange={(e) => setScholarshipForm((cur) => ({ ...cur, applicationDeadline: e.target.value }))} required /></Field>
-                  </div>
-                  <Field label="Status">
-                    <select className={inputClass} value={scholarshipForm.status} onChange={(e) => setScholarshipForm((cur) => ({ ...cur, status: e.target.value }))}>
-                      <option value="OPEN">Open (Accepting Applications)</option>
-                      <option value="DRAFT">Draft</option>
-                    </select>
-                  </Field>
-                  <div className="grid gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-3.5 sm:p-4">
-                    <div>
-                      <h3 className="text-xs font-bold text-[var(--text-primary)]">Mandatory Supporting Proof</h3>
-                      <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">Applicant must upload this proof before submitting.</p>
+              <div className="flex flex-col gap-6 w-full min-w-0">
+                {/* Create / Edit Scholarship Form (Toggleable) */}
+                {showScholarshipForm && (
+                  <form onSubmit={createScholarship} className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-4 sm:p-6 shadow-xl space-y-4 w-full min-w-0">
+                    <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
+                      <div>
+                        <h2 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">
+                          {editingScholarshipId ? "Edit Scholarship" : "Create Education Scholarship"}
+                        </h2>
+                        <p className="text-xs text-[var(--text-muted)]">Configure financial grant, eligibility and required proof</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowScholarshipForm(false);
+                          setEditingScholarshipId(null);
+                        }}
+                        className="flex h-8 w-8 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
+                      >
+                        <FiX size={16} />
+                      </button>
                     </div>
-                    <Field label="Proof Name *"><input className={inputClass} value={scholarshipForm.requiredDocument.name} onChange={(e) => setScholarshipForm((cur) => ({ ...cur, requiredDocument: { ...cur.requiredDocument, name: e.target.value } }))} placeholder="Latest College Marksheet / Income Certificate" required={scholarshipForm.status === "OPEN"} /></Field>
-                    <Field label="Instructions"><textarea className={textareaClass} value={scholarshipForm.requiredDocument.instructions} onChange={(e) => setScholarshipForm((cur) => ({ ...cur, requiredDocument: { ...cur.requiredDocument, instructions: e.target.value } }))} placeholder="Upload a clear PDF or scanned image..." /></Field>
-                    <Field label="Reference Form (PDF/Image)"><input type="file" accept="application/pdf,image/jpeg,image/png" className={`${inputClass} !py-2`} onChange={(e) => setScholarshipDocumentFile(e.target.files?.[0] || null)} /></Field>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <Button icon={FaPaperPlane} tone="success" disabled={busyId === "scholarship"}>
-                      {editingScholarshipId ? "Update Scholarship" : "Save Scholarship"}
-                    </Button>
-                    {editingScholarshipId && (
+
+                    <div className="grid gap-3.5 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      <div className="sm:col-span-2">
+                        <Field label="Scholarship Title *">
+                          <input className={inputClass} value={scholarshipForm.title} onChange={(e) => setScholarshipForm((cur) => ({ ...cur, title: e.target.value }))} placeholder="e.g. Higher Education Merit Scholarship" required />
+                        </Field>
+                      </div>
+                      <div>
+                        <Field label="Status">
+                          <select className={inputClass} value={scholarshipForm.status} onChange={(e) => setScholarshipForm((cur) => ({ ...cur, status: e.target.value }))}>
+                            <option value="OPEN">Open (Accepting Applications)</option>
+                            <option value="DRAFT">Draft</option>
+                          </select>
+                        </Field>
+                      </div>
+                      <div className="sm:col-span-2 lg:col-span-3">
+                        <Field label="Description *">
+                          <textarea className={textareaClass} value={scholarshipForm.description} onChange={(e) => setScholarshipForm((cur) => ({ ...cur, description: e.target.value }))} placeholder="Program objectives, selection criteria..." required />
+                        </Field>
+                      </div>
+                      <div className="sm:col-span-2 lg:col-span-3">
+                        <Field label="Eligibility Criteria">
+                          <textarea className={textareaClass} value={scholarshipForm.eligibility} onChange={(e) => setScholarshipForm((cur) => ({ ...cur, eligibility: e.target.value }))} placeholder="Minimum 75% in 12th standard, enrolled in recognized university..." />
+                        </Field>
+                      </div>
+                      <div>
+                        <Field label="Grant Amount (Rs.)">
+                          <input type="number" className={inputClass} value={scholarshipForm.amount} onChange={(e) => setScholarshipForm((cur) => ({ ...cur, amount: e.target.value }))} placeholder="25000" />
+                        </Field>
+                      </div>
+                      <div>
+                        <Field label="Seats Available">
+                          <input type="number" className={inputClass} value={scholarshipForm.seats} onChange={(e) => setScholarshipForm((cur) => ({ ...cur, seats: e.target.value }))} placeholder="10" />
+                        </Field>
+                      </div>
+                      <div>
+                        <Field label="Deadline *">
+                          <input type="date" className={inputClass} value={scholarshipForm.applicationDeadline} onChange={(e) => setScholarshipForm((cur) => ({ ...cur, applicationDeadline: e.target.value }))} required />
+                        </Field>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-3.5 sm:p-4">
+                      <div>
+                        <h3 className="text-xs font-bold text-[var(--text-primary)]">Mandatory Supporting Proof</h3>
+                        <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">Applicant must upload this proof before submitting.</p>
+                      </div>
+                      <Field label="Proof Name *">
+                        <input className={inputClass} value={scholarshipForm.requiredDocument.name} onChange={(e) => setScholarshipForm((cur) => ({ ...cur, requiredDocument: { ...cur.requiredDocument, name: e.target.value } }))} placeholder="Latest College Marksheet / Income Certificate" required={scholarshipForm.status === "OPEN"} />
+                      </Field>
+                      <Field label="Instructions">
+                        <textarea className={textareaClass} value={scholarshipForm.requiredDocument.instructions} onChange={(e) => setScholarshipForm((cur) => ({ ...cur, requiredDocument: { ...cur.requiredDocument, instructions: e.target.value } }))} placeholder="Upload a clear PDF or scanned image..." />
+                      </Field>
+                      <Field label="Reference Form (PDF/Image)">
+                        <input type="file" accept="application/pdf,image/jpeg,image/png" className={`${inputClass} !py-2`} onChange={(e) => setScholarshipDocumentFile(e.target.files?.[0] || null)} />
+                      </Field>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      <Button icon={FaPaperPlane} tone="success" disabled={busyId === "scholarship"}>
+                        {editingScholarshipId ? "Update Scholarship" : "Save Scholarship"}
+                      </Button>
                       <Button
                         type="button"
                         onClick={() => {
+                          setShowScholarshipForm(false);
                           setEditingScholarshipId(null);
                           setScholarshipForm(initialScholarship);
                           setScholarshipDocumentFile(null);
                         }}
                       >
-                        Cancel Edit
+                        Cancel
                       </Button>
-                    )}
-                  </div>
-                </form>
+                    </div>
+                  </form>
+                )}
 
                 {/* Scholarships Roster with Tabs + Search */}
-                <section className="grid content-start gap-3">
+                <section className="flex flex-col gap-4 w-full min-w-0">
                   <SummaryCards data={scholarships} config={MODULE_STATUS_CONFIG.scholarships} />
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-2 w-full min-w-0">
                     <StatusTabBar
                       data={scholarships}
                       config={MODULE_STATUS_CONFIG.scholarships}
@@ -830,33 +1148,44 @@ const OpportunityAdmin = () => {
                   {filteredScholarships.length === 0 ? (
                     <ModuleEmptyState statusKey={statusFilters.scholarships} moduleLabel="scholarships" />
                   ) : (
-                    <div className="grid gap-3">
+                    <div className="grid gap-4 w-full min-w-0">
                       {filteredScholarships.map((scholarship) => {
                         const isDone = DONE_STATUSES.has(scholarship.status);
                         return (
                           <article
                             key={scholarship._id}
-                            className={`rounded-2xl border p-4 sm:p-5 transition ${
-                              isDone ? "border-white/5 bg-white/[0.01] opacity-75" : "border-white/10 bg-white/[0.02]"
+                            className={`rounded-2xl border p-4 sm:p-5 md:p-6 transition shadow-sm ${
+                              isDone ? "border-[var(--border-subtle)] bg-[var(--surface-elevated)] opacity-75" : "border-[var(--border-subtle)] bg-[var(--surface-elevated)]"
                             }`}
                           >
                             <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-                              <div>
+                              <div className="min-w-0 flex-1 space-y-1.5">
                                 <div className="flex flex-wrap items-center gap-2 mb-1">
-                                  <h3 className={`font-bold ${isDone ? "text-[var(--text-secondary)]" : "text-[var(--text-primary)]"}`}>{scholarship.title}</h3>
+                                  <h3 className={`text-base sm:text-lg font-bold break-words ${isDone ? "text-[var(--text-secondary)]" : "text-[var(--text-primary)]"}`}>
+                                    {scholarship.title}
+                                  </h3>
                                   <StatusBadge value={scholarship.status} />
                                 </div>
-                                <p className="text-xs text-gray-400 font-semibold">{money(scholarship.amount)} · Deadline {formatDate(scholarship.applicationDeadline)}</p>
-                                <p className="mt-1 line-clamp-2 text-xs text-gray-500">{scholarship.description}</p>
+                                <p className="text-xs sm:text-sm font-semibold text-emerald-400">
+                                  {money(scholarship.amount)} · ⏳ Deadline {formatDate(scholarship.applicationDeadline)} {scholarship.seats ? `· 🪑 ${scholarship.seats} Seats` : ""}
+                                </p>
+                                <p className="text-xs sm:text-sm leading-relaxed text-[var(--text-secondary)] break-words whitespace-pre-line">
+                                  {scholarship.description}
+                                </p>
+                                {scholarship.eligibility && (
+                                  <p className="text-xs text-[var(--text-muted)] italic">
+                                    <span className="font-semibold text-[var(--text-secondary)]">Eligibility: </span>{scholarship.eligibility}
+                                  </p>
+                                )}
                                 {scholarship.requiredDocument?.name && (
                                   <p className="mt-1.5 text-xs text-emerald-400 font-medium">
-                                    Proof: {scholarship.requiredDocument.name}
+                                    Required Proof: {scholarship.requiredDocument.name}
                                   </p>
                                 )}
                               </div>
                             </div>
 
-                            <div className="mt-4 grid gap-2 border-t border-white/10 pt-4 md:grid-cols-[1fr_auto]">
+                            <div className="mt-4 grid gap-2.5 border-t border-[var(--border-subtle)] pt-4 md:grid-cols-[1fr_auto]">
                               {draftInput(scholarship._id, "Archive reason")}
                               <div className="flex flex-wrap gap-2 [&>*]:flex-1 sm:[&>*]:flex-none">
                                 <Button
@@ -878,6 +1207,7 @@ const OpportunityAdmin = () => {
                                       },
                                     });
                                     setScholarshipDocumentFile(null);
+                                    setShowScholarshipForm(true);
                                   }}
                                 >
                                   Edit

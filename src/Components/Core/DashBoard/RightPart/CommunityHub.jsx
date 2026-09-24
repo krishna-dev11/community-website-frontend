@@ -545,8 +545,7 @@ const CommunityHub = () => {
           </div>
         ) : (
           <>
-            {/* TAB 1: MEMBERSHIP CARD */}
-            {activeTab === "card" && (
+{activeTab === "card" && (
               <section className="flex flex-col items-center">
                 {card ? (
                   <div className="w-full max-w-xl flex flex-col items-center">
@@ -555,39 +554,39 @@ const CommunityHub = () => {
                       <div
                         ref={cardRef}
                         data-membership-card="true"
-                        className="w-full relative rounded-2xl border-2 border-[#00DFA5] p-5 sm:p-6 text-white shadow-2xl overflow-hidden"
-                        style={{
-                          background: "linear-gradient(135deg, #0d221a 0%, #06140e 60%, #030a07 100%)",
-                          maxWidth: "540px",
-                        }}
+                        className="w-full relative rounded-2xl border-2 border-emerald-800/30 bg-white p-5 sm:p-6 text-gray-900 shadow-xl overflow-hidden"
+                        style={{ maxWidth: "560px" }}
                       >
-                        {/* Glows */}
-                        <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-[#00DFA5] opacity-20 blur-3xl" />
-                        <div className="pointer-events-none absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-[#19C9C0] opacity-15 blur-3xl" />
+                        {/* Top Tricolor Accent Bar */}
+                        <div className="flex h-1.5 w-full mb-4 overflow-hidden rounded-full">
+                          <div className="w-1/3 bg-amber-500" />
+                          <div className="w-1/3 bg-gray-100 border-y border-gray-200" />
+                          <div className="w-1/3 bg-emerald-600" />
+                        </div>
 
                         {/* Top Header */}
-                        <div className="relative flex items-center justify-between border-b border-[#00DFA5]/30 pb-3">
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-xl border border-amber-400/70 bg-gradient-to-br from-amber-500/30 to-[#00DFA5]/20 shadow-md">
-                              <span className="text-lg font-black text-amber-400">ॐ</span>
+                        <div className="flex items-center justify-between border-b border-gray-200 pb-4">
+                          <div className="flex items-center gap-3.5">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-emerald-800/20 bg-emerald-50 shadow-sm">
+                              <span className="text-xl font-black text-emerald-800">ॐ</span>
                             </div>
                             <div>
-                              <h3 className="text-xs font-black uppercase tracking-wider text-amber-400 leading-tight">
+                              <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-emerald-900 leading-tight">
                                 SHRI SAMAJ COMMUNITY TRUST
                               </h3>
-                              <p className="text-[9px] font-bold uppercase tracking-wider text-[#00DFA5]">
-                                Official Verified Identity Card
+                              <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-700 mt-0.5">
+                                KALYAN SAMITI, UJJAIN
                               </p>
                             </div>
                           </div>
-                          <span className="inline-flex items-center gap-1 rounded-full border border-[#00DFA5]/40 bg-[#00DFA5]/15 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-emerald-300">
-                            <FiCheckCircle size={10} /> Active
+                          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700">
+                            <FiCheckCircle size={12} className="text-emerald-600" /> Active
                           </span>
                         </div>
 
                         {/* Card Body */}
-                        <div className="relative mt-4 flex items-center justify-between gap-3 sm:gap-4">
-                          <div className="flex items-start gap-3 sm:gap-4 min-w-0 flex-1">
+                        <div className="mt-5 flex flex-col sm:flex-row items-center justify-between gap-5">
+                          <div className="flex items-start gap-4 w-full sm:w-auto min-w-0 flex-1">
                             <div className="relative shrink-0">
                               <img
                                 src={
@@ -596,52 +595,56 @@ const CommunityHub = () => {
                                 }
                                 alt={card.name}
                                 crossOrigin="anonymous"
-                                className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl border-2 border-[#00DFA5] object-cover shadow-lg"
+                                className="h-24 w-24 rounded-xl border-2 border-emerald-800 object-cover shadow-md"
                               />
-                              <div className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border border-gray-900 bg-[#00DFA5] text-black">
-                                <FiUserCheck size={11} />
+                              <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-emerald-600 text-white shadow-sm">
+                                <FiUserCheck size={12} />
                               </div>
                             </div>
                             <div className="min-w-0 flex-1 text-left">
-                              <h4 className="text-sm sm:text-base font-black text-white truncate">{card.name}</h4>
-                              <p className="font-mono text-xs font-bold uppercase tracking-wider text-[#00DFA5]">
-                                {card?.memberId ? `SMJ-${String(card.memberId).slice(-8).toUpperCase()}` : "SMJ-MEMBER"}
-                              </p>
-                              {card.family?.familyName && (
-                                <p className="text-[11px] text-gray-300 mt-1 truncate">
-                                  Family: <strong className="text-white">{card.family.familyName}</strong>
+                              <div className="mb-2">
+                                <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Name / नाम:</p>
+                                <h4 className="text-base sm:text-lg font-black text-gray-900 truncate tracking-tight">{card.name}</h4>
+                              </div>
+                              <div className="mb-2">
+                                <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Member ID / आईडी:</p>
+                                <p className="font-mono text-xs font-bold uppercase tracking-wider text-orange-600">
+                                  {card?.memberId ? `SMJ-${String(card.memberId).slice(-8).toUpperCase()}` : "SMJ-MEMBER"}
                                 </p>
-                              )}
-                              <p className="text-[10px] text-gray-400 mt-1">
-                                Issued: {card.issuedAt ? formatDate(card.issuedAt) : "Active"} · Lifetime
-                              </p>
+                              </div>
+                              <div>
+                                <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Issued Date / जारी तिथि:</p>
+                                <p className="text-xs font-bold text-gray-800">
+                                  {card.issuedAt ? formatDate(card.issuedAt) : "22/9/2026"}
+                                </p>
+                              </div>
                             </div>
                           </div>
 
                           {/* QR Code */}
-                          <div className="flex shrink-0 flex-col items-center rounded-xl border border-[#00DFA5]/40 bg-white p-2 shadow-lg">
-                            <div className="h-14 w-14 sm:h-16 sm:w-16">
+                          <div className="flex shrink-0 flex-col items-center rounded-xl border border-gray-200 bg-gray-50 p-2.5 shadow-sm">
+                            <div className="h-20 w-20">
                               <QRCode
                                 value={verificationUrl}
-                                size={64}
+                                size={80}
                                 style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-                                viewBox={`0 0 64 64`}
+                                viewBox={`0 0 80 80`}
                               />
                             </div>
-                            <span className="mt-1 text-[7px] font-black uppercase tracking-wider text-black">
+                            <span className="mt-1.5 text-[8px] font-black uppercase tracking-wider text-gray-900">
                               SCAN TO VERIFY
+                            </span>
+                            <span className="text-[7px] text-gray-500 tracking-tight">
+                              MEMBERSHIP VERIFICATION
                             </span>
                           </div>
                         </div>
 
-                        {/* Card Footer */}
-                        <div className="relative mt-4 flex items-center justify-between border-t border-[#00DFA5]/25 pt-2 text-[9px] text-gray-400">
-                          <span className="flex items-center gap-1 text-[#00DFA5]">
-                            <FiShield size={10} /> Digital Credential Standard
-                          </span>
-                          <span className="font-mono font-bold tracking-wider text-[#00DFA5]">
-                            SMJ-SECURITY-AUTHENTICATED
-                          </span>
+                        {/* Card Footer Tagline */}
+                        <div className="mt-6 border-t border-gray-200 pt-3 text-center">
+                          <p className="text-xs font-bold tracking-wide text-gray-900">
+                            <span className="text-orange-600 font-extrabold">समाज</span> की पहचान, हमारा अधिकार
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -1050,13 +1053,15 @@ const CommunityHub = () => {
                       <article key={achievement._id} className="py-4">
                         <div className="flex flex-col sm:flex-row gap-3.5">
                           {achievement.recipientPhoto?.url || achievement.image?.url ? (
-                            <img
-                              src={achievement.recipientPhoto?.url || achievement.image?.url}
-                              alt={achievement.title}
-                              className="h-32 sm:h-20 w-full sm:w-24 shrink-0 rounded-xl border border-[var(--border-subtle)] object-cover shadow-md"
-                            />
+                            <div className="flex aspect-[4/5] w-full shrink-0 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-2 shadow-md sm:w-24">
+                              <img
+                                src={achievement.recipientPhoto?.url || achievement.image?.url}
+                                alt={achievement.title}
+                                className="h-full w-full object-contain"
+                              />
+                            </div>
                           ) : (
-                            <div className="flex h-20 w-full sm:w-24 shrink-0 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-amber-300">
+                            <div className="flex aspect-[4/5] w-full shrink-0 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-amber-300 sm:w-24">
                               <FiAward size={28} />
                             </div>
                           )}
