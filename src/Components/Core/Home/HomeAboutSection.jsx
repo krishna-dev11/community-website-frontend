@@ -102,7 +102,7 @@ const HomeAboutSection = () => {
               {/* Heritage image */}
               <div className="relative aspect-[4/3] overflow-hidden">
                 <img
-                  src="/images/tribal_heritage.jpg"
+                  src="/images/image-1.jpg"
                   alt="आदिवासी हल्बा/हल्बी समाज की सांस्कृतिक विरासत"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   onError={(e) => {

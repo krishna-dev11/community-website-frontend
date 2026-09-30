@@ -3,32 +3,44 @@
 
 <head>
   <meta charset="UTF-8" />
-  <link rel="icon" type="image/jpg" href="/community-website-frontend/src/assets/Images/Brain.jpg" />
+
+  <!-- Samaj Favicon -->
+  <link rel="icon" type="image/png" href="/logo.png" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>आदिवासी हल्बा/हल्बी समाज कल्याण समिति, उज्जैन | Official Portal</title>
-  <meta name="description"
-    content="आदिवासी हल्बा/हल्बी समाज कल्याण समिति, उज्जैन का आधिकारिक डिजिटल मंच। “गर्व से कहो हम आदिवासी हैं, भारत के मूल निवासी हैं”" />
-  <!-- Anti-FOUC: Set theme before React renders to prevent color flash (Default = LIGHT) -->
+
+  <title>
+    आदिवासी हल्बा/हल्बी समाज कल्याण समिति, उज्जैन | Official Portal
+  </title>
+
+  <meta
+    name="description"
+    content="आदिवासी हल्बा/हल्बी समाज कल्याण समिति, उज्जैन का आधिकारिक डिजिटल मंच। “गर्व से कहो हम आदिवासी हैं, भारत के मूल निवासी हैं”"
+  />
+
+  <!-- Anti-FOUC: Set theme before React renders to prevent color flash -->
   <script>
     (function () {
       try {
-        var t = localStorage.getItem('samaj_theme');
-        if (t === 'light' || t === 'dark') {
-          document.documentElement.setAttribute('data-theme', t);
+        var t = localStorage.getItem("samaj_theme");
+
+        if (t === "light" || t === "dark") {
+          document.documentElement.setAttribute("data-theme", t);
         } else {
-          document.documentElement.setAttribute('data-theme', 'light');
+          document.documentElement.setAttribute("data-theme", "light");
         }
       } catch (e) {
-        document.documentElement.setAttribute('data-theme', 'light');
+        document.documentElement.setAttribute("data-theme", "light");
       }
     })();
   </script>
 </head>
 
 <body>
+
   <div id="root"></div>
 
-  <!-- IMPORTANT: Vite needs this script -->
+  <!-- Vite entry -->
   <script type="module" src="/src/index.jsx"></script>
 
 </body>

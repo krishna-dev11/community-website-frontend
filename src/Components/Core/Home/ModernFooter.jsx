@@ -38,9 +38,13 @@ const ModernFooter = () => {
           {/* Brand Col */}
           <div className="lg:col-span-2 flex flex-col gap-4">
             <Link to="/" className="flex items-center gap-3 w-fit text-decoration-none">
-              <div className="h-10 w-10 rounded-xl bg-[var(--accent-primary)]/10 border border-[var(--accent-primary)]/30 flex items-center justify-center shadow-sm">
-                <span className="text-[var(--accent-primary)] font-black text-xl">ह</span>
-              </div>
+<div className="h-10 w-10 rounded-xl bg-[var(--accent-primary)]/10 border border-[var(--accent-primary)]/30 flex items-center justify-center shadow-sm overflow-hidden">
+  <img
+    src="/logo.png"
+    alt="Adivasi Halba/Halbi Samaj Logo"
+    className="h-full w-full object-contain p-1"
+  />
+</div>
               <div className="flex flex-col leading-tight">
                 <span className="text-base font-black tracking-wider uppercase text-[var(--text-primary)]">
                   {isHindi ? organizationInfo.nameHi : organizationInfo.nameEn}

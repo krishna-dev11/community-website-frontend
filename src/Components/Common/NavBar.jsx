@@ -454,7 +454,18 @@ const NavBar = () => {
               flexShrink: 0,
             }}
           >
-            <img
+          {
+            isDark ? <img
+              src="/logodark.png"
+              alt="आदिवासी हल्बा/हल्बी समाज कल्याण समिति, उज्जैन राज."
+              style={{
+                height: 48,
+                width: "auto",
+                maxWidth: 150,
+                objectFit: "contain",
+                display: "block",
+              }}
+            /> : <img
               src="/logo.png"
               alt="आदिवासी हल्बा/हल्बी समाज कल्याण समिति, उज्जैन राज."
               style={{
@@ -465,6 +476,7 @@ const NavBar = () => {
                 display: "block",
               }}
             />
+          }
           </Link>
 
           {/* DESKTOP NAVIGATION MENU */}

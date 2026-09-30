@@ -1015,3 +1015,19 @@ textarea:focus {
   box-shadow: 0 16px 40px -12px rgba(0, 223, 165, 0.18), 0 0 0 1px rgba(0, 223, 165, 0.2);
 }
 
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 60s linear infinite;
+  width: max-content;
+  will-change: transform;
+}

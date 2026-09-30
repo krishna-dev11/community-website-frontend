@@ -74,13 +74,22 @@ const SamajHeroSlider = () => {
 
   return (
     <div
-      className="relative w-full overflow-hidden rounded-xl sm:rounded-2xl border border-stone-200 dark:border-stone-800 bg-stone-100 dark:bg-stone-900 select-none"
-      style={{ aspectRatio: "16 / 7" }}
-      onTouchStart={onTouchStart}
-      onTouchEnd={onTouchEnd}
-      aria-roledescription="carousel"
-      aria-label="Samaj Community Photo Slideshow"
-    >
+  className="
+    relative w-full overflow-hidden
+    rounded-[10px] sm:rounded-[8px] lg:rounded-[16px]
+    border border-stone-200 dark:border-stone-800
+    bg-stone-100 dark:bg-stone-900
+    select-none
+    aspect-[4/3]
+    sm:aspect-[16/10]
+    md:aspect-[16/9]
+    lg:aspect-[16/7]
+  "
+  onTouchStart={onTouchStart}
+  onTouchEnd={onTouchEnd}
+  aria-roledescription="carousel"
+  aria-label="Samaj Community Photo Slideshow"
+>
       {/* IMAGE */}
       <img
         key={current}
@@ -130,11 +139,10 @@ const SamajHeroSlider = () => {
             key={i}
             onClick={() => { goTo(i); resetTimer(); }}
             aria-label={`Go to slide ${i + 1}`}
-            className={`h-2 rounded-full transition-all duration-300 ${
-              i === current
+            className={`h-2 rounded-full transition-all duration-300 ${i === current
                 ? "w-6 bg-white"
                 : "w-2 bg-white/50 hover:bg-white/75"
-            }`}
+              }`}
           />
         ))}
       </div>
