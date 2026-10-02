@@ -28,6 +28,7 @@ import ContentAdmin from "./Components/Core/DashBoard/RightPart/ContentAdmin";
 import FinanceAdmin from "./Components/Core/DashBoard/RightPart/FinanceAdmin";
 import MatrimonialAdmin from "./Components/Core/DashBoard/RightPart/MatrimonialAdmin";
 import OpportunityAdmin from "./Components/Core/DashBoard/RightPart/OpportunityAdmin";
+import AdminLifecycleQueue from "./Components/Core/DashBoard/RightPart/AdminLifecycleQueue";
 import NotFound from "./Components/Common/NotFound";
 import AIGeminiChat from "./Components/Common/AIGeminiChat";
 import PublicResourcePage from "./Pages/PublicResourcePage";
@@ -90,6 +91,8 @@ function App() {
         <Route path="/donate" element={<DonatePage />} />
         <Route path="/verify-member/:memberId" element={<VerifyMemberCardPage />} />
         <Route path="/verify-card/:memberId" element={<VerifyMemberCardPage />} />
+        {/* New secure token-based QR verification route */}
+        <Route path="/verify/member/:token" element={<VerifyMemberCardPage />} />
         <Route
           path="/matrimonial"
           element={
@@ -199,6 +202,7 @@ function App() {
           <Route path="/dashboard/admin/finance" element={<FinanceAdmin />} />
           <Route path="/dashboard/admin/matrimonial" element={<MatrimonialAdmin />} />
           <Route path="/dashboard/admin/opportunities" element={<OpportunityAdmin />} />
+          <Route path="/dashboard/admin/family-lifecycle" element={<AdminLifecycleQueue />} />
           <Route path="/dashboard/setting" element={<SettingIndex />} />
         </Route>
 

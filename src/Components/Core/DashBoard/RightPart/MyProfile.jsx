@@ -86,10 +86,29 @@ const MyProfile = () => {
                 {user?.firstName} {details?.middleName ? `${details.middleName} ` : ""}{user?.lastName}
               </p>
               <p className="text-[var(--text-secondary)] text-xs md:text-sm mt-0.5 break-all">{user?.email}</p>
+              {user?.memberId && (
+                <p className="mt-1 text-[10px] font-mono font-bold tracking-widest text-[var(--accent-primary)] uppercase">{user.memberId}</p>
+              )}
               <div className="mt-3 flex flex-wrap items-center justify-center md:justify-start gap-2">
-                <span className="inline-block px-3 py-1 rounded-full bg-[var(--accent-primary)]/10 border border-[var(--accent-primary)]/20 text-[10px] font-bold text-[var(--accent-primary)] uppercase tracking-wider">
+                <span className={`inline-block px-3 py-1 rounded-full border text-[10px] font-bold uppercase tracking-wider ${
+                  user?.accountStatus === 'ACTIVE' 
+                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                    : user?.accountStatus === 'PENDING'
+                    ? 'bg-amber-400/10 border-amber-400/20 text-amber-300'
+                    : 'bg-[var(--accent-primary)]/10 border-[var(--accent-primary)]/20 text-[var(--accent-primary)]'
+                }`}>
                   {user?.accountStatus || "ACTIVE"}
                 </span>
+                {user?.familyRole && (
+                  <span className="inline-block px-2.5 py-0.5 rounded-full bg-amber-400/10 border border-amber-400/20 text-[9px] font-bold text-amber-300 uppercase tracking-wider">
+                    {user.familyRole.replace('_', ' ')}
+                  </span>
+                )}
+                {user?.mustChangePassword && (
+                  <span className="inline-block px-2.5 py-0.5 rounded-full bg-red-400/10 border border-red-400/20 text-[9px] font-bold text-red-400 uppercase tracking-wider">
+                    Password Change Required
+                  </span>
+                )}
                 {user?.roles?.map((role, idx) => (
                   <span key={idx} className="inline-block px-2.5 py-0.5 rounded-full bg-[var(--surface-elevated)] border border-[var(--border-subtle)] text-[9px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">
                     {role}
@@ -161,12 +180,13 @@ const MyProfile = () => {
         {/* Section 5: Community & Samaj Info */}
         <ProfileSection icon={FiUsers} title="Samaj & Membership Record" onEdit={null}>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-6">
-            <DetailItem label="Membership ID" value={user?._id ? `SMJ-${String(user._id).slice(-6).toUpperCase()}` : "Pending"} />
+            <DetailItem label="Permanent Member ID" value={user?.memberId || "Pending Assignment"} />
             <DetailItem label="Membership Status" value={user?.accountStatus || "ACTIVE"} />
+            <DetailItem label="Family Role" value={user?.familyRole ? user.familyRole.replace(/_/g, ' ') : "Member"} />
             <DetailItem label="Account Type" value={user?.accountType || "Member"} />
             <DetailItem label="Registration Date" value={user?.createdAt ? new Date(user.createdAt).toLocaleDateString("en-IN", { year: "numeric", month: "short", day: "numeric" }) : "N/A"} />
             {user?.family && (
-              <DetailItem label="Family Record" value={user.family.familyName || "Connected"} />
+              <DetailItem label="Family Record" value={typeof user.family === 'object' ? (user.family.familyName || user.family.familyCode || "Connected") : "Connected"} />
             )}
           </div>
         </ProfileSection>

@@ -32,7 +32,7 @@ import { useSelector } from "react-redux";
 import { apiConnector } from "../../../../services/apiConnector";
 import { communityEndpoints } from "../../../../services/apis";
 import FileUploadWithPreview from "../../../Common/FileUploadWithPreview";
-import { generateCardImage } from "../../../Common/MembershipCardModal";
+import { generateCardImage, generateCardBackImage } from "../../../Common/MembershipCardModal";
 
 const tabs = [
   { key: "card", label: "Membership Card", icon: FaIdCard },
@@ -276,15 +276,19 @@ const CommunityHub = () => {
     if (!card) return;
     try {
       setDownloadingCard(true);
-      const verificationUrl = card?.memberId
-        ? `${window.location.origin}/verify-member/${card.memberId}`
-        : `${window.location.origin}/verify-member/sample`;
-
-      const formattedMemberId = card?.memberId
-        ? `SMJ-${String(card.memberId).slice(-8).toUpperCase()}`
+      const effectiveId = card?.memberId
+        ? (String(card.memberId).toUpperCase().startsWith("SMJ-")
+            ? card.memberId
+            : `SMJ-${String(card.memberId).slice(-8).toUpperCase()}`)
         : "SMJ-MEMBER";
 
-      const imageBase64 = await generateCardImage(card, verificationUrl, formattedMemberId);
+      const currentVerifyUrl =
+        card?.verifyUrl ||
+        `${window.location.origin}/verify/member/${card?.verificationToken || effectiveId}`;
+      const formattedMemberId = effectiveId;
+
+      const frontBase64 = await generateCardImage(card, currentVerifyUrl, formattedMemberId);
+      const backBase64 = await generateCardBackImage(card, currentVerifyUrl, formattedMemberId);
 
       const pdf = new jsPDF({
         orientation: "landscape",
@@ -292,10 +296,16 @@ const CommunityHub = () => {
         format: [148, 105],
       });
 
-      pdf.addImage(imageBase64, "PNG", 4, 4, 140, 97);
+      // Page 1: Front Side (140mm x 89.6mm centered)
+      pdf.addImage(frontBase64, "PNG", 4, 7.7, 140, 89.6);
+
+      // Page 2: Back Side (Identical 140mm x 89.6mm centered)
+      pdf.addPage([148, 105], "landscape");
+      pdf.addImage(backBase64, "PNG", 4, 7.7, 140, 89.6);
+
       const cleanName = (card?.name || "Member").replace(/\s+/g, "_");
       pdf.save(`Samaj_Membership_Card_${cleanName}.pdf`);
-      toast.success("Membership card PDF downloaded!");
+      toast.success("Membership card PDF (Front & Back) downloaded!");
     } catch (err) {
       console.error("Card download error:", err);
       toast.error("Failed to generate PDF card");
@@ -492,9 +502,11 @@ const CommunityHub = () => {
     }
   };
 
-  const verificationUrl = card?.memberId
-    ? `${window.location.origin}/verify-member/${card.memberId}`
-    : `${window.location.origin}/verify-member/sample`;
+  const verificationUrl =
+    card?.verifyUrl ||
+    (card?.memberId
+      ? `${window.location.origin}/verify/member/${card.memberId}`
+      : `${window.location.origin}/verify/member/sample`);
 
   return (
     <div className="min-h-screen bg-[var(--bg)] px-3 py-6 text-[var(--text-primary)] md:px-6 transition-colors duration-300">

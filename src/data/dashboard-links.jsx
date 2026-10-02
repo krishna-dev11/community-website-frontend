@@ -55,6 +55,12 @@ export const sidebarLinks = [
         path: "/dashboard/admin/registrations",
         icon: "FaUserCheck",
       },
+      {
+        name: "Family Lifecycle Queue",
+        nameHi: "परिवार जीवनचक्र अनुरोध",
+        path: "/dashboard/admin/family-lifecycle",
+        icon: "FaHeartbeat",
+      },
     ],
   },
   {

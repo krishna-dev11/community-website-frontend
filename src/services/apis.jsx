@@ -3,12 +3,15 @@ const BASE_URL = import.meta.env.VITE_API_URL
 export const endpoints = {
   CHAT_BOT : BASE_URL + "/ai/chat" , 
   SENDOTP_API: BASE_URL + "/auth/sendOTP",
+  VERIFY_OTP_API: BASE_URL + "/auth/verifyOTP",
   SIGNUP_API: BASE_URL + "/auth/signUP",
   LOGIN_API: BASE_URL + "/auth/login",
   GOOGLE_AUTH_LOGIN_API : BASE_URL + "/auth/google-login",
   LOGOUT_API: BASE_URL + "/auth/logout",
   RESETPASSTOKEN_API: BASE_URL + "/auth/forgotpasswordToken",
   RESETPASSWORD_API: BASE_URL + "/auth/forgotPassword",
+  CLAIM_PROFILE_REQUEST_OTP_API: BASE_URL + "/auth/claim-profile/request-otp",
+  CLAIM_PROFILE_VERIFY_API: BASE_URL + "/auth/claim-profile/verify",
 }
 
 export const profileEndpoints = {
@@ -41,6 +44,17 @@ export const familyEndpoints = {
   FAMILY_JOIN_REQUESTS_API: (familyId) => BASE_URL + `/families/${familyId}/join-requests`,
   REVIEW_FAMILY_JOIN_REQUEST_API: (familyId, requestId) => BASE_URL + `/families/${familyId}/join-requests/${requestId}`,
   TRANSFER_FAMILY_ADMIN_API: (familyId) => BASE_URL + `/families/${familyId}/admin`,
+  ADD_FAMILY_MEMBER_API: (familyId) => BASE_URL + `/families/${familyId}/members`,
+  RESUBMIT_FAMILY_MEMBER_DOC_API: (familyId, memberId) => BASE_URL + `/families/${familyId}/members/${memberId}/resubmit-document`,
+  FIX_AND_RESUBMIT_MEMBER_API: (familyId, memberId) => BASE_URL + `/families/${familyId}/members/${memberId}/fix-and-resubmit`,
+  UPDATE_NOMINEE_API: (familyId) => BASE_URL + `/families/${familyId}/nominee`,
+  REPORT_HEAD_DEATH_API: (familyId) => BASE_URL + `/families/${familyId}/succession/report-death`,
+  REVIEW_SUCCESSION_API: (familyId, requestId) => BASE_URL + `/families/${familyId}/succession/${requestId}/review`,
+  SUBMIT_LIFECYCLE_REQUEST_API: (familyId) => BASE_URL + `/families/${familyId}/lifecycle-requests`,
+  GET_FAMILY_LIFECYCLE_REQUESTS_API: (familyId) => BASE_URL + `/families/${familyId}/lifecycle-requests`,
+  ADMIN_LIFECYCLE_REQUESTS_API: BASE_URL + "/families/admin/lifecycle-requests",
+  REVIEW_LIFECYCLE_REQUEST_API: (requestId) => BASE_URL + `/families/admin/lifecycle-requests/${requestId}/review`,
+  ADMIN_MERGE_FAMILIES_API: BASE_URL + "/families/admin/merge",
 }
 
 export const contentEndpoints = {
@@ -169,6 +183,7 @@ export const communityEndpoints = {
   SHRADHANJALI_SUPPORTING_DOCUMENT_API: (shradhanjaliId) => BASE_URL + `/community/admin/shradhanjalis/${shradhanjaliId}/supporting-document`,
   MEMBERSHIP_CARD_API: BASE_URL + "/community/membership-cards/me",
   VERIFY_MEMBERSHIP_CARD_API: (memberId) => BASE_URL + `/community/membership-cards/${memberId}/verify`,
+  VERIFY_MEMBER_BY_TOKEN_API: (token) => BASE_URL + `/community/membership-cards/verify-token/${token}`,
   PUBLISH_ISSUE_SOLUTION_API: (issueId) => BASE_URL + `/community/issues/${issueId}/publish-solution`,
   PUBLIC_SOLUTIONS_API: BASE_URL + "/community/solutions",
 }

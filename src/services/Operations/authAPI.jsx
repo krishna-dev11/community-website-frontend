@@ -7,17 +7,21 @@ import { endpoints } from "../apis";
 const {
   CHAT_BOT,
   SENDOTP_API,
+  VERIFY_OTP_API,
   SIGNUP_API,
   LOGIN_API,
   GOOGLE_AUTH_LOGIN_API,
   LOGOUT_API,
   RESETPASSTOKEN_API,
   RESETPASSWORD_API,
+  CLAIM_PROFILE_REQUEST_OTP_API,
+  CLAIM_PROFILE_VERIFY_API,
 } = endpoints;
 
 export const pendingSignupFiles = {
   identityDocument: null,
   photo: null,
+  memberFiles: {}, // { [index]: { doc: File, photo: File } }
 };
 
 export function askAI(query, setAnswer) {
@@ -43,26 +47,71 @@ export function askAI(query, setAnswer) {
   };
 }
 
-export function sendOtp(email) {
+export function sendOtp(contact, options = {}) {
   return async (dispatch) => {
-    const toastId = toast.loading("Sending OTP...");
+    const toastId = toast.loading("Sending verification code...");
     dispatch(setLoading(true));
-    const normalizedEmail = email?.trim().toLowerCase();
+    const trimmed = contact?.trim();
+    const isEmail = trimmed && trimmed.includes("@");
     try {
-      const response = await apiConnector("POST", SENDOTP_API, {
-        email: normalizedEmail,
-        checkUserPresent: true,
-      });
+      const payload = {
+        email: isEmail ? trimmed.toLowerCase() : undefined,
+        phone: !isEmail ? trimmed : undefined,
+        channel: isEmail ? "EMAIL" : "PHONE",
+        purpose: options.purpose || "REGISTRATION_CONTACT_VERIFICATION",
+        memberKey: options.memberKey || "head",
+        sessionToken: options.sessionToken || undefined,
+        checkUserPresent: options.checkUserPresent ?? false,
+      };
+
+      const response = await apiConnector("POST", SENDOTP_API, payload);
 
       if (!response?.data?.success) {
-        throw new Error(response?.data?.message || "Unable to send OTP");
+        throw new Error(response?.data?.message || "Unable to send verification code");
       }
 
-      toast.success("OTP sent to your email");
-      return true;
+      toast.success(response.data?.message || "Verification code sent");
+      return response.data?.data || true;
     } catch (error) {
       console.log("Error in sending OTP", error);
-      toast.error(error.response?.data?.message || "Could not send OTP");
+      toast.error(error.response?.data?.message || "Could not send verification code");
+      return false;
+    } finally {
+      dispatch(setLoading(false));
+      toast.dismiss(toastId);
+    }
+  };
+}
+
+export function verifyOtp(contact, otp, options = {}) {
+  return async (dispatch) => {
+    const toastId = toast.loading("Verifying code...");
+    dispatch(setLoading(true));
+    const trimmed = contact?.trim();
+    const isEmail = trimmed && trimmed.includes("@");
+    try {
+      const payload = {
+        contact: trimmed,
+        email: isEmail ? trimmed.toLowerCase() : undefined,
+        phone: !isEmail ? trimmed : undefined,
+        channel: isEmail ? "EMAIL" : "PHONE",
+        otp: String(otp).trim(),
+        purpose: options.purpose || "REGISTRATION_CONTACT_VERIFICATION",
+        memberKey: options.memberKey || "head",
+        sessionToken: options.sessionToken || undefined,
+      };
+
+      const response = await apiConnector("POST", VERIFY_OTP_API, payload);
+
+      if (!response?.data?.success) {
+        throw new Error(response?.data?.message || "Verification failed");
+      }
+
+      toast.success("Contact verified successfully");
+      return response.data?.data || true;
+    } catch (error) {
+      console.log("Error in verifyOTP", error);
+      toast.error(error.response?.data?.message || "Invalid verification code");
       return false;
     } finally {
       dispatch(setLoading(false));
@@ -73,28 +122,43 @@ export function sendOtp(email) {
 
 export function signUp(registrationData, otp, navigate) {
   return async (dispatch) => {
-    const toastId = toast.loading("Submitting registration...");
+    const toastId = toast.loading("Submitting family application...");
     dispatch(setLoading(true));
 
     try {
-      // Build multipart/form-data so files and text fields are sent together
       const formData = new FormData();
 
       const textFields = typeof registrationData === "object" ? registrationData : {};
       Object.entries(textFields).forEach(([key, value]) => {
         if (value !== null && value !== undefined && value !== "") {
-          formData.append(key, String(value));
+          if (typeof value === "object" && !(value instanceof File)) {
+            formData.append(key, JSON.stringify(value));
+          } else {
+            formData.append(key, String(value));
+          }
         }
       });
       formData.append("otp", String(otp));
 
-      // Attach actual document file
+      // Attach Family Head document
       if (pendingSignupFiles.identityDocument instanceof File) {
         formData.append("identityDocument", pendingSignupFiles.identityDocument);
       }
-      // Attach actual photo file if provided
+      // Attach Family Head photo if provided
       if (pendingSignupFiles.photo instanceof File) {
         formData.append("photo", pendingSignupFiles.photo);
+      }
+
+      // Attach member documents & photos
+      if (pendingSignupFiles.memberFiles) {
+        Object.entries(pendingSignupFiles.memberFiles).forEach(([index, files]) => {
+          if (files.doc instanceof File) {
+            formData.append(`member_doc_${index}`, files.doc);
+          }
+          if (files.photo instanceof File) {
+            formData.append(`member_photo_${index}`, files.photo);
+          }
+        });
       }
 
       const response = await apiConnector("POST", SIGNUP_API, formData, {
@@ -108,12 +172,18 @@ export function signUp(registrationData, otp, navigate) {
       // Clear pending files
       pendingSignupFiles.identityDocument = null;
       pendingSignupFiles.photo = null;
+      pendingSignupFiles.memberFiles = {};
 
-      toast.success("Application submitted! Awaiting admin approval.");
+      const headMemberId = response.data?.data?.head?.memberId;
+      toast.success(
+        headMemberId
+          ? `Application submitted! Family Head Member ID: ${headMemberId}`
+          : "Family application submitted! Awaiting committee approval."
+      );
       navigate("/login");
     } catch (error) {
       console.log("Registration error:", error.response?.data || error);
-      toast.error(error.response?.data?.message || "Registration failed. Please verify your details.");
+      toast.error(error.response?.data?.message || "Registration failed. Please check your details.");
     } finally {
       dispatch(setLoading(false));
       toast.dismiss(toastId);
@@ -121,13 +191,15 @@ export function signUp(registrationData, otp, navigate) {
   };
 }
 
-export function setLogin(email, password, navigate) {
+export function setLogin(identifier, password, navigate, onMustChangePassword = null) {
   return async (dispatch) => {
     const toastId = toast.loading("Logging in...");
     dispatch(setLoading(true));
     try {
       const response = await apiConnector("POST", LOGIN_API, {
-        email: email?.trim().toLowerCase(),
+        email: identifier?.trim(),
+        memberId: identifier?.trim(),
+        identifier: identifier?.trim(),
         password,
       });
 
@@ -137,6 +209,7 @@ export function setLogin(email, password, navigate) {
 
       const token = response.data.token || response.data.data?.token || response.data.data?.accessToken;
       const userData = response.data.user || response.data.data?.user || response.data.User;
+      const mustChangePassword = Boolean(response.data.mustChangePassword || response.data.data?.mustChangePassword || userData?.mustChangePassword);
 
       dispatch(settoken(token));
       localStorage.setItem("token", JSON.stringify(token));
@@ -144,12 +217,19 @@ export function setLogin(email, password, navigate) {
       dispatch(setUser(userData));
       localStorage.setItem("user", JSON.stringify(userData));
 
-      toast.success("Welcome back!");
-      navigate("/");
+      if (mustChangePassword && onMustChangePassword) {
+        toast("Please set your personal password before continuing.", { icon: "🔐" });
+        onMustChangePassword(true);
+      } else {
+        toast.success(userData?.memberId ? `Welcome back (${userData.memberId})!` : "Welcome back!");
+        navigate("/");
+      }
     } catch (error) {
       console.log("Login error:", error.response?.data || error);
       if (error.response?.data?.googleAuth) {
         toast.error("Please login using Google");
+      } else if (error.response?.data?.code === "AMBIGUOUS_EMAIL_LOGIN") {
+        toast.error(error.response.data.message, { duration: 6000 });
       } else if (error.response?.data?.code?.startsWith("ACCOUNT_")) {
         const status = error.response?.data?.details?.accountStatus;
         const reason = error.response?.data?.details?.latestReview?.reason;
@@ -220,6 +300,68 @@ export function setLogOut(navigate) {
     } catch (error) {
       console.log("Error in LogOut:", error);
       toast.error("Logout failed");
+    } finally {
+      dispatch(setLoading(false));
+      toast.dismiss(toastId);
+    }
+  };
+}
+
+export function claimProfileRequestOtp(identifier) {
+  return async (dispatch) => {
+    const toastId = toast.loading("Finding member record...");
+    dispatch(setLoading(true));
+    try {
+      const payload = /^SMJ-[A-Z0-9]+$/i.test(identifier?.trim())
+        ? { memberId: identifier.trim().toUpperCase() }
+        : { identityNumber: identifier?.trim() };
+
+      const response = await apiConnector("POST", CLAIM_PROFILE_REQUEST_OTP_API, payload);
+
+      if (!response.data.success) {
+        throw new Error(response.data.message);
+      }
+
+      toast.success(response.data.message);
+      return response.data.data;
+    } catch (error) {
+      console.log("Claim profile error:", error);
+      toast.error(error.response?.data?.message || "Unable to find record for claim");
+      return null;
+    } finally {
+      dispatch(setLoading(false));
+      toast.dismiss(toastId);
+    }
+  };
+}
+
+export function claimProfileVerify(payload, navigate) {
+  return async (dispatch) => {
+    const toastId = toast.loading("Activating profile & setting password...");
+    dispatch(setLoading(true));
+    try {
+      const response = await apiConnector("POST", CLAIM_PROFILE_VERIFY_API, payload);
+
+      if (!response.data.success) {
+        throw new Error(response.data.message);
+      }
+
+      const token = response.data.data?.token || response.data.data?.accessToken;
+      const userData = response.data.data?.user;
+
+      dispatch(settoken(token));
+      localStorage.setItem("token", JSON.stringify(token));
+
+      dispatch(setUser(userData));
+      localStorage.setItem("user", JSON.stringify(userData));
+
+      toast.success("Profile claimed & activated successfully! Welcome to Samaj Portal.");
+      navigate("/");
+      return true;
+    } catch (error) {
+      console.log("Claim verification error:", error);
+      toast.error(error.response?.data?.message || "Failed to claim profile. Check details and OTP.");
+      return false;
     } finally {
       dispatch(setLoading(false));
       toast.dismiss(toastId);
