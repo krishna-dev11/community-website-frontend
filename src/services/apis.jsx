@@ -29,6 +29,8 @@ export const adminEndpoints = {
   REGISTRATION_DOCUMENT_API: (userId) => BASE_URL + `/auth/registrations/${userId}/document`,
   ADMIN_INVITES_API: BASE_URL + "/admin/invites",
   REVOKE_ADMIN_INVITE_API: (inviteId) => BASE_URL + `/admin/invites/${inviteId}/revoke`,
+  RESEND_ADMIN_INVITE_API: (inviteId) => BASE_URL + `/admin/invites/${inviteId}/resend`,
+  VALIDATE_ADMIN_INVITE_API: (token) => BASE_URL + `/admin/invites/validate/${token}`,
   ACCEPT_ADMIN_INVITE_API: BASE_URL + "/admin/invites/accept",
   USERS_API: BASE_URL + "/admin/users",
   UPDATE_USER_STATUS_API: (userId) => BASE_URL + `/admin/users/${userId}/status`,

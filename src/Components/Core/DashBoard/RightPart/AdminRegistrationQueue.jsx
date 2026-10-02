@@ -22,6 +22,14 @@ import {
   FiUsers,
   FiChevronDown,
   FiChevronUp,
+  FiClock,
+  FiSlash,
+  FiUserCheck,
+  FiSend,
+  FiMail,
+  FiUserX,
+  FiRefreshCw,
+  FiUser,
 } from "react-icons/fi";
 import { useSelector } from "react-redux";
 import { apiConnector } from "../../../../services/apiConnector";
@@ -98,10 +106,27 @@ const AdminRegistrationQueue = () => {
   const [users, setUsers] = useState([]);
   const [familyApplications, setFamilyApplications] = useState([]);
   const [invites, setInvites] = useState([]);
+  const [activeAdmins, setActiveAdmins] = useState([]);
+  const [inviteSubTab, setInviteSubTab] = useState("pending");
+  const [revokingInvite, setRevokingInvite] = useState(null);
+  const [resendingId, setResendingId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [activeUserId, setActiveUserId] = useState(null);
   const [inviteForm, setInviteForm] = useState({ email: "", roles: ["CONTENT_ADMIN"] });
+
+  const isSuperAdmin = user?.accountType === "Admin" && (user?.roles || []).includes("SUPER_ADMIN");
+
+  const AVAILABLE_ADMIN_ROLES = useMemo(() => [
+    { key: "CONTENT_ADMIN", label: "Content Admin", desc: "Notices, gallery & news" },
+    { key: "MODERATOR", label: "Moderator", desc: "Member verification & moderation" },
+    { key: "TREASURER", label: "Treasurer", desc: "Donations & financial records" },
+    { key: "MATRIMONIAL_ADMIN", label: "Matrimonial Admin", desc: "Matrimonial listings" },
+    { key: "SCHOLARSHIP_ADMIN", label: "Scholarship Admin", desc: "Educational aid & awards" },
+    { key: "JOB_ADMIN", label: "Job Admin", desc: "Employment & career postings" },
+    { key: "DHARAMSHALA_ADMIN", label: "Dharamshala Admin", desc: "Room bookings & facilities" },
+    ...(isSuperAdmin ? [{ key: "SUPER_ADMIN", label: "Super Admin", desc: "Complete administrative control" }] : []),
+  ], [isSuperAdmin]);
 
   // Rejection / Correction Modal State
   const [rejectingUser, setRejectingUser] = useState(null);
@@ -152,6 +177,7 @@ const AdminRegistrationQueue = () => {
         authConfig
       );
       setInvites(response.data?.data?.invites || []);
+      setActiveAdmins(response.data?.data?.activeAdmins || []);
     } catch (error) {
       toast.error(error.response?.data?.message || "Unable to load admin invites");
     } finally {
@@ -249,17 +275,40 @@ const AdminRegistrationQueue = () => {
     }
   };
 
+  const toggleRole = (roleKey) => {
+    setInviteForm((prev) => {
+      const exists = prev.roles.includes(roleKey);
+      let updated;
+      if (exists) {
+        updated = prev.roles.filter((r) => r !== roleKey);
+      } else {
+        updated = [...prev.roles, roleKey];
+      }
+      return { ...prev, roles: updated.length > 0 ? updated : [roleKey] };
+    });
+  };
+
   const createInvite = async (event) => {
     event.preventDefault();
+    const cleanEmail = inviteForm.email.trim().toLowerCase();
+    if (!cleanEmail) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+    if (!inviteForm.roles || inviteForm.roles.length === 0) {
+      toast.error("Please select at least one administrator role");
+      return;
+    }
+
     setActiveUserId("invite");
     try {
       await apiConnector(
         "POST",
         adminEndpoints.ADMIN_INVITES_API,
-        { email: inviteForm.email.trim().toLowerCase(), roles: inviteForm.roles },
+        { email: cleanEmail, roles: inviteForm.roles },
         authConfig
       );
-      toast.success("Admin invite sent");
+      toast.success("Administrator invitation sent successfully");
       setInviteForm({ email: "", roles: ["CONTENT_ADMIN"] });
       await fetchInvites();
     } catch (error) {
@@ -269,16 +318,40 @@ const AdminRegistrationQueue = () => {
     }
   };
 
-  const revokeInvite = async (inviteId) => {
-    setActiveUserId(inviteId);
+  const resendInvite = async (inviteId) => {
+    setResendingId(inviteId);
     try {
       await apiConnector(
-        "PATCH",
-        adminEndpoints.REVOKE_ADMIN_INVITE_API(inviteId),
+        "POST",
+        adminEndpoints.RESEND_ADMIN_INVITE_API(inviteId),
         null,
         authConfig
       );
-      toast.success("Invite revoked");
+      toast.success("Invitation resent with a fresh token and email");
+      await fetchInvites();
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Unable to resend invite");
+    } finally {
+      setResendingId(null);
+    }
+  };
+
+  const initiateRevokeInvite = (invite) => {
+    setRevokingInvite(invite);
+  };
+
+  const confirmRevokeInvite = async () => {
+    if (!revokingInvite) return;
+    setActiveUserId(revokingInvite._id);
+    try {
+      await apiConnector(
+        "PATCH",
+        adminEndpoints.REVOKE_ADMIN_INVITE_API(revokingInvite._id),
+        { reason: "Revoked by admin" },
+        authConfig
+      );
+      toast.success("Invitation revoked successfully");
+      setRevokingInvite(null);
       await fetchInvites();
     } catch (error) {
       toast.error(error.response?.data?.message || "Unable to revoke invite");
@@ -651,43 +724,404 @@ const AdminRegistrationQueue = () => {
           </div>
         ) : (
           /* =====================================================
-              TAB 3: ADMIN INVITES
+              TAB 3: COMPLETE ADMIN INVITATIONS & ACCESS MANAGEMENT
              ====================================================== */
           <div className="space-y-6">
-            <form onSubmit={createInvite} className="ka-card p-6">
-              <h3 className="text-sm font-bold text-[var(--text-primary)] mb-4">प्रशासक आमंत्रण भेजें (Invite Admin)</h3>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <input
-                  required
-                  type="email"
-                  value={inviteForm.email}
-                  onChange={(e) => setInviteForm((prev) => ({ ...prev, email: e.target.value }))}
-                  placeholder="admin@samaj.org"
-                  className="ka-input flex-1"
-                />
-                <button type="submit" className="btn-primary !py-2.5 !px-6 font-bold text-xs">
-                  आमंत्रण भेजें
-                </button>
+            {/* 1. Admin Invitation Form Card */}
+            <form onSubmit={createInvite} className="ka-card p-6 sm:p-7 shadow-xl border border-[var(--border-subtle)]">
+              <div className="mb-5 border-b border-[var(--border-subtle)] pb-4">
+                <div className="eyebrow-badge mb-1.5 flex items-center gap-1.5">
+                  <FiMail size={12} />
+                  <span>Admin Onboarding</span>
+                </div>
+                <h3 className="text-lg font-black text-[var(--text-primary)]">
+                  प्रशासक आमंत्रण (Admin Invitations)
+                </h3>
+                <p className="mt-1 text-xs text-[var(--text-secondary)] font-normal">
+                  Invite trusted people to help manage the Samaj website. Select one or more administrative roles to assign.
+                </p>
+              </div>
+
+              <div className="space-y-5">
+                <div>
+                  <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                    Email Address <span className="text-red-400">*</span>
+                  </label>
+                  <div className="relative">
+                    <FiMail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" size={15} />
+                    <input
+                      required
+                      type="email"
+                      value={inviteForm.email}
+                      onChange={(e) => setInviteForm((prev) => ({ ...prev, email: e.target.value }))}
+                      placeholder="Enter administrator email address (e.g. admin@samaj.org)"
+                      className="ka-input !pl-10 text-xs sm:text-sm"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="mb-2 flex items-center justify-between">
+                    <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                      Select Role(s) <span className="text-red-400">*</span>
+                    </label>
+                    <span className="text-[11px] text-[var(--text-muted)]">
+                      {inviteForm.roles.length} role{inviteForm.roles.length > 1 ? "s" : ""} selected
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                    {AVAILABLE_ADMIN_ROLES.map((role) => {
+                      const isSelected = inviteForm.roles.includes(role.key);
+                      return (
+                        <button
+                          key={role.key}
+                          type="button"
+                          onClick={() => toggleRole(role.key)}
+                          className={`flex flex-col items-start p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                            isSelected
+                              ? "bg-[var(--accent-primary)]/10 border-[var(--accent-primary)] text-[var(--accent-primary)] shadow-sm ring-1 ring-[var(--accent-primary)]/30"
+                              : "border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:border-[var(--border-strong)] hover:text-[var(--text-primary)]"
+                          }`}
+                        >
+                          <div className="flex w-full items-center justify-between mb-1">
+                            <span className="text-xs font-black uppercase tracking-wider">{role.label}</span>
+                            <div
+                              className={`h-4 w-4 rounded-full flex items-center justify-center text-[10px] ${
+                                isSelected
+                                  ? "bg-[var(--accent-primary)] text-black font-bold"
+                                  : "border border-[var(--border-subtle)]"
+                              }`}
+                            >
+                              {isSelected ? "✓" : ""}
+                            </div>
+                          </div>
+                          <span className="text-[10px] text-[var(--text-muted)] leading-tight">{role.desc}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="pt-2 flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={activeUserId === "invite"}
+                    className="btn-primary !py-2.5 !px-7 font-bold text-xs flex items-center gap-2"
+                  >
+                    {activeUserId === "invite" ? (
+                      <>
+                        <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-black border-t-transparent" />
+                        <span>Sending Invitation...</span>
+                      </>
+                    ) : (
+                      <>
+                        <FiSend size={13} />
+                        <span>Send Invitation</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </form>
 
-            <div className="ka-card divide-y divide-[var(--border-subtle)]">
-              {invites.map((inv) => (
-                <div key={inv._id} className="p-4 flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-bold text-[var(--text-primary)]">{inv.email}</p>
-                    <p className="text-xs text-[var(--text-muted)]">Roles: {inv.roles?.join(", ")}</p>
-                  </div>
-                  {inv.status === "PENDING" && (
-                    <button
-                      onClick={() => revokeInvite(inv._id)}
-                      className="text-red-400 hover:text-red-300 text-xs font-bold"
-                    >
-                      Revoke
-                    </button>
+            {/* 2. Admin & Invitations Management Tabs */}
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border-subtle)] pb-3">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setInviteSubTab("pending")}
+                    className={`h-9 rounded-xl px-4 text-xs font-bold transition cursor-pointer flex items-center gap-2 ${
+                      inviteSubTab === "pending"
+                        ? "bg-[var(--accent-primary)] text-black shadow-sm"
+                        : "border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                    }`}
+                  >
+                    <FiClock size={13} />
+                    <span>Pending Invitations ({invites.filter((i) => i.status === "PENDING").length})</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setInviteSubTab("active")}
+                    className={`h-9 rounded-xl px-4 text-xs font-bold transition cursor-pointer flex items-center gap-2 ${
+                      inviteSubTab === "active"
+                        ? "bg-[var(--accent-primary)] text-black shadow-sm"
+                        : "border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                    }`}
+                  >
+                    <FiUserCheck size={13} />
+                    <span>Active Administrators ({activeAdmins.length})</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setInviteSubTab("history")}
+                    className={`h-9 rounded-xl px-4 text-xs font-bold transition cursor-pointer flex items-center gap-2 ${
+                      inviteSubTab === "history"
+                        ? "bg-[var(--accent-primary)] text-black shadow-sm"
+                        : "border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                    }`}
+                  >
+                    <FiFileText size={13} />
+                    <span>History ({invites.filter((i) => i.status !== "PENDING").length})</span>
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={fetchInvites}
+                  className="btn-secondary !h-9 !py-0 !px-3 text-xs flex items-center gap-1.5"
+                  title="Refresh list"
+                >
+                  <FiRefreshCw size={12} className={loading ? "animate-spin" : ""} />
+                  <span>Refresh</span>
+                </button>
+              </div>
+
+              {/* Sub-Tab 1: Pending Invitations */}
+              {inviteSubTab === "pending" && (
+                <div className="space-y-3">
+                  {invites.filter((i) => i.status === "PENDING").length === 0 ? (
+                    <div className="ka-card p-10 text-center border-dashed border-[var(--border-subtle)]">
+                      <FiClock size={32} className="mx-auto text-[var(--text-muted)] mb-3" />
+                      <p className="text-sm font-bold text-[var(--text-primary)]">No pending invitations</p>
+                      <p className="text-xs text-[var(--text-muted)] mt-1">
+                        Use the form above to invite trusted members to join the administration team.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid gap-3 sm:grid-cols-1 md:grid-cols-2">
+                      {invites
+                        .filter((i) => i.status === "PENDING")
+                        .map((inv) => (
+                          <div
+                            key={inv._id}
+                            className="ka-card p-4 sm:p-5 flex flex-col justify-between border border-[var(--border-subtle)] shadow-md hover:border-[var(--border-strong)] transition-all"
+                          >
+                            <div>
+                              <div className="flex items-start justify-between gap-3 mb-3">
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div className="h-10 w-10 shrink-0 rounded-2xl bg-[var(--accent-primary)]/10 border border-[var(--accent-primary)]/20 flex items-center justify-center text-[var(--accent-primary)] font-black text-sm">
+                                    {inv.email?.[0]?.toUpperCase() || "A"}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-bold text-[var(--text-primary)] truncate">
+                                      {inv.email}
+                                    </p>
+                                    <p className="text-[11px] text-[var(--text-muted)]">
+                                      Invited: {new Date(inv.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                                    </p>
+                                  </div>
+                                </div>
+                                <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/10 border border-amber-400/30 px-2.5 py-0.5 text-[10px] font-bold text-amber-400">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
+                                  PENDING
+                                </span>
+                              </div>
+
+                              <div className="mb-4">
+                                <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1.5">
+                                  Assigned Role(s):
+                                </p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {(inv.roles || []).map((r) => (
+                                    <span
+                                      key={r}
+                                      className="inline-flex items-center gap-1 rounded-lg bg-[var(--surface-elevated)] border border-[var(--border-subtle)] px-2 py-0.5 text-[10px] font-bold text-[var(--accent-primary)]"
+                                    >
+                                      <FiShield size={9} />
+                                      {r.replace(/_/g, " ")}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="border-t border-[var(--border-subtle)] pt-3 flex items-center justify-between gap-2 text-xs">
+                              <span className="text-[11px] text-[var(--text-muted)] flex items-center gap-1">
+                                <FiClock size={11} />
+                                Expires: {new Date(inv.expiresAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}
+                              </span>
+
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  disabled={resendingId === inv._id}
+                                  onClick={() => resendInvite(inv._id)}
+                                  className="btn-secondary !h-8 !py-0 !px-3 text-[11px] font-bold flex items-center gap-1 text-[var(--accent-primary)] cursor-pointer"
+                                  title="Rotate token and resend invitation email"
+                                >
+                                  <FiRefreshCw size={11} className={resendingId === inv._id ? "animate-spin" : ""} />
+                                  <span>{resendingId === inv._id ? "Sending..." : "Resend"}</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => initiateRevokeInvite(inv)}
+                                  className="btn-secondary !h-8 !py-0 !px-3 text-[11px] font-bold text-red-400 hover:text-red-300 hover:border-red-400/40 cursor-pointer"
+                                >
+                                  Revoke
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
                   )}
                 </div>
-              ))}
+              )}
+
+              {/* Sub-Tab 2: Active Administrators */}
+              {inviteSubTab === "active" && (
+                <div className="space-y-3">
+                  {activeAdmins.length === 0 ? (
+                    <div className="ka-card p-10 text-center border-dashed border-[var(--border-subtle)]">
+                      <FiUserCheck size={32} className="mx-auto text-[var(--text-muted)] mb-3" />
+                      <p className="text-sm font-bold text-[var(--text-primary)]">No active administrators found</p>
+                    </div>
+                  ) : (
+                    <div className="grid gap-3 sm:grid-cols-1 md:grid-cols-2">
+                      {activeAdmins.map((admin) => (
+                        <div
+                          key={admin._id}
+                          className="ka-card p-4 sm:p-5 flex flex-col justify-between border border-[var(--border-subtle)] shadow-md"
+                        >
+                          <div>
+                            <div className="flex items-start justify-between gap-3 mb-3">
+                              <div className="flex items-center gap-3 min-w-0">
+                                <img
+                                  src={admin.imageUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(`${admin.firstName || "A"} ${admin.lastName || ""}`)}`}
+                                  alt=""
+                                  className="h-10 w-10 rounded-2xl border border-[var(--border-subtle)] object-cover shadow-sm"
+                                  onError={(e) => {
+                                    e.target.onerror = null;
+                                    e.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(admin.firstName || "A")}`;
+                                  }}
+                                />
+                                <div className="min-w-0">
+                                  <p className="text-sm font-bold text-[var(--text-primary)] truncate">
+                                    {admin.firstName} {admin.lastName}
+                                  </p>
+                                  <p className="text-[11px] text-[var(--text-muted)] truncate font-mono">
+                                    {admin.email}
+                                  </p>
+                                </div>
+                              </div>
+                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-400/10 border border-emerald-400/30 px-2.5 py-0.5 text-[10px] font-bold text-emerald-400">
+                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                                ACTIVE ADMIN
+                              </span>
+                            </div>
+
+                            <div className="mb-2">
+                              <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1.5">
+                                Current Role(s):
+                              </p>
+                              <div className="flex flex-wrap gap-1.5">
+                                {(admin.roles || []).map((r) => (
+                                  <span
+                                    key={r}
+                                    className="inline-flex items-center gap-1 rounded-lg bg-[var(--accent-primary)]/10 border border-[var(--accent-primary)]/30 px-2 py-0.5 text-[10px] font-bold text-[var(--accent-primary)]"
+                                  >
+                                    <FiShield size={9} />
+                                    {r.replace(/_/g, " ")}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="border-t border-[var(--border-subtle)] pt-3 text-[11px] text-[var(--text-muted)] flex items-center justify-between">
+                            <span>
+                              Joined: {new Date(admin.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                            </span>
+                            <span className="font-semibold text-emerald-400">Verified Samaj Admin</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Sub-Tab 3: Invitation History */}
+              {inviteSubTab === "history" && (
+                <div className="space-y-3">
+                  {invites.filter((i) => i.status !== "PENDING").length === 0 ? (
+                    <div className="ka-card p-10 text-center border-dashed border-[var(--border-subtle)]">
+                      <FiFileText size={32} className="mx-auto text-[var(--text-muted)] mb-3" />
+                      <p className="text-sm font-bold text-[var(--text-primary)]">No invitation history available</p>
+                      <p className="text-xs text-[var(--text-muted)] mt-1">
+                        Accepted, expired, or revoked invitations will appear here.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="ka-card divide-y divide-[var(--border-subtle)] border border-[var(--border-subtle)] shadow-md overflow-hidden">
+                      {invites
+                        .filter((i) => i.status !== "PENDING")
+                        .map((inv) => {
+                          const isAccepted = inv.status === "ACCEPTED";
+                          const isExpired = inv.status === "EXPIRED";
+                          const isRevoked = inv.status === "REVOKED";
+
+                          let badgeClass = "bg-gray-500/10 text-gray-400 border-gray-500/30";
+                          if (isAccepted) badgeClass = "bg-emerald-400/10 text-emerald-400 border-emerald-400/30";
+                          else if (isExpired) badgeClass = "bg-amber-400/10 text-amber-400 border-amber-400/30";
+                          else if (isRevoked) badgeClass = "bg-red-400/10 text-red-400 border-red-400/30";
+
+                          return (
+                            <div key={inv._id} className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <p className="text-sm font-bold text-[var(--text-primary)] truncate">
+                                    {inv.email}
+                                  </p>
+                                  <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold ${badgeClass}`}>
+                                    {inv.status}
+                                  </span>
+                                </div>
+                                <div className="flex flex-wrap items-center gap-1.5 text-xs text-[var(--text-muted)]">
+                                  <span>Roles: {(inv.roles || []).join(", ")}</span>
+                                  <span>•</span>
+                                  <span>Invited: {new Date(inv.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</span>
+                                  {inv.acceptedAt && (
+                                    <>
+                                      <span>•</span>
+                                      <span className="text-emerald-400">
+                                        Accepted: {new Date(inv.acceptedAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}
+                                      </span>
+                                    </>
+                                  )}
+                                  {inv.revokedAt && (
+                                    <>
+                                      <span>•</span>
+                                      <span className="text-red-400">
+                                        Revoked: {new Date(inv.revokedAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}
+                                      </span>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+
+                              {isExpired && (
+                                <button
+                                  type="button"
+                                  onClick={() => resendInvite(inv._id)}
+                                  disabled={resendingId === inv._id}
+                                  className="btn-secondary !h-8 !py-0 !px-3 text-[11px] font-bold text-[var(--accent-primary)] shrink-0 self-start sm:self-auto cursor-pointer"
+                                >
+                                  {resendingId === inv._id ? "Reissuing..." : "Send New Invite"}
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -899,6 +1333,58 @@ const AdminRegistrationQueue = () => {
                   className="btn-secondary !py-2 !px-4 text-xs font-bold text-red-400 hover:text-red-300"
                 >
                   अस्वीकृत करें (Reject)
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* =====================================================
+            REVOKE INVITATION CONFIRMATION MODAL
+           ====================================================== */}
+        {revokingInvite && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
+            <div className="w-full max-w-md rounded-3xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-6 shadow-2xl">
+              <div className="mb-4 flex items-center gap-3">
+                <div className="p-2.5 rounded-2xl bg-red-400/10 text-red-400 border border-red-400/20">
+                  <FiAlertTriangle size={22} />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[var(--text-primary)]">
+                    Revoke this invitation?
+                  </h3>
+                  <p className="text-xs text-[var(--text-muted)]">
+                    This person will no longer be able to accept this invitation.
+                  </p>
+                </div>
+              </div>
+
+              <div className="my-4 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] p-4 space-y-2 text-xs">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Email Address</p>
+                  <p className="font-bold text-[var(--text-primary)] break-all">{revokingInvite.email}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Assigned Role(s)</p>
+                  <p className="text-[var(--accent-primary)] font-semibold">{(revokingInvite.roles || []).join(", ")}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 border-t border-[var(--border-subtle)] pt-4">
+                <button
+                  type="button"
+                  onClick={() => setRevokingInvite(null)}
+                  className="btn-secondary !py-2 !px-4 text-xs font-bold cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={activeUserId === revokingInvite._id}
+                  onClick={confirmRevokeInvite}
+                  className="btn-primary !py-2 !px-5 text-xs font-bold !bg-red-600 hover:!bg-red-500 !text-white cursor-pointer"
+                >
+                  {activeUserId === revokingInvite._id ? "Revoking..." : "Revoke Invitation"}
                 </button>
               </div>
             </div>

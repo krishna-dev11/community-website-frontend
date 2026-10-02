@@ -133,14 +133,25 @@ const MemberDirectory = () => {
         ) : (
           <div className={`grid gap-4 ${isAdmin ? "md:grid-cols-2 xl:grid-cols-3" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"}`}>
             {members.map((member) => (
-              <article key={member._id} className="ka-card p-5 transition-all hover:border-[var(--border-strong)]">
+              <article
+                key={member._id}
+                className={`ka-card p-5 transition-all ${
+                  isAdmin
+                    ? "hover:border-[var(--border-strong)]"
+                    : "cursor-default border border-[var(--border-subtle)] hover:border-[var(--accent-primary)]/40 shadow-md"
+                }`}
+              >
                 {isAdmin ? (
                   <>
                     <div className="flex items-center gap-3 border-b border-[var(--border-subtle)] pb-4">
                       <img
-                        src={member.imageUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${member.firstName || "Member"}`}
+                        src={member.imageUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(member.firstName || "Member")}`}
                         alt={`${member.firstName || "Member"} profile`}
                         className="h-12 w-12 rounded-2xl border border-[var(--border-subtle)] object-cover shadow-sm"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(member.firstName || "Member")}`;
+                        }}
                       />
                       <div className="min-w-0">
                         <h2 className="truncate text-base font-bold text-[var(--text-primary)]">{member.firstName} {member.lastName}</h2>
@@ -158,12 +169,24 @@ const MemberDirectory = () => {
                     </div>
                   </>
                 ) : (
-                  <div className="flex flex-col items-center justify-center text-center py-4">
-                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--surface-elevated)] border-2 border-[var(--accent-primary)]/30 text-[var(--accent-primary)] mb-3 shadow-inner">
-                      <FiUser size={30} />
+                  <div className="flex flex-col items-center justify-center text-center py-6 px-3">
+                    <div className="relative mb-4">
+                      <img
+                        src={
+                          member.profilePhoto ||
+                          member.imageUrl ||
+                          `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(`${member.firstName || "M"} ${member.lastName || ""}`)}`
+                        }
+                        alt={member.name || `${member.firstName || ""} ${member.lastName || ""}`}
+                        className="h-24 w-24 sm:h-28 sm:w-28 rounded-full border-2 border-[var(--accent-primary)]/40 object-cover shadow-lg ring-4 ring-[var(--surface-elevated)]"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(member.firstName || "M")}`;
+                        }}
+                      />
                     </div>
-                    <h2 className="text-base sm:text-lg font-bold text-[var(--text-primary)] truncate max-w-full">
-                      {member.firstName} {member.lastName}
+                    <h2 className="text-sm sm:text-base font-extrabold uppercase tracking-wide text-[var(--text-primary)] max-w-full break-words">
+                      {member.name || `${member.firstName || ""} ${member.lastName || ""}`.trim()}
                     </h2>
                   </div>
                 )}

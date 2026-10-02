@@ -110,6 +110,14 @@ function App() {
           }
         />
         <Route
+          path="/admin/invite/accept/:token"
+          element={
+            <OpenRoute>
+              <AdminInviteAcceptPage />
+            </OpenRoute>
+          }
+        />
+        <Route
           path="/notifications"
           element={
             <PrivateRoute>
