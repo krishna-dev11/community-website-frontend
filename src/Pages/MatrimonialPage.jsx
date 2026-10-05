@@ -18,6 +18,9 @@ import {
   FiBriefcase,
   FiBook,
   FiX,
+  FiFilter,
+  FiChevronLeft,
+  FiChevronRight,
 } from "react-icons/fi";
 import { apiConnector } from "../services/apiConnector";
 import { matrimonialEndpoints } from "../services/apis";
@@ -102,6 +105,7 @@ const initialForm = {
   currentCity: "",
   nativePlace: "",
   gotra: "",
+  kul: "",
   about: "",
   expectations: "",
   familyDetails: "",
@@ -113,6 +117,20 @@ const initialForm = {
   guardianPhone: "",
   photoUrl: "",
   status: "PENDING_REVIEW",
+};
+
+const initialFilters = {
+  q: "",
+  gender: "",
+  gotra: "",
+  kul: "",
+  minAge: "",
+  maxAge: "",
+  city: "",
+  nativePlace: "",
+  minIncome: "",
+  maxIncome: "",
+  profession: "",
 };
 
 const Button = ({ children, className = "", tone = "neutral", icon: Icon, ...props }) => {
@@ -160,6 +178,7 @@ const profileToForm = (profile) => ({
   currentCity: profile?.currentCity || "",
   nativePlace: profile?.nativePlace || "",
   gotra: profile?.gotra || "",
+  kul: profile?.kul || "",
   about: profile?.about || "",
   expectations: profile?.expectations || "",
   familyDetails: profile?.familyDetails || "",
@@ -185,6 +204,7 @@ const formToPayload = (form) => ({
   currentCity: form.currentCity,
   nativePlace: form.nativePlace,
   gotra: form.gotra,
+  kul: form.kul,
   about: form.about,
   expectations: form.expectations,
   familyDetails: form.familyDetails,
@@ -210,7 +230,12 @@ const MatrimonialPage = () => {
   const [myProfile, setMyProfile] = useState(null);
   const [interests, setInterests] = useState({ sent: [], received: [] });
   const [contacts, setContacts] = useState({ sent: [], received: [] });
-  const [filters, setFilters] = useState({ gender: "", city: "", gotra: "", profession: "", q: "" });
+  const [filters, setFilters] = useState(initialFilters);
+  const [appliedFilters, setAppliedFilters] = useState(initialFilters);
+  const [filterOptions, setFilterOptions] = useState({ gotras: [], kuls: [], cities: [], nativePlaces: [] });
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalProfiles, setTotalProfiles] = useState(0);
   const [form, setForm] = useState(initialForm);
   const [matrimonialPhotoFile, setMatrimonialPhotoFile] = useState(null);
   const [messageDrafts, setMessageDrafts] = useState({});
@@ -228,6 +253,59 @@ const MatrimonialPage = () => {
     }),
     [token]
   );
+
+  const activeFilterChips = useMemo(() => {
+    const chips = [];
+    if (appliedFilters.q?.trim()) {
+      chips.push({ key: "q", label: `Search: "${appliedFilters.q.trim()}"` });
+    }
+    if (appliedFilters.gender) {
+      const gLabel = appliedFilters.gender === "MALE" ? "Groom" : appliedFilters.gender === "FEMALE" ? "Bride" : "Other";
+      chips.push({ key: "gender", label: `Gender: ${gLabel}` });
+    }
+    if (appliedFilters.gotra?.trim()) {
+      chips.push({ key: "gotra", label: `Gotra: ${appliedFilters.gotra.trim()}` });
+    }
+    if (appliedFilters.kul?.trim()) {
+      chips.push({ key: "kul", label: `Kul: ${appliedFilters.kul.trim()}` });
+    }
+    if (appliedFilters.minAge || appliedFilters.maxAge) {
+      chips.push({
+        key: "age",
+        label: `Age: ${appliedFilters.minAge || "18"} - ${appliedFilters.maxAge || "Any"}`,
+      });
+    }
+    if (appliedFilters.city?.trim()) {
+      chips.push({ key: "city", label: `City: ${appliedFilters.city.trim()}` });
+    }
+    if (appliedFilters.nativePlace?.trim()) {
+      chips.push({ key: "nativePlace", label: `Native: ${appliedFilters.nativePlace.trim()}` });
+    }
+    if (appliedFilters.minIncome || appliedFilters.maxIncome) {
+      const minText = appliedFilters.minIncome ? `₹${Number(appliedFilters.minIncome).toLocaleString("en-IN")}` : "₹0";
+      const maxText = appliedFilters.maxIncome ? `₹${Number(appliedFilters.maxIncome).toLocaleString("en-IN")}` : "Any";
+      chips.push({ key: "income", label: `Income: ${minText} - ${maxText}` });
+    }
+    return chips;
+  }, [appliedFilters]);
+
+  const removeFilterChip = (key) => {
+    let updated;
+    if (key === "age") {
+      updated = { ...filters, minAge: "", maxAge: "" };
+    } else if (key === "income") {
+      updated = { ...filters, minIncome: "", maxIncome: "" };
+    } else {
+      updated = { ...filters, [key]: "" };
+    }
+    setFilters(updated);
+    loadProfiles(1, updated);
+  };
+
+  const clearAllFilters = () => {
+    setFilters(initialFilters);
+    loadProfiles(1, initialFilters);
+  };
 
   const selectedProfileContactApproved = useMemo(() => {
     if (!selectedProfile?._id) return false;
@@ -248,18 +326,41 @@ const MatrimonialPage = () => {
     }
   };
 
-  const loadProfiles = async () => {
+  const loadFilterOptions = async () => {
+    try {
+      const response = await apiConnector("GET", matrimonialEndpoints.FILTERS_API, null, authConfig);
+      if (response.data?.data) {
+        setFilterOptions({
+          gotras: response.data.data.gotras || [],
+          kuls: response.data.data.kuls || [],
+          cities: response.data.data.cities || [],
+          nativePlaces: response.data.data.nativePlaces || [],
+        });
+      }
+    } catch {
+      // Ignore error gracefully
+    }
+  };
+
+  const loadProfiles = async (pageToLoad = 1, filtersToApply = filters) => {
     try {
       const params = Object.fromEntries(
-        Object.entries(filters).filter(([, v]) => v !== "" && v !== undefined)
+        Object.entries(filtersToApply).filter(([, v]) => v !== "" && v !== undefined && v !== null)
       );
       const response = await apiConnector("GET", matrimonialEndpoints.PROFILES_API, null, authConfig, {
         ...params,
-        limit: 24,
+        page: pageToLoad,
+        limit: 12,
       });
       setProfiles(response.data?.data?.profiles || []);
+      setTotalPages(response.data?.meta?.pages || 1);
+      setTotalProfiles(response.data?.meta?.total || 0);
+      setPage(pageToLoad);
+      setAppliedFilters(filtersToApply);
     } catch {
       setProfiles([]);
+      setTotalPages(1);
+      setTotalProfiles(0);
     }
   };
 
@@ -285,7 +386,9 @@ const MatrimonialPage = () => {
     setLoading(true);
     try {
       if (activeTab === "profile") await loadMine();
-      if (activeTab === "browse") await loadProfiles();
+      if (activeTab === "browse") {
+        await Promise.all([loadProfiles(1, filters), loadFilterOptions()]);
+      }
       if (activeTab === "interests") {
         await loadInterests();
         await loadContacts();
@@ -517,34 +620,215 @@ const MatrimonialPage = () => {
             {/* TAB: BROWSE PROFILES */}
             {activeTab === "browse" && (
               <section className="grid gap-5">
-                <div className="ka-card p-4 grid gap-3 lg:grid-cols-[1fr_160px_160px_auto]">
-                  <div className="flex items-center gap-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-3">
-                    <FiSearch className="text-[var(--text-muted)]" />
-                    <input
-                      className="h-10 min-w-0 flex-1 bg-transparent text-xs sm:text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] border-none shadow-none focus:ring-0"
-                      value={filters.q}
-                      onChange={(event) => setFilters((c) => ({ ...c, q: event.target.value }))}
-                      placeholder={isHindi ? "नाम, व्यवसाय, शहर खोजें..." : "Search name, profession, city"}
-                    />
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    loadProfiles(1, filters);
+                  }}
+                  className="ka-card p-5 sm:p-6 space-y-4"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border-subtle)] pb-3">
+                    <div className="flex items-center gap-2">
+                      <FiFilter className="text-[var(--accent-primary)]" size={16} />
+                      <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--text-primary)]">
+                        {isHindi ? "वैवाहिक खोज एवं फ़िल्टर" : "Matrimonial Match Filters"}
+                      </h2>
+                      {activeFilterChips.length > 0 && (
+                        <span className="inline-flex items-center justify-center rounded-full bg-[var(--accent-primary)] px-2 py-0.5 text-[10px] font-black text-black">
+                          {activeFilterChips.length}
+                        </span>
+                      )}
+                    </div>
+                    {activeFilterChips.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={clearAllFilters}
+                        className="text-xs font-semibold text-[var(--accent-primary)] hover:underline cursor-pointer"
+                      >
+                        {isHindi ? "सभी फ़िल्टर साफ़ करें" : "Clear All Filters"}
+                      </button>
+                    )}
                   </div>
-                  <select
-                    className={inputClass}
-                    value={filters.gender}
-                    onChange={(event) => setFilters((c) => ({ ...c, gender: event.target.value }))}
-                  >
-                    <option value="">{isHindi ? "सभी लिंग" : "All Genders"}</option>
-                    <option value="MALE">{isHindi ? "वर (पुरुष)" : "Groom (Male)"}</option>
-                    <option value="FEMALE">{isHindi ? "वधू (महिला)" : "Bride (Female)"}</option>
-                    <option value="OTHER">{isHindi ? "अन्य" : "Other"}</option>
-                  </select>
-                  <input
-                    className={inputClass}
-                    value={filters.city}
-                    onChange={(event) => setFilters((c) => ({ ...c, city: event.target.value }))}
-                    placeholder="Filter by city"
-                  />
-                  <Button icon={FiSearch} onClick={loadProfiles}>Search</Button>
-                </div>
+
+                  {/* Filter Grid - Row 1 */}
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <Field label={isHindi ? "नाम या कीवर्ड" : "Search Keyword"}>
+                      <div className="flex items-center gap-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-3">
+                        <FiSearch className="text-[var(--text-muted)] shrink-0" />
+                        <input
+                          className="h-10 min-w-0 flex-1 bg-transparent text-xs sm:text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] border-none shadow-none focus:ring-0"
+                          value={filters.q}
+                          onChange={(e) => setFilters((c) => ({ ...c, q: e.target.value }))}
+                          placeholder={isHindi ? "नाम, पेशा या शहर..." : "Name, profession, city..."}
+                        />
+                      </div>
+                    </Field>
+
+                    <Field label={isHindi ? "लिंग" : "Gender"}>
+                      <select
+                        className={inputClass}
+                        value={filters.gender}
+                        onChange={(e) => setFilters((c) => ({ ...c, gender: e.target.value }))}
+                      >
+                        <option value="">{isHindi ? "सभी लिंग" : "All Genders"}</option>
+                        <option value="MALE">{isHindi ? "वर (पुरुष)" : "Groom (Male)"}</option>
+                        <option value="FEMALE">{isHindi ? "वधू (महिला)" : "Bride (Female)"}</option>
+                        <option value="OTHER">{isHindi ? "अन्य" : "Other"}</option>
+                      </select>
+                    </Field>
+
+                    <Field label={isHindi ? "गोत्र" : "Gotra"}>
+                      <select
+                        className={inputClass}
+                        value={filters.gotra}
+                        onChange={(e) => setFilters((c) => ({ ...c, gotra: e.target.value }))}
+                      >
+                        <option value="">{isHindi ? "सभी गोत्र" : "All Gotras"}</option>
+                        {filterOptions.gotras?.map((g) => (
+                          <option key={g} value={g}>{g}</option>
+                        ))}
+                      </select>
+                    </Field>
+
+                    <Field label={isHindi ? "कुल" : "Kul"}>
+                      <select
+                        className={inputClass}
+                        value={filters.kul}
+                        onChange={(e) => setFilters((c) => ({ ...c, kul: e.target.value }))}
+                      >
+                        <option value="">{isHindi ? "सभी कुल" : "All Kuls"}</option>
+                        {filterOptions.kuls?.map((k) => (
+                          <option key={k} value={k}>{k}</option>
+                        ))}
+                      </select>
+                    </Field>
+                  </div>
+
+                  {/* Filter Grid - Row 2 */}
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <Field label={isHindi ? "आयु सीमा (वर्ष)" : "Age Range (Years)"}>
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          type="number"
+                          min="18"
+                          max="100"
+                          className={inputClass}
+                          value={filters.minAge}
+                          onChange={(e) => setFilters((c) => ({ ...c, minAge: e.target.value }))}
+                          placeholder={isHindi ? "न्यूनतम (18)" : "Min (18)"}
+                        />
+                        <input
+                          type="number"
+                          min="18"
+                          max="100"
+                          className={inputClass}
+                          value={filters.maxAge}
+                          onChange={(e) => setFilters((c) => ({ ...c, maxAge: e.target.value }))}
+                          placeholder={isHindi ? "अधिकतम" : "Max"}
+                        />
+                      </div>
+                    </Field>
+
+                    <Field label={isHindi ? "वर्तमान शहर" : "Current City"}>
+                      <input
+                        list="city-filter-options"
+                        className={inputClass}
+                        value={filters.city}
+                        onChange={(e) => setFilters((c) => ({ ...c, city: e.target.value }))}
+                        placeholder={isHindi ? "शहर चुनें या लिखें..." : "Select or type city..."}
+                      />
+                      <datalist id="city-filter-options">
+                        {filterOptions.cities?.map((c) => (
+                          <option key={c} value={c} />
+                        ))}
+                      </datalist>
+                    </Field>
+
+                    <Field label={isHindi ? "मूल निवास / गाँव" : "Native Place / Village"}>
+                      <input
+                        list="native-filter-options"
+                        className={inputClass}
+                        value={filters.nativePlace}
+                        onChange={(e) => setFilters((c) => ({ ...c, nativePlace: e.target.value }))}
+                        placeholder={isHindi ? "गाँव / मूल निवास..." : "Village / native place..."}
+                      />
+                      <datalist id="native-filter-options">
+                        {filterOptions.nativePlaces?.map((n) => (
+                          <option key={n} value={n} />
+                        ))}
+                      </datalist>
+                    </Field>
+
+                    <Field label={isHindi ? "वार्षिक आय सीमा (₹)" : "Annual Income (₹)"}>
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          type="number"
+                          step="50000"
+                          min="0"
+                          className={inputClass}
+                          value={filters.minIncome}
+                          onChange={(e) => setFilters((c) => ({ ...c, minIncome: e.target.value }))}
+                          placeholder="Min ₹"
+                        />
+                        <input
+                          type="number"
+                          step="50000"
+                          min="0"
+                          className={inputClass}
+                          value={filters.maxIncome}
+                          onChange={(e) => setFilters((c) => ({ ...c, maxIncome: e.target.value }))}
+                          placeholder="Max ₹"
+                        />
+                      </div>
+                    </Field>
+                  </div>
+
+                  {/* Active Filter Chips */}
+                  {activeFilterChips.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[var(--border-subtle)]">
+                      <span className="text-[11px] font-bold text-[var(--text-muted)]">Active:</span>
+                      {activeFilterChips.map((chip) => (
+                        <span
+                          key={chip.key}
+                          className="inline-flex items-center gap-1.5 rounded-full border border-[var(--accent-primary)]/40 bg-[var(--accent-primary)]/10 px-3 py-1 text-xs font-semibold text-[var(--accent-primary)]"
+                        >
+                          <span>{chip.label}</span>
+                          <button
+                            type="button"
+                            onClick={() => removeFilterChip(chip.key)}
+                            className="rounded-full hover:bg-[var(--accent-primary)]/20 p-0.5 cursor-pointer text-[var(--accent-primary)]"
+                            aria-label={`Remove ${chip.label}`}
+                          >
+                            <FiX size={12} />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Submit / Clear Row */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                    <p className="text-xs text-[var(--text-muted)]">
+                      {totalProfiles} {totalProfiles === 1 ? "profile found" : "profiles found"}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        type="button"
+                        onClick={clearAllFilters}
+                        disabled={activeFilterChips.length === 0}
+                      >
+                        {isHindi ? "फ़िल्टर हटाएं" : "Clear Filters"}
+                      </Button>
+                      <Button
+                        icon={FiSearch}
+                        tone="solid"
+                        type="submit"
+                      >
+                        {isHindi ? "फ़िल्टर लागू करें" : "Search / Apply"}
+                      </Button>
+                    </div>
+                  </div>
+                </form>
 
                 <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                   {profiles.map((profile) => (
@@ -570,7 +854,14 @@ const MatrimonialPage = () => {
                               {profileAge(profile) || "N/A"} yrs • {profile.gender === "FEMALE" ? "Bride" : "Groom"}
                             </p>
                           </div>
-                          <Status value={profile.gotra || "Gotra"} />
+                          <div className="flex flex-col items-end gap-1">
+                            <Status value={profile.gotra || "Gotra"} />
+                            {profile.kul ? (
+                              <span className="inline-flex w-fit rounded-full border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">
+                                Kul: {profile.kul}
+                              </span>
+                            ) : null}
+                          </div>
                         </div>
 
                         <div className="mt-3 space-y-1 text-xs text-[var(--text-secondary)]">
@@ -620,13 +911,51 @@ const MatrimonialPage = () => {
                   ))}
                 </div>
 
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-center gap-3 pt-4">
+                    <button
+                      type="button"
+                      onClick={() => loadProfiles(page - 1, appliedFilters)}
+                      disabled={page <= 1}
+                      className="inline-flex items-center gap-1 rounded-full border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-4 py-2 text-xs font-bold text-[var(--text-primary)] transition hover:border-[var(--accent-primary)] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      <FiChevronLeft size={14} />
+                      <span>{isHindi ? "पिछला" : "Previous"}</span>
+                    </button>
+                    <span className="text-xs font-bold text-[var(--text-muted)]">
+                      {isHindi ? `पृष्ठ ${page} / ${totalPages}` : `Page ${page} of ${totalPages}`}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => loadProfiles(page + 1, appliedFilters)}
+                      disabled={page >= totalPages}
+                      className="inline-flex items-center gap-1 rounded-full border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-4 py-2 text-xs font-bold text-[var(--text-primary)] transition hover:border-[var(--accent-primary)] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      <span>{isHindi ? "अगला" : "Next"}</span>
+                      <FiChevronRight size={14} />
+                    </button>
+                  </div>
+                )}
+
                 {profiles.length === 0 ? (
-                  <div className="ka-card p-12 text-center rounded-3xl border-dashed">
-                    <FiHeart size={36} className="mx-auto mb-3 text-[var(--text-muted)] opacity-50" />
-                    <h3 className="text-base font-bold text-[var(--text-primary)]">No Approved Profiles Found</h3>
-                    <p className="mt-1 text-xs text-[var(--text-secondary)]">
-                      Profiles will appear here once submitted and verified by Samaj administrators.
+                  <div className="ka-card p-12 text-center rounded-3xl border-dashed space-y-3">
+                    <FiHeart size={36} className="mx-auto text-[var(--text-muted)] opacity-50" />
+                    <h3 className="text-base font-bold text-[var(--text-primary)]">
+                      {activeFilterChips.length > 0 ? "No Matching Profiles Found" : "No Approved Profiles Found"}
+                    </h3>
+                    <p className="text-xs text-[var(--text-secondary)] max-w-md mx-auto">
+                      {activeFilterChips.length > 0
+                        ? "Try adjusting or clearing some filters to broaden your search results."
+                        : "Profiles will appear here once submitted and verified by Samaj administrators."}
                     </p>
+                    {activeFilterChips.length > 0 && (
+                      <div className="pt-2">
+                        <Button onClick={clearAllFilters} tone="solid">
+                          {isHindi ? "सभी फ़िल्टर साफ़ करें" : "Clear Filters"}
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 ) : null}
               </section>
@@ -669,8 +998,11 @@ const MatrimonialPage = () => {
                     <Field label="Height (e.g. 5ft 9in)">
                       <input className={inputClass} value={form.height} onChange={(event) => updateForm("height", event.target.value)} />
                     </Field>
-                    <Field label="Gotra / Sub-caste">
-                      <input className={inputClass} value={form.gotra} onChange={(event) => updateForm("gotra", event.target.value)} />
+                    <Field label="Gotra">
+                      <input className={inputClass} value={form.gotra} onChange={(event) => updateForm("gotra", event.target.value)} placeholder="e.g. Gothwal" />
+                    </Field>
+                    <Field label="Kul">
+                      <input className={inputClass} value={form.kul} onChange={(event) => updateForm("kul", event.target.value)} placeholder="e.g. Kul Name" />
                     </Field>
                     <Field label="Highest Education">
                       <input className={inputClass} value={form.education} onChange={(event) => updateForm("education", event.target.value)} />
@@ -788,6 +1120,14 @@ const MatrimonialPage = () => {
                       <div className="flex justify-between border-b border-[var(--border-subtle)] pb-2">
                         <span>City</span>
                         <span>{myProfile.currentCity || "Not set"}</span>
+                      </div>
+                      <div className="flex justify-between border-b border-[var(--border-subtle)] pb-2">
+                        <span>Gotra</span>
+                        <span>{myProfile.gotra || "Not set"}</span>
+                      </div>
+                      <div className="flex justify-between border-b border-[var(--border-subtle)] pb-2">
+                        <span>Kul</span>
+                        <span>{myProfile.kul || "Not set"}</span>
                       </div>
                       <p className="text-[11px] text-[var(--text-muted)] mt-3">
                         {myProfile.status === "PENDING_REVIEW"
@@ -1056,6 +1396,7 @@ const MatrimonialPage = () => {
                     {[
                       ["Height", selectedProfile?.height],
                       ["Gotra", selectedProfile?.gotra],
+                      ["Kul", selectedProfile?.kul],
                       ["Education", selectedProfile?.education],
                       ["Profession", selectedProfile?.profession],
                       ["Annual Income", selectedProfile?.annualIncome],
@@ -1208,7 +1549,8 @@ const MatrimonialPage = () => {
                       {
                         title: "Community & Family",
                         rows: [
-                          ["Gotra / Community", interestProfileModal?.profile?.gotra],
+                          ["Gotra", interestProfileModal?.profile?.gotra],
+                          ["Kul", interestProfileModal?.profile?.kul],
                           ["Family Details", interestProfileModal?.profile?.familyDetails],
                           ["Guardian", [interestProfileModal?.profile?.guardian?.name, interestProfileModal?.profile?.guardian?.relation].filter(Boolean).join(" - ")],
                         ],

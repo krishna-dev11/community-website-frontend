@@ -1880,7 +1880,7 @@ const OpportunityAdmin = () => {
   }, [scholarshipApplications, statusFilters.scholarshipApps, moduleSearch.scholarshipApps]);
 
   return (
-    <div className="w-full min-w-0 overflow-x-clip flex flex-col gap-5 text-[var(--text-primary)] sm:gap-6">
+    <div className="w-full  px-6 min-w-0 overflow-x-clip flex flex-col gap-5 text-[var(--text-primary)] sm:gap-6">
       <div className="flex w-full min-w-0 flex-col gap-5 sm:gap-6">
 
         {/* ── Header ──────────────────────────────────────────────────────── */}

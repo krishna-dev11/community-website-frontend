@@ -244,7 +244,7 @@ export function setLogin(identifier, password, navigate, onMustChangePassword = 
   };
 }
 
-export function setGoogleLogin(credential, accountType, navigate) {
+export function setGoogleLogin(credential, accountType, navigate, onSuccess = null) {
   return async (dispatch) => {
     const toastId = toast.loading("Authenticating...");
     dispatch(setLoading(true));
@@ -254,7 +254,7 @@ export function setGoogleLogin(credential, accountType, navigate) {
         "POST",
         GOOGLE_AUTH_LOGIN_API,
         {
-          token: credential,
+          idToken: credential,
           accountType: accountType,
         },
         { withCredentials: true }
@@ -264,16 +264,24 @@ export function setGoogleLogin(credential, accountType, navigate) {
         throw new Error(response.data.message);
       }
 
-      const userData = response.data.user ?? response.data.User;
+      const token = response.data.token || response.data.data?.token || response.data.accessToken;
+      const userData = response.data.user ?? response.data.User ?? response.data.data?.user;
+      if (!token || !userData) {
+        throw new Error("Google authentication response is incomplete");
+      }
 
-      dispatch(settoken(response.data.token));
-      localStorage.setItem("token", JSON.stringify(response.data.token));
+      dispatch(settoken(token));
+      localStorage.setItem("token", JSON.stringify(token));
 
       dispatch(setUser(userData));
       localStorage.setItem("user", JSON.stringify(userData));
 
       toast.success("Google Login Successful");
-      navigate("/");
+      if (onSuccess) {
+        onSuccess(userData);
+      } else {
+        navigate?.("/");
+      }
     } catch (error) {
       console.log("Google login error:", error.response?.data || error);
       toast.error(error.response?.data?.message || "Google login failed");

@@ -87,7 +87,7 @@ export function UpdateProfileDetails(token, data) {
 }
 
 export function ChangePassword(token, data) {
-  return async (dispatch) => {
+  return async (dispatch, getState) => {
     const toastId = toast.loading("Loading");
     dispatch(setLoading(true));
     try {
@@ -99,6 +99,18 @@ export function ChangePassword(token, data) {
         throw new Error(response.data.message);
       }
 
+      const freshToken = response.data.data?.accessToken || response.data.data?.token;
+      if (!freshToken) {
+        throw new Error("Password changed, but the server did not return a fresh session. Please log in again.");
+      }
+      dispatch(settoken(freshToken));
+      localStorage.setItem("token", JSON.stringify(freshToken));
+      const currentUser = getState().profile?.user;
+      if (currentUser) {
+        const updatedUser = { ...currentUser, mustChangePassword: false };
+        dispatch(setUser(updatedUser));
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+      }
       toast.success("Password Updated Successfully");
     } catch (error) {
       console.log(error.response?.data || error);

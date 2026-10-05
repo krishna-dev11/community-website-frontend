@@ -25,6 +25,8 @@ import { communityEndpoints } from "../services/apis";
 import ImageSkeleton from "../Components/Common/ImageSkeleton";
 import { useLanguage } from "../i18n/LanguageContext";
 import { formatDharamshalaPrice, getDharamshalaPrice } from "../Utilities/dharamshalaPricing";
+import DharamshalaBookingV2 from "../Components/Dharamshala/DharamshalaBookingV2";
+import MyDharamshalaBookings from "../Components/Dharamshala/MyDharamshalaBookings";
 
 const {
   DHARAMSHALAS_API,
@@ -46,6 +48,20 @@ const loadRazorpay = () => new Promise((resolve) => {
   document.body.appendChild(script);
 });
 
+// Safe capacity and unit helpers (prevents React object crash)
+const getRoomCapacity = (room) => {
+  if (!room) return 2;
+  if (typeof room.capacity === "number") return room.capacity;
+  if (typeof room.capacity === "object" && room.capacity !== null) {
+    return room.capacity.max || room.capacity.base || 2;
+  }
+  return 2;
+};
+
+const getRoomTotalUnits = (room) => {
+  return room?.totalUnits || room?.totalRooms || 1;
+};
+
 const DharamshalaPage = () => {
   const { user } = useSelector((state) => state.profile);
   const { token } = useSelector((state) => state.auth);
@@ -63,8 +79,11 @@ const DharamshalaPage = () => {
 
   // My bookings state for logged-in members
   const [myBookings, setMyBookings] = useState([]);
-  const [activeTab, setActiveTab] = useState("browse"); // "browse" | "my-bookings"
+  const [activeTab, setActiveTab] = useState("browse"); // "browse" | "my-bookings" | "my-bookings-v2"
   const [loadingMyBookings, setLoadingMyBookings] = useState(false);
+
+  // V2 booking modal
+  const [bookingV2Modal, setBookingV2Modal] = useState(null); // { property, roomType }
 
   // Booking Form State
   const [bookingForm, setBookingForm] = useState({
@@ -168,7 +187,7 @@ const DharamshalaPage = () => {
     try {
       setLoading(true);
       const res = await apiConnector("GET", DHARAMSHALAS_API);
-      const list = res.data?.data?.dharamshalas;
+      const list = res.data?.data?.properties || res.data?.data?.dharamshalas;
       if (Array.isArray(list) && list.length > 0) {
         setDharamshalas(list);
       } else {
@@ -276,7 +295,7 @@ const DharamshalaPage = () => {
       startDate: startStr,
       endDate: endStr,
       roomsRequested: 1,
-      numberOfGuests: room?.capacity || 2,
+      numberOfGuests: getRoomCapacity(room),
       purpose: "Pilgrimage / Family Yatra",
       guestName: user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() : "",
       guestEmail: user?.email || "",
@@ -389,15 +408,25 @@ const DharamshalaPage = () => {
     }
   };
 
-  const cities = ["ALL", ...new Set(dharamshalas.map((d) => d.location?.city).filter(Boolean))];
+  const cities = [
+    "ALL",
+    ...new Set(
+      dharamshalas
+        .map((d) => d.address?.city || d.location?.city)
+        .filter(Boolean)
+    ),
+  ];
 
   const filteredDharamshalas = dharamshalas.filter((d) => {
-    const matchesCity = selectedCity === "ALL" || d.location?.city === selectedCity;
+    const city = d.address?.city || d.location?.city || "";
+    const state = d.address?.state || d.location?.state || "";
+    const matchesCity = selectedCity === "ALL" || city.toLowerCase() === selectedCity.toLowerCase();
     const matchesSearch =
       !searchQuery ||
       d.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      d.location?.city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      d.location?.state?.toLowerCase().includes(searchQuery.toLowerCase());
+      city.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      state.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (d.tagline && d.tagline.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchesCity && matchesSearch;
   });
 
@@ -455,13 +484,31 @@ const DharamshalaPage = () => {
                 }`}
               >
                 <FiCalendar size={14} />
-                <span>{isHindi ? `मेरी बुकिंग्स (${myBookings.length})` : `My Bookings (${myBookings.length})`}</span>
+                <span>{isHindi ? `पुरानी बुकिंग्स (${myBookings.length})` : `Old Bookings (${myBookings.length})`}</span>
+              </button>
+              <button
+                onClick={() => setActiveTab("my-bookings-v2")}
+                className={`flex items-center gap-2 rounded-xl px-5 py-2 text-xs font-bold transition ${
+                  activeTab === "my-bookings-v2"
+                    ? "bg-[var(--accent-primary)] text-white shadow"
+                    : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                }`}
+              >
+                <FiCalendar size={14} />
+                <span>{isHindi ? "मेरी बुकिंग्स" : "My Bookings ✨"}</span>
               </button>
             </div>
           )}
         </div>
 
-        {/* ===================== VIEW 1: MY BOOKINGS ===================== */}
+        {/* ===================== VIEW 0: MY BOOKINGS V2 ===================== */}
+        {activeTab === "my-bookings-v2" && token && (
+          <div className="max-w-3xl mx-auto">
+            <MyDharamshalaBookings />
+          </div>
+        )}
+
+        {/* ===================== VIEW 1: MY BOOKINGS (legacy) ===================== */}
         {activeTab === "my-bookings" && token && (
           <div className="max-w-5xl mx-auto">
             <div className="flex justify-between items-center mb-6">
@@ -675,10 +722,10 @@ const DharamshalaPage = () => {
                       className="ka-card overflow-hidden flex flex-col group border border-[var(--border-subtle)] hover:border-[var(--accent-primary)]/40 transition-all duration-300 shadow-md"
                     >
                       {/* Image / Skeleton Placeholder */}
-                      <div className="relative h-56 w-full bg-[var(--surface-elevated)] overflow-hidden">
-                        {dharamshala.mainImage ? (
+                      <div className="relative h-60 w-full bg-[var(--surface-elevated)] overflow-hidden">
+                        {dharamshala.mainImage || dharamshala.coverImage?.url || dharamshala.images?.[0]?.url ? (
                           <img
-                            src={dharamshala.mainImage}
+                            src={dharamshala.mainImage || dharamshala.coverImage?.url || dharamshala.images?.[0]?.url}
                             alt={dharamshala.name}
                             className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
                           />
@@ -691,15 +738,15 @@ const DharamshalaPage = () => {
                         )}
 
                         <div className="absolute top-3 left-3 flex gap-2">
-                          <span className="px-2.5 py-1 rounded-lg bg-black/60 backdrop-blur-md border border-white/10 text-[10px] font-bold text-white uppercase tracking-wider flex items-center gap-1">
-                            <FiMapPin size={11} className="text-emerald-400" />
-                            {dharamshala.location?.city}, {dharamshala.location?.state}
+                          <span className="px-3 py-1 rounded-xl bg-black/70 backdrop-blur-md border border-white/15 text-[11px] font-bold text-white uppercase tracking-wider flex items-center gap-1.5 shadow-md">
+                            <FiMapPin size={12} className="text-emerald-400" />
+                            {dharamshala.address?.city || dharamshala.location?.city || "Ujjain"}, {dharamshala.address?.state || dharamshala.location?.state || "MP"}
                           </span>
                         </div>
 
-                        <div className="absolute bottom-3 right-3">
-                          <span className="px-3 py-1 rounded-xl bg-emerald-500/90 text-white text-xs font-bold shadow-lg">
-                            Active & Open
+                        <div className="absolute bottom-3 right-3 flex items-center gap-1.5">
+                          <span className="px-3 py-1 rounded-xl bg-emerald-500/90 text-white text-xs font-bold shadow-lg backdrop-blur-sm">
+                            ✓ Verified & Open
                           </span>
                         </div>
                       </div>
@@ -782,14 +829,31 @@ const DharamshalaPage = () => {
                             >
                               View Details
                             </button>
-                            <button
-                              type="button"
-                              onClick={() => openBookingModal(dharamshala)}
-                              className="btn-primary !py-2.5 !px-5 !text-xs flex-1 sm:flex-initial"
-                            >
-                              <span>Book Now</span>
-                              <FiArrowRight size={13} />
-                            </button>
+                            {dharamshala.roomTypes?.length > 0 ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (dharamshala.roomTypes.length === 1) {
+                                    setBookingV2Modal({ property: dharamshala, roomType: dharamshala.roomTypes[0] });
+                                  } else {
+                                    setDetailsModalItem(dharamshala);
+                                  }
+                                }}
+                                className="btn-primary !py-2.5 !px-5 !text-xs flex-1 sm:flex-initial !bg-emerald-600 hover:!bg-emerald-700"
+                              >
+                                <span>Book Now ⚡</span>
+                                <FiArrowRight size={13} />
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => openBookingModal(dharamshala)}
+                                className="btn-primary !py-2.5 !px-5 !text-xs flex-1 sm:flex-initial"
+                              >
+                                <span>Book Now</span>
+                                <FiArrowRight size={13} />
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -817,7 +881,9 @@ const DharamshalaPage = () => {
         <div className="pr-10 max-w-full">
           <div className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-bold text-emerald-400 uppercase tracking-wider mb-1 max-w-full">
             <FiMapPin size={12} className="shrink-0" />
-            <span className="truncate">{detailsModalItem.location?.address}, {detailsModalItem.location?.city}</span>
+            <span className="truncate">
+              {detailsModalItem.address?.line1 || detailsModalItem.location?.address}, {detailsModalItem.address?.city || detailsModalItem.location?.city}
+            </span>
           </div>
           <h2 className="text-lg sm:text-2xl md:text-3xl font-black text-[var(--text-primary)] leading-snug break-words">
             {detailsModalItem.name}
@@ -901,7 +967,7 @@ const DharamshalaPage = () => {
                   <div className="flex justify-between items-start gap-2">
                     <h4 className="font-bold text-xs sm:text-sm text-[var(--text-primary)]">{room.name}</h4>
                     <span className="text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] shrink-0">
-                      Cap: {room.capacity}
+                      Cap: {getRoomCapacity(room)} Guests
                     </span>
                   </div>
                   <p className="text-xs text-[var(--text-secondary)] mt-1 line-clamp-2">{room.description}</p>
@@ -920,16 +986,29 @@ const DharamshalaPage = () => {
                       {formatDharamshalaPrice(getDharamshalaPrice(room))} {getDharamshalaPrice(room) && <span className="text-[9px] text-[var(--text-muted)] font-normal">/ night</span>}
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setDetailsModalItem(null);
-                      openBookingModal(detailsModalItem, room);
-                    }}
-                    className="btn-primary !py-1.5 !px-3 !text-xs shrink-0"
-                  >
-                    Book Room
-                  </button>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const prop = detailsModalItem;
+                        setDetailsModalItem(null);
+                        setBookingV2Modal({ property: prop, roomType: room });
+                      }}
+                      className="btn-primary !py-1.5 !px-3 !text-xs !bg-emerald-600 hover:!bg-emerald-700 shrink-0"
+                    >
+                      Book Room ⚡
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDetailsModalItem(null);
+                        openBookingModal(detailsModalItem, room);
+                      }}
+                      className="btn-secondary !py-1.5 !px-3 !text-xs shrink-0"
+                    >
+                      Legacy
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -967,11 +1046,15 @@ const DharamshalaPage = () => {
           onClick={() => {
             const item = detailsModalItem;
             setDetailsModalItem(null);
-            openBookingModal(item);
+            if (item?.roomTypes?.length > 0) {
+              setBookingV2Modal({ property: item, roomType: item.roomTypes[0] });
+            } else {
+              openBookingModal(item);
+            }
           }}
-          className="btn-primary !py-2.5 sm:!py-2 !px-6 !text-xs flex-1 sm:flex-none"
+          className="btn-primary !py-2.5 sm:!py-2 !px-6 !text-xs flex-1 sm:flex-none !bg-emerald-600 hover:!bg-emerald-700"
         >
-          Proceed to Book
+          Proceed to Book ⚡
         </button>
       </div>
 
@@ -1131,7 +1214,7 @@ const DharamshalaPage = () => {
                       </span>
                     </div>
                     <p className="text-[10px] text-[var(--text-muted)] mt-1">
-                      Up to {room.capacity} Guests · {room.totalRooms} Total Rooms
+                      Up to {getRoomCapacity(room)} Guests · {getRoomTotalUnits(room)} Total Rooms
                     </p>
                   </div>
                 );
@@ -1327,6 +1410,15 @@ const DharamshalaPage = () => {
     </div>
   </div>
 </div>
+      )}
+
+      {/* ── V2 Booking Modal ──────────────────────────────────────────────── */}
+      {bookingV2Modal && (
+        <DharamshalaBookingV2
+          property={bookingV2Modal.property}
+          roomType={bookingV2Modal.roomType}
+          onClose={() => setBookingV2Modal(null)}
+        />
       )}
     </div>
   );

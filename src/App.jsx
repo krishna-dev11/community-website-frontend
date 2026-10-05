@@ -15,6 +15,7 @@ import ResestCompletePage from "./Pages/ResestCompletePage";
 import OpenRoute from "./Components/Core/Auth/OpenRoute";
 import Dashboard from "./Pages/Dashboard";
 import PrivateRoute from "./Components/Core/Auth/PrivateRoute";
+import PermissionRoute from "./Components/Core/Auth/PermissionRoute";
 import MyProfile from "./Components/Core/DashBoard/RightPart/MyProfile";
 import MyDues from "./Components/Core/DashBoard/RightPart/MyDues";
 import MyJobPosts from "./Components/Core/DashBoard/RightPart/MyJobPosts";
@@ -29,6 +30,8 @@ import FinanceAdmin from "./Components/Core/DashBoard/RightPart/FinanceAdmin";
 import MatrimonialAdmin from "./Components/Core/DashBoard/RightPart/MatrimonialAdmin";
 import OpportunityAdmin from "./Components/Core/DashBoard/RightPart/OpportunityAdmin";
 import AdminLifecycleQueue from "./Components/Core/DashBoard/RightPart/AdminLifecycleQueue";
+import MySuggestions from "./Components/Core/DashBoard/RightPart/MySuggestions";
+import SuggestionsAdmin from "./Components/Core/DashBoard/RightPart/SuggestionsAdmin";
 import NotFound from "./Components/Common/NotFound";
 import AIGeminiChat from "./Components/Common/AIGeminiChat";
 import PublicResourcePage from "./Pages/PublicResourcePage";
@@ -202,15 +205,77 @@ function App() {
           <Route path="/dashboard/my-dues" element={<MyDues />} />
           <Route path="/dashboard/my-jobs" element={<MyJobPosts />} />
           <Route path="/dashboard/directory" element={<MemberDirectory />} />
+          <Route path="/dashboard/directory/family/:familyId" element={<MemberDirectory />} />
           <Route path="/dashboard/family" element={<FamilyHub />} />
           <Route path="/dashboard/community" element={<CommunityHub />} />
-          <Route path="/dashboard/admin/registrations" element={<AdminRegistrationQueue />} />
-          <Route path="/dashboard/admin/community" element={<CommunityAdmin />} />
-          <Route path="/dashboard/admin/content" element={<ContentAdmin />} />
-          <Route path="/dashboard/admin/finance" element={<FinanceAdmin />} />
-          <Route path="/dashboard/admin/matrimonial" element={<MatrimonialAdmin />} />
-          <Route path="/dashboard/admin/opportunities" element={<OpportunityAdmin />} />
-          <Route path="/dashboard/admin/family-lifecycle" element={<AdminLifecycleQueue />} />
+          <Route path="/dashboard/suggestions" element={<MySuggestions />} />
+
+          {/* ── Admin routes — each guarded by a specific permission ─── */}
+          <Route
+            path="/dashboard/admin/registrations"
+            element={
+              <PermissionRoute permission="member:verify">
+                <AdminRegistrationQueue />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/dashboard/admin/family-lifecycle"
+            element={
+              <PermissionRoute permission="*">
+                <AdminLifecycleQueue />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/dashboard/admin/community"
+            element={
+              <PermissionRoute permission="community:moderate">
+                <CommunityAdmin />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/dashboard/admin/content"
+            element={
+              <PermissionRoute permission="notice:read">
+                <ContentAdmin />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/dashboard/admin/finance"
+            element={
+              <PermissionRoute permission="contribution:read">
+                <FinanceAdmin />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/dashboard/admin/matrimonial"
+            element={
+              <PermissionRoute permission="matrimonial:review">
+                <MatrimonialAdmin />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/dashboard/admin/opportunities"
+            element={
+              <PermissionRoute permissions={["job:moderate", "scholarship:read"]}>
+                <OpportunityAdmin />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/dashboard/admin/suggestions"
+            element={
+              <PermissionRoute permission="suggestion:*">
+                <SuggestionsAdmin />
+              </PermissionRoute>
+            }
+          />
+
           <Route path="/dashboard/setting" element={<SettingIndex />} />
         </Route>
 

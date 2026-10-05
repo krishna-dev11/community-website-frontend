@@ -8,6 +8,7 @@
     "start": "vite",
     "build": "vite build",
     "lint": "eslint .",
+    "test:receipt": "node --test src/Components/Common/receiptPresentation.test.js",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -1,0 +1,43 @@
+@page {
+  size: A4;
+  margin: 14mm;
+}
+
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+
+  .contribution-receipt-overlay,
+  .contribution-receipt-overlay * {
+    visibility: visible !important;
+  }
+
+  .contribution-receipt-overlay {
+    position: absolute !important;
+    inset: 0 !important;
+    display: block !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    background: #fff !important;
+    backdrop-filter: none !important;
+  }
+
+  .contribution-receipt-paper {
+    position: static !important;
+    width: 100% !important;
+    max-width: none !important;
+    padding: 0 !important;
+    color: #0f172a !important;
+  }
+
+  .contribution-receipt-paper table {
+    width: 100%;
+    page-break-inside: auto;
+  }
+
+  .contribution-receipt-paper tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+}

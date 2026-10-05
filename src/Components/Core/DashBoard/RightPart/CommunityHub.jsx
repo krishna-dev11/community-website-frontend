@@ -39,7 +39,7 @@ const tabs = [
   { key: "issues", label: "Issues & Solutions", icon: FaExclamationCircle },
   { key: "dharamshala", label: "Dharamshala Booking", icon: FaCalendarCheck, isExternalLink: true, link: "/dharamshala" },
   { key: "polls", label: "Polls & Voting", icon: FaPoll },
-  { key: "posts", label: "Discussion Feed", icon: FaComments },
+  // { key: "posts", label: "Discussion Feed", icon: FaComments },
   { key: "achievements", label: "Samaj Pride", icon: FaAward },
   { key: "shradhanjali", label: "Tribute / Shradhanjali", icon: FaHeart },
 ];
@@ -1030,7 +1030,7 @@ const CommunityHub = () => {
                   {/* Recipient Photo Upload */}
                   <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] p-3.5">
                     <FileUploadWithPreview
-                      label="Recipient / Medal Photo"
+                      label="Recipient Photo"
                       required={false}
                       accept="image/jpeg,image/jpg,image/png,image/webp"
                       maxSizeMB={10}

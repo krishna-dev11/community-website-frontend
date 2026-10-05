@@ -710,6 +710,7 @@ import { apiConnector } from "../../../../services/apiConnector";
 import { paymentEndpoints } from "../../../../services/apis";
 import FileUploadWithPreview from "../../../Common/FileUploadWithPreview";
 import MonthlyContributionsAdmin from "./MonthlyContributionsAdmin";
+import FamilyContributionsAdmin from "./FamilyContributionsAdmin";
 
 // ─── Module navigation tabs ────────────────────────────────────────────────
 const tabs = [
@@ -923,6 +924,7 @@ const initialGenerate = { month: new Date().getMonth() + 1, year: new Date().get
 const FinanceAdmin = () => {
   const { token } = useSelector((state) => state.auth);
   const [activeTab, setActiveTab] = useState("campaigns");
+  const [contributionMode, setContributionMode] = useState("family");
   const [loading, setLoading]     = useState(false);
   const [busyId, setBusyId]       = useState(null);
 
@@ -1370,10 +1372,49 @@ const FinanceAdmin = () => {
                 CONTRIBUTIONS (MONTHLY SAMaj CONTRIBUTIONS MANAGEMENT)
             ══════════════════════════════════════════════════════════════ */}
             {activeTab === "contributions" && (
-              <div className="w-full max-w-full min-w-0 overflow-hidden [&_table]:min-w-[760px] [&_table]:w-[760px] sm:[&_table]:w-full sm:[&_table]:min-w-[760px] [&_th]:whitespace-nowrap [&_td]:whitespace-normal">
-                <div className="w-full max-w-full min-w-0 overflow-x-auto overscroll-x-contain [scrollbar-width:thin]">
-                  <MonthlyContributionsAdmin />
+              <div className="w-full flex flex-col gap-4">
+                <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-[var(--border-subtle)]">
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setContributionMode("family")}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition cursor-pointer ${
+                        contributionMode === "family"
+                          ? "bg-[var(--accent-primary)] text-slate-950 shadow-md"
+                          : "border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                      }`}
+                    >
+                      Family Ledger (Auto Recurring)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setContributionMode("legacy")}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition cursor-pointer ${
+                        contributionMode === "legacy"
+                          ? "bg-[var(--accent-primary)] text-slate-950 shadow-md"
+                          : "border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                      }`}
+                    >
+                      Historical Cycles (Archive)
+                    </button>
+                  </div>
+
+                  {contributionMode === "family" && (
+                    <span className="text-[11px] text-[var(--text-muted)] font-medium">
+                      One ₹60 contribution per Family • Auto-generated
+                    </span>
+                  )}
                 </div>
+
+                {contributionMode === "family" ? (
+                  <FamilyContributionsAdmin />
+                ) : (
+                  <div className="w-full max-w-full min-w-0 overflow-hidden [&_table]:min-w-[760px] [&_table]:w-[760px] sm:[&_table]:w-full sm:[&_table]:min-w-[760px] [&_th]:whitespace-nowrap [&_td]:whitespace-normal">
+                    <div className="w-full max-w-full min-w-0 overflow-x-auto overscroll-x-contain [scrollbar-width:thin]">
+                      <MonthlyContributionsAdmin />
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </>

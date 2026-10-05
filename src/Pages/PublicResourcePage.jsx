@@ -27,6 +27,9 @@ import {
   FiMail,
   FiAlertTriangle,
   FiFlag,
+  FiLock,
+  FiLogIn,
+  FiUserPlus,
 } from "react-icons/fi";
 import { FaYoutube, FaPlay, FaWhatsapp } from "react-icons/fa";
 import { apiConnector } from "../services/apiConnector";
@@ -674,14 +677,26 @@ const PublicResourcePage = ({ type }) => {
     return next;
   }, [activeQuery, type]);
 
+  // Types that require authentication to see listings
+  const MEMBER_ONLY_TYPES = ["jobs", "scholarships"];
+  const isMemberOnly = MEMBER_ONLY_TYPES.includes(type);
+
   useEffect(() => {
     let mounted = true;
 
     const loadResources = async () => {
+      // Do NOT fetch protected listings for unauthenticated users
+      if (isMemberOnly && !token) {
+        setLoading(false);
+        setItems([]);
+        return;
+      }
+
       setLoading(true);
       setError("");
       try {
-        const response = await apiConnector("GET", config.endpoint, null, null, params);
+        const headers = token ? { Authorization: `Bearer ${token}` } : null;
+        const response = await apiConnector("GET", config.endpoint, null, headers, params);
         if (!mounted) return;
         setItems(response?.data?.data?.[config.dataKey] || []);
         setMeta(response?.data?.meta || null);
@@ -698,7 +713,15 @@ const PublicResourcePage = ({ type }) => {
     return () => {
       mounted = false;
     };
-  }, [config.dataKey, config.endpoint, params]);
+  }, [config.dataKey, config.endpoint, params, isMemberOnly, token]);
+
+  // Clear protected data when user logs out
+  useEffect(() => {
+    if (!token && isMemberOnly) {
+      setItems([]);
+      setError("");
+    }
+  }, [token, isMemberOnly]);
 
   useEffect(() => {
     if (type !== "scholarships" || !token) return undefined;
@@ -1061,9 +1084,47 @@ const PublicResourcePage = ({ type }) => {
               <div key={index} className="h-56 animate-pulse rounded-3xl border border-[var(--border-subtle)] bg-[var(--surface)]" />
             ))}
           </div>
+        ) : isMemberOnly && !token ? (
+          /* ── Auth Gate for logged-out users on jobs/scholarships ── */
+          <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-[var(--accent-primary)]/30 bg-[var(--accent-primary)]/5 p-12 text-center gap-6">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[var(--accent-primary)]/10 border border-[var(--accent-primary)]/20 text-[var(--accent-primary)]">
+              <FiLock size={36} />
+            </div>
+            <div className="space-y-3 max-w-md">
+              <p className="text-xl font-black text-[var(--text-primary)]">
+                {isHindi ? "सदस्य लॉगिन आवश्यक" : "Login Required"}
+              </p>
+              <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+                {type === "jobs"
+                  ? (isHindi
+                      ? "रोजगार के अवसर केवल पंजीकृत समाज सदस्यों के लिए उपलब्ध हैं। कृपया अपने समाज खाते से लॉगिन करें।"
+                      : "Job opportunities are available exclusively to registered Samaj members. Please login to your Samaj account to view available opportunities.")
+                  : (isHindi
+                      ? "छात्रवृत्ति योजनाएं केवल पंजीकृत समाज सदस्यों के लिए उपलब्ध हैं। कृपया अपने समाज खाते से लॉगिन करें।"
+                      : "Scholarship opportunities are available to registered Samaj members. Please login to your Samaj account to view available scholarships.")}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-4">
+              <a
+                href={`/login?redirect=${type === "jobs" ? "/jobs" : "/scholarships"}`}
+                className="inline-flex items-center gap-2 rounded-2xl bg-[var(--accent-primary)] px-6 py-3 text-sm font-bold text-white shadow-lg hover:opacity-90 transition-opacity"
+              >
+                <FiLogIn size={16} />
+                <span>{isHindi ? "लॉगिन करें" : "Login"}</span>
+              </a>
+              <a
+                href="/signup"
+                className="inline-flex items-center gap-2 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-6 py-3 text-sm font-bold text-[var(--text-primary)] hover:border-[var(--accent-primary)]/40 transition-colors"
+              >
+                <FiUserPlus size={16} />
+                <span>{isHindi ? "समाज से जुड़ें" : "Join Samaj"}</span>
+              </a>
+            </div>
+          </div>
         ) : items.length === 0 ? (
           <div className="ka-card p-12 text-center text-[var(--text-muted)]">
             {config.empty}
+
           </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">

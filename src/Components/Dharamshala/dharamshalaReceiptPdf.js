@@ -1,0 +1,133 @@
+import { jsPDF } from "jspdf";
+
+const formatMoney = (paise) =>
+  `INR ${(Number(paise || 0) / 100).toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+
+const displayDate = (value) => {
+  if (!value) return "-";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleDateString("en-IN");
+};
+
+const safeFilename = (value) => String(value || "Dharamshala-Receipt").replace(/[^a-z0-9-_]/gi, "-");
+
+export function downloadDharamshalaReceipt(receipt) {
+  const booking = receipt?.booking;
+  if (!booking || !receipt.receiptNumber) {
+    throw new Error("Receipt data is incomplete");
+  }
+
+  const pdf = new jsPDF({ unit: "mm", format: "a4" });
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const margin = 16;
+  let y = 18;
+
+  const sectionTitle = (title) => {
+    y += 4;
+    pdf.setFillColor(245, 243, 255);
+    pdf.roundedRect(margin, y - 5, pageWidth - margin * 2, 9, 2, 2, "F");
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(10);
+    pdf.setTextColor(91, 33, 182);
+    pdf.text(title, margin + 3, y + 1);
+    y += 9;
+  };
+
+  const row = (label, value, emphasized = false) => {
+    const text = String(value || "-");
+    const lines = pdf.splitTextToSize(text, pageWidth - margin * 2 - 48);
+    if (y + Math.max(6, lines.length * 5) > pageHeight - 18) {
+      pdf.addPage();
+      y = 18;
+    }
+    pdf.setFont("helvetica", emphasized ? "bold" : "normal");
+    pdf.setFontSize(9);
+    pdf.setTextColor(90, 90, 90);
+    pdf.text(label, margin + 2, y);
+    pdf.setTextColor(25, 25, 25);
+    pdf.text(lines, margin + 48, y);
+    y += Math.max(6, lines.length * 5);
+  };
+
+  pdf.setFillColor(91, 33, 182);
+  pdf.rect(0, 0, pageWidth, 38, "F");
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(14);
+  pdf.text("ADIVASI HALBA/HALBI SAMAJ KALYAN SAMITI, UJJAIN", margin, 15);
+  pdf.setFontSize(10);
+  pdf.setFont("helvetica", "normal");
+  pdf.text(booking.propertyName || "Dharamshala", margin, 23);
+  if (booking.propertyAddress) pdf.text(pdf.splitTextToSize(booking.propertyAddress, pageWidth - margin * 2)[0], margin, 30);
+
+  y = 48;
+  pdf.setTextColor(30, 30, 30);
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(16);
+  pdf.text(receipt.documentType === "PAYMENT_RECEIPT" ? "PAYMENT RECEIPT" : "BOOKING RECEIPT", margin, y);
+  pdf.setFontSize(9);
+  pdf.setFont("helvetica", "normal");
+  pdf.setTextColor(100, 100, 100);
+  pdf.text(`Receipt: ${receipt.receiptNumber}`, pageWidth - margin, y, { align: "right" });
+  y += 8;
+
+  sectionTitle("BOOKING DETAILS");
+  row("Booking reference", booking.bookingRef, true);
+  row("Booking status", booking.status);
+  row("Booking source", booking.bookingSource);
+  row("Guest", booking.guestName);
+  row("Mobile", booking.guestPhone);
+  row("Email", booking.guestEmail);
+  row("Property contact", booking.propertyContact);
+  if (booking.propertyEmail) row("Property email", booking.propertyEmail);
+  row("Room / unit", booking.roomType);
+  row("Rooms / guests", `${booking.rooms || 1} room(s) / ${booking.guests || 1} guest(s)`);
+  row("Check-in / check-out", `${displayDate(booking.checkIn)} / ${displayDate(booking.checkOut)}`);
+  row("Nights", booking.nights);
+  row("Purpose", booking.purpose);
+
+  sectionTitle("FINANCIAL SUMMARY");
+  row("Price tier", booking.priceTier);
+  row("Subtotal", formatMoney(booking.pricing?.subtotalPaise));
+  if (booking.pricing?.taxPaise > 0) row("Tax", formatMoney(booking.pricing.taxPaise));
+  row("Total booking value", formatMoney(booking.totalPaise), true);
+  row("Advance required", formatMoney(booking.advanceRequiredPaise));
+  row("Total paid", formatMoney(booking.paidPaise));
+  row("Balance due", formatMoney(booking.balancePaise), true);
+  if (booking.refundedPaise > 0) row("Refunded", formatMoney(booking.refundedPaise));
+
+  if (receipt.payment) {
+    sectionTitle("PAYMENT DETAILS");
+    row("Payment purpose", receipt.payment.type);
+    row("Payment method", receipt.payment.method);
+    row("Payment status", receipt.payment.status);
+    row("Amount received", formatMoney(receipt.payment.amountPaise), true);
+    row("Transaction ID", receipt.payment.transactionId);
+    row("Provider order ID", receipt.payment.providerOrderId);
+    row("Payment note", receipt.payment.note);
+  }
+
+  if (booking.cancellationPolicy?.length) {
+    sectionTitle("CANCELLATION POLICY");
+    booking.cancellationPolicy.forEach((tier) => {
+      row(`${tier.hoursBeforeCheckIn}+ hours before check-in`, `${tier.refundPercent}% refund`);
+    });
+  }
+  if (booking.specialRequests) {
+    sectionTitle("GUEST NOTES");
+    row("Special request", booking.specialRequests);
+  }
+
+  y = Math.min(y + 8, pageHeight - 18);
+  pdf.setFont("helvetica", "italic");
+  pdf.setFontSize(8);
+  pdf.setTextColor(110, 110, 110);
+  pdf.text(`Generated by ${receipt.generatedBy || "System"} on ${displayDate(receipt.receiptDate)}. This is a booking/payment receipt, not a GST invoice.`, margin, y);
+
+  const kind = receipt.documentType === "PAYMENT_RECEIPT" ? "Payment-Receipt" : "Booking-Receipt";
+  pdf.save(`${safeFilename(booking.bookingRef)}-${kind}.pdf`);
+}

@@ -913,6 +913,27 @@ textarea:focus {
 }
 
 /* ======================================================
+   MONTH SELECTOR UI VISIBILITY RULES
+   Ensures select value and dropdown options are crisp and readable
+   across all OS / browsers in both Light and Dark themes
+   ====================================================== */
+.ka-month-select {
+  color: var(--text-primary) !important;
+  background-color: var(--surface) !important;
+}
+
+.ka-month-select option {
+  color: #111827 !important;
+  background-color: #ffffff !important;
+}
+
+[data-theme="dark"] .ka-month-select option,
+.dark .ka-month-select option {
+  color: #f5f5f5 !important;
+  background-color: #171717 !important;
+}
+
+/* ======================================================
    SCROLL-REVEAL ANIMATION UTILITIES
    Used by public pages (About, History, Faith, Heritage…)
    ====================================================== */

@@ -101,6 +101,56 @@ const StatusBadge = ({ status }) => {
 };
 
 // ---------------------------------------------------------------------------
+// Uploaded file preview (UI-only; does not change upload/submission behavior)
+// ---------------------------------------------------------------------------
+const FilePreview = ({ file, label = "Preview" }) => {
+  const [previewUrl, setPreviewUrl] = useState("");
+
+  useEffect(() => {
+    if (!file || !file.type?.startsWith("image/")) {
+      setPreviewUrl("");
+      return undefined;
+    }
+
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
+
+  if (!file) return null;
+
+  if (file.type?.startsWith("image/") && previewUrl) {
+    return (
+      <div className="mt-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-2.5">
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-[var(--text-muted)]">
+            {label}
+          </span>
+          <span className="max-w-[65%] truncate text-[9px] text-[var(--text-secondary)]" title={file.name}>
+            {file.name}
+          </span>
+        </div>
+        <img
+          src={previewUrl}
+          alt={`${label}: ${file.name}`}
+          className="block max-h-48 w-full rounded-lg border border-[var(--border-subtle)] bg-black/10 object-contain"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-2 flex items-center gap-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-3 py-2">
+      <FiCheckCircle size={11} className="shrink-0 text-emerald-400" />
+      <span className="min-w-0 truncate text-[10px] text-[var(--text-secondary)]" title={file.name}>
+        {file.name}
+      </span>
+    </div>
+  );
+};
+
+// ---------------------------------------------------------------------------
 // Request-type labels
 // ---------------------------------------------------------------------------
 const LIFECYCLE_TYPES = [
@@ -174,7 +224,7 @@ const ReportLifeEventModal = ({ familyId, members, authConfig, onClose, onSucces
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-2000 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div className="relative w-full max-w-lg rounded-3xl border border-[var(--border-subtle)] bg-[var(--surface)] shadow-2xl overflow-y-auto max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-[var(--border-subtle)]">
@@ -283,6 +333,7 @@ const ReportLifeEventModal = ({ familyId, members, authConfig, onClose, onSucces
                 <FiCheckCircle size={10} /> {docFile.name}
               </span>
             )}
+            <FilePreview file={docFile} label="Document Preview" />
           </label>
 
           <div className="flex gap-3 pt-2 border-t border-[var(--border-subtle)]">
@@ -364,6 +415,7 @@ const FixResubmitModal = ({ familyId, member, membership, authConfig, onClose, o
               onChange={(e) => setDocFile(e.target.files?.[0] || null)}
               className="ka-input !h-auto !py-2.5 text-xs file:mr-3 file:rounded-full file:border-0 file:bg-[var(--accent-primary)] file:text-white file:text-[10px] file:font-bold file:px-3 file:py-1 file:cursor-pointer"
             />
+            <FilePreview file={docFile} label="Updated Document Preview" />
           </label>
           <div className="flex gap-3 pt-2 border-t border-[var(--border-subtle)]">
             <Button tone="neutral" type="button" onClick={onClose} className="flex-1">Cancel</Button>
@@ -448,7 +500,7 @@ const AddMemberModal = ({ familyId, authConfig, onClose, onSuccess }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-2000 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div className="relative w-full max-w-lg rounded-3xl border border-[var(--border-subtle)] bg-[var(--surface)] shadow-2xl overflow-y-auto max-h-[90vh]">
         <div className="flex items-center justify-between p-5 border-b border-[var(--border-subtle)]">
           <div>
@@ -539,7 +591,7 @@ const AddMemberModal = ({ familyId, authConfig, onClose, onSuccess }) => {
               onChange={(e) => update("dateOfBirth", e.target.value)}
             />
             <Input
-              label="SSSM / Aadhaar No. (Optional)"
+              label="SSSM / Aadhaar No."
               placeholder="12-digit Aadhaar / SSSM"
               value={form.identityNumber}
               onChange={(e) => update("identityNumber", e.target.value)}
@@ -556,7 +608,7 @@ const AddMemberModal = ({ familyId, authConfig, onClose, onSuccess }) => {
                 onChange={(e) => update("contactNumber", e.target.value)}
               />
               <Input
-                label="Email (optional)"
+                label="Email"
                 type="email"
                 placeholder="member@example.com"
                 value={form.email}
@@ -588,6 +640,7 @@ const AddMemberModal = ({ familyId, authConfig, onClose, onSuccess }) => {
                 onChange={(e) => setDocFile(e.target.files?.[0] || null)}
                 className="ka-input !h-auto !py-2 text-xs"
               />
+              <FilePreview file={docFile} label="Identity Document Preview" />
             </label>
           </div>
 
@@ -602,6 +655,7 @@ const AddMemberModal = ({ familyId, authConfig, onClose, onSuccess }) => {
                 onChange={(e) => setPhotoFile(e.target.files?.[0] || null)}
                 className="ka-input !h-auto !py-2 text-xs"
               />
+              <FilePreview file={photoFile} label="Photo Preview" />
             </label>
           </div>
 

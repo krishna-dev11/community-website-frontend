@@ -15,6 +15,8 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import toast from "react-hot-toast";
+import { settoken } from "../../../Slices/Auth";
+import { setUser } from "../../../Slices/Profile";
 import {
   setLogin,
   claimProfileRequestOtp,
@@ -111,7 +113,7 @@ const LoginForm = () => {
     try {
       const BASE_URL = import.meta.env.VITE_API_URL;
       const token = JSON.parse(localStorage.getItem("token"));
-      await apiConnector(
+      const response = await apiConnector(
         "POST",
         `${BASE_URL}/auth/changePassword`,
         pwdChangeForm,
@@ -120,6 +122,18 @@ const LoginForm = () => {
           withCredentials: true,
         }
       );
+      const freshToken = response.data?.data?.accessToken || response.data?.data?.token;
+      if (!freshToken) {
+        throw new Error("Password changed, but the server did not return a fresh login session. Please log in again.");
+      }
+      dispatch(settoken(freshToken));
+      localStorage.setItem("token", JSON.stringify(freshToken));
+      const currentUser = JSON.parse(localStorage.getItem("user") || "null");
+      if (currentUser) {
+        const updatedUser = { ...currentUser, mustChangePassword: false };
+        dispatch(setUser(updatedUser));
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+      }
       toast.success("पासवर्ड सफलतापूर्वक बदल गया! स्वागत है।");
       setShowMustChangeModal(false);
       navigate("/");

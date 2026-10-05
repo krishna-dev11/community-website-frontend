@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useSelector } from "react-redux";
 import {
   FiBriefcase,
   FiMapPin,
@@ -9,10 +10,14 @@ import {
   FiCalendar,
   FiAlertCircle,
   FiTag,
+  FiLock,
+  FiLogIn,
+  FiUserPlus,
 } from "react-icons/fi";
 import { apiConnector } from "../../../services/apiConnector";
 import { opportunityEndpoints } from "../../../services/apis";
 import { useLanguage } from "../../../i18n/LanguageContext";
+
 
 const formatDate = (val) => {
   if (!val) return "";
@@ -154,16 +159,30 @@ const SkeletonJobCard = () => (
 
 const HomeJobsSection = () => {
   const { isHindi } = useLanguage();
+  const { token } = useSelector((state) => state.auth);
   const [jobs, setJobs] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
 
   useEffect(() => {
+    // Do NOT fetch if not authenticated — listings are member-only
+    if (!token) {
+      setLoading(false);
+      setJobs([]);
+      return;
+    }
+
     let isMounted = true;
     setLoading(true);
     setError(false);
 
-    apiConnector("GET", opportunityEndpoints.JOBS_API, null, null, { limit: 4 })
+    apiConnector(
+      "GET",
+      opportunityEndpoints.JOBS_API,
+      null,
+      { Authorization: `Bearer ${token}` },
+      { limit: 4 }
+    )
       .then((res) => {
         if (!isMounted) return;
         const jobList = res?.data?.data?.jobs || [];
@@ -179,7 +198,15 @@ const HomeJobsSection = () => {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [token]);
+
+  // When user logs out, clear cached job data immediately
+  useEffect(() => {
+    if (!token) {
+      setJobs([]);
+      setError(false);
+    }
+  }, [token]);
 
   return (
     <section
@@ -207,7 +234,7 @@ const HomeJobsSection = () => {
         </div>
 
         <Link
-          to="/jobs"
+          to={token ? "/jobs" : "/login?redirect=/jobs"}
           className="inline-flex items-center gap-2 self-start sm:self-auto rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-4 py-2.5 text-xs font-bold text-[var(--text-primary)] transition-all duration-200 hover:border-emerald-500/40 hover:bg-[var(--surface-hover)] hover:text-emerald-600 dark:hover:text-emerald-400 shrink-0"
         >
           <span>{isHindi ? "सभी Jobs देखें" : "View All Jobs"}</span>
@@ -216,7 +243,40 @@ const HomeJobsSection = () => {
       </div>
 
       {/* Content */}
-      {loading ? (
+      {!token ? (
+        /* Logged-out: show auth gate, no data fetched */
+        <div className="flex flex-col items-center justify-center py-12 text-center rounded-2xl border border-dashed border-emerald-500/30 bg-emerald-500/5 p-8 gap-5">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500">
+            <FiLock size={28} />
+          </div>
+          <div className="space-y-2 max-w-sm">
+            <p className="text-base font-black text-[var(--text-primary)]">
+              {isHindi ? "सदस्य लॉगिन आवश्यक" : "Member Login Required"}
+            </p>
+            <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+              {isHindi
+                ? "रोजगार के अवसर केवल पंजीकृत समाज सदस्यों के लिए उपलब्ध हैं।"
+                : "Job opportunities are available exclusively to registered Samaj members."}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
+            <Link
+              to="/login?redirect=/jobs"
+              className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-500 transition-colors"
+            >
+              <FiLogIn size={14} />
+              <span>{isHindi ? "Jobs देखने के लिए लॉगिन करें" : "Login to View Jobs"}</span>
+            </Link>
+            <Link
+              to="/signup"
+              className="inline-flex items-center gap-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-5 py-2.5 text-xs font-bold text-[var(--text-primary)] hover:border-emerald-500/40 transition-colors"
+            >
+              <FiUserPlus size={14} />
+              <span>{isHindi ? "समाज से जुड़ें" : "Join Samaj"}</span>
+            </Link>
+          </div>
+        </div>
+      ) : loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           <SkeletonJobCard />
           <SkeletonJobCard />

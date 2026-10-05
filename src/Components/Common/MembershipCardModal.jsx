@@ -683,7 +683,12 @@ const MembershipCardModal = ({ isOpen, onClose }) => {
         pdf.line(marginX, marginY + cardH, marginX, marginY + cardH + 3);
         // bottom-right
         pdf.line(marginX + cardW, marginY + cardH, marginX + cardW + 3, marginY + cardH);
-        pdf.line(marginX + cardW, marginY + cardH, marginX + cardW + 3);
+        pdf.line(
+          marginX + cardW,
+          marginY + cardH,
+          marginX + cardW + 3,
+          marginY + cardH
+        );
       };
 
       // Page 1: FRONT SIDE
@@ -790,7 +795,7 @@ const MembershipCardModal = ({ isOpen, onClose }) => {
 
   return createPortal(
     <div className="fixed inset-0 z-[2600] flex items-center justify-center bg-black/85 p-3 sm:p-4 backdrop-blur-md overflow-y-auto">
-      <div className="relative w-full max-w-2xl max-h-[92dvh] overflow-y-auto overflow-x-hidden ka-card p-4 sm:p-6 md:p-8 shadow-[0_30px_90px_rgba(0,0,0,0.95)] my-auto rounded-2xl border border-slate-700 bg-slate-900">
+      <div className="relative w-full max-w-2xl max-h-[92dvh] overflow-y-auto overflow-x-hidden ka-card p-2.5 sm:p-6 md:p-8 shadow-[0_30px_90px_rgba(0,0,0,0.95)] my-auto rounded-2xl border border-slate-700 bg-slate-900">
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -800,15 +805,15 @@ const MembershipCardModal = ({ isOpen, onClose }) => {
         </button>
 
         {/* Modal Header */}
-        <div className="mb-4 sm:mb-6 flex items-center gap-3 pr-10">
-          <div className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-2xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
+        <div className="mb-3 sm:mb-6 flex items-center gap-2.5 sm:gap-3 pr-9 sm:pr-10">
+          <div className="flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
             <FiShield size={20} />
           </div>
           <div className="min-w-0">
-            <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider text-white truncate">
+            <h2 className="text-[11px] sm:text-base font-bold uppercase tracking-wider text-white leading-tight sm:truncate">
               Official Community Membership ID Card
             </h2>
-            <p className="text-[11px] sm:text-xs text-emerald-400 font-medium truncate">
+            <p className="text-[9px] sm:text-xs text-emerald-400 font-medium leading-tight sm:truncate">
               Adivasi Halba/Halbi Samaj Kalyan Samiti, Ujjain
             </p>
           </div>
@@ -829,11 +834,11 @@ const MembershipCardModal = ({ isOpen, onClose }) => {
         ) : (
           <div className="w-full overflow-hidden">
             {/* Front / Back Preview Toggle Switch */}
-            <div className="flex items-center justify-center gap-2 mb-4">
+            <div className="flex items-center justify-center gap-1.5 sm:gap-2 mb-3 sm:mb-4">
               <button
                 type="button"
                 onClick={() => setActiveSide("front")}
-                className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                className={`px-2.5 sm:px-4 py-1.5 rounded-full text-[10px] sm:text-xs font-bold transition-all cursor-pointer ${
                   activeSide === "front"
                     ? "bg-emerald-600 text-white shadow-md shadow-emerald-900/30 ring-2 ring-emerald-400/50"
                     : "bg-slate-800 text-slate-400 hover:text-white border border-slate-700"
@@ -844,7 +849,7 @@ const MembershipCardModal = ({ isOpen, onClose }) => {
               <button
                 type="button"
                 onClick={() => setActiveSide("back")}
-                className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                className={`px-2.5 sm:px-4 py-1.5 rounded-full text-[10px] sm:text-xs font-bold transition-all cursor-pointer ${
                   activeSide === "back"
                     ? "bg-emerald-600 text-white shadow-md shadow-emerald-900/30 ring-2 ring-emerald-400/50"
                     : "bg-slate-800 text-slate-400 hover:text-white border border-slate-700"
@@ -861,7 +866,7 @@ const MembershipCardModal = ({ isOpen, onClose }) => {
               <div
                 ref={cardRef}
                 data-membership-card="true"
-                className="w-full min-h-[360px] sm:min-h-[380px] rounded-2xl p-4 sm:p-6 relative overflow-hidden text-slate-900 shadow-2xl border-2 border-emerald-900/30 bg-[#fafaf9] transition-all flex flex-col justify-between"
+                className="w-full min-h-[330px] sm:min-h-[380px] rounded-xl sm:rounded-2xl p-3 sm:p-6 relative overflow-hidden text-slate-900 shadow-2xl border-2 border-emerald-900/30 bg-[#fafaf9] transition-all flex flex-col justify-between"
               >
                 {/* Top Header Section */}
                 <div
@@ -941,9 +946,9 @@ const MembershipCardModal = ({ isOpen, onClose }) => {
                 </div>
 
                 {/* Card Body Grid Layout */}
-                <div className="relative mt-4 sm:mt-5 flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4">
+                <div className="relative mt-3 sm:mt-5 flex flex-col sm:flex-row items-center sm:items-start justify-between gap-3 sm:gap-4">
                   {/* Member Photo & Details */}
-                  <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-4 flex-1 min-w-0 w-full sm:w-auto">
+                  <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-2.5 sm:gap-4 flex-1 min-w-0 w-full sm:w-auto">
                     <div className="relative shrink-0 p-1 bg-white rounded-lg border-2 border-emerald-900/30 shadow-sm">
                       <img
                         src={
@@ -954,17 +959,17 @@ const MembershipCardModal = ({ isOpen, onClose }) => {
                         }
                         alt={cardData.name}
                         crossOrigin="anonymous"
-                        className="w-20 h-24 sm:w-24 sm:h-28 rounded object-cover"
+                        className="w-16 h-20 sm:w-24 sm:h-28 rounded object-cover"
                       />
                     </div>
 
-                    <div className="flex flex-col gap-1.5 min-w-0">
+                    <div className="flex flex-col gap-1 sm:gap-1.5 min-w-0 w-full sm:w-auto">
                       <div>
                         <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">
                           Name / नाम
                         </span>
                         <h4
-                          className="text-base sm:text-lg font-black leading-tight truncate"
+                          className="text-sm sm:text-lg font-black leading-tight truncate"
                           style={{ color: "#0f172a" }}
                         >
                           {cardData.name}
@@ -975,7 +980,7 @@ const MembershipCardModal = ({ isOpen, onClose }) => {
                         <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">
                           Member ID / आईडी
                         </span>
-                        <p className="font-mono text-xs sm:text-sm font-extrabold text-orange-600">
+                        <p className="font-mono text-[11px] sm:text-sm font-extrabold text-orange-600">
                           {formattedMemberId}
                         </p>
                       </div>
@@ -992,13 +997,13 @@ const MembershipCardModal = ({ isOpen, onClose }) => {
                   </div>
 
                   {/* QR Code Container UI (Points to secure verification token) */}
-                  <div className="flex flex-col items-center rounded-xl p-2.5 bg-white border border-slate-300 shadow-sm shrink-0 self-center sm:self-auto">
+                  <div className="flex flex-col items-center rounded-lg sm:rounded-xl p-2 sm:p-2.5 bg-white border border-slate-300 shadow-sm shrink-0 self-center sm:self-auto">
                     <img
                       src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
                         verificationUrl
                       )}`}
                       alt="Verification QR"
-                      className="w-16 h-16 sm:w-20 sm:h-20 rounded"
+                      className="w-14 h-14 sm:w-20 sm:h-20 rounded"
                     />
                     <span className="text-[8px] font-black uppercase tracking-wider text-slate-900 mt-1.5">
                       SCAN TO VERIFY
@@ -1010,8 +1015,8 @@ const MembershipCardModal = ({ isOpen, onClose }) => {
                 </div>
 
                 {/* Card Footer Tagline */}
-                <div className="relative mt-4 sm:mt-5 flex items-center justify-center pt-3 border-t border-slate-200 text-center">
-                  <span className="text-[11px] font-extrabold text-slate-900 tracking-wide">
+                <div className="relative mt-3 sm:mt-5 flex items-center justify-center pt-2.5 sm:pt-3 border-t border-slate-200 text-center">
+                  <span className="text-[10px] sm:text-[11px] font-extrabold text-slate-900 tracking-wide">
                     <span className="text-orange-600">समाज</span> की पहचान, हमारा अधिकार
                   </span>
                 </div>
@@ -1023,7 +1028,7 @@ const MembershipCardModal = ({ isOpen, onClose }) => {
             {/* ========================================================= */}
             {activeSide === "back" && (
               <div
-                className="w-full min-h-[360px] sm:min-h-[380px] rounded-2xl p-4 sm:p-6 relative overflow-hidden text-slate-900 shadow-2xl border-2 border-emerald-900/30 bg-[#fafaf9] transition-all flex flex-col justify-between"
+                className="w-full min-h-[330px] sm:min-h-[380px] rounded-xl sm:rounded-2xl p-3 sm:p-6 relative overflow-hidden text-slate-900 shadow-2xl border-2 border-emerald-900/30 bg-[#fafaf9] transition-all flex flex-col justify-between"
               >
                 {/* Top Header Section */}
                 <div
@@ -1102,15 +1107,15 @@ const MembershipCardModal = ({ isOpen, onClose }) => {
                 </div>
 
                 {/* Back Side Two-Column Details Layout */}
-                <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
+                <div className="mt-2.5 sm:mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 text-left">
                   {/* Left Column: Member ID, Contact, Address & Verification Note */}
-                  <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
+                  <div className="bg-white p-2.5 sm:p-3 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
                     <div>
                       <div className="flex items-center gap-1.5 text-[10px] font-black text-emerald-900 uppercase tracking-wider mb-1.5 border-b border-slate-100 pb-1">
                         <FiUser size={12} className="text-emerald-700" />
                         <span>Member Identification</span>
                       </div>
-                      <div className="space-y-1 text-[11px]">
+                      <div className="space-y-1 text-[10px] sm:text-[11px]">
                         <div className="flex justify-between items-center">
                           <span className="text-slate-500 font-medium">Contact / फोन:</span>
                           <span className="font-bold text-slate-800">{cardData.phone || "Not Provided"}</span>
@@ -1146,7 +1151,7 @@ const MembershipCardModal = ({ isOpen, onClose }) => {
                   </div>
 
                   {/* Right Column: Complete Family Members List (Full Names, No Truncation!) */}
-                  <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
+                  <div className="bg-white p-2.5 sm:p-3 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
                     <div>
                       <div className="flex items-center justify-between text-[10px] font-black text-emerald-900 uppercase tracking-wider mb-1.5 border-b border-slate-100 pb-1">
                         <div className="flex items-center gap-1.5">
@@ -1158,7 +1163,7 @@ const MembershipCardModal = ({ isOpen, onClose }) => {
                         </span>
                       </div>
 
-                      <div className="space-y-1.5 text-[11px] max-h-[190px] overflow-y-auto pr-0.5">
+                      <div className="space-y-1.5 text-[10px] sm:text-[11px] max-h-[150px] sm:max-h-[190px] overflow-y-auto pr-0.5">
                         {Array.isArray(cardData.familyMembers) && cardData.familyMembers.length > 0 ? (
                           <>
                             {cardData.familyMembers.slice(0, 8).map((fm, idx) => (
@@ -1191,14 +1196,14 @@ const MembershipCardModal = ({ isOpen, onClose }) => {
                 </div>
 
                 {/* Back Side Footer: Samaj Contact Info */}
-                <div className="mt-3 pt-2 border-t border-slate-200 text-center">
-                  <p className="text-[10px] font-black text-[#14532d] uppercase">
+                <div className="mt-2.5 sm:mt-3 pt-2 border-t border-slate-200 text-center">
+                  <p className="text-[9px] sm:text-[10px] font-black text-[#14532d] uppercase">
                     ADIVASI HALBA/HALBI SAMAJ KALYAN SAMITI, UJJAIN
                   </p>
-                  <p className="text-[8.5px] text-slate-600 mt-0.5">
-                    Helpline: +91 9926018058 | Email: halbahalbiujjain79@gmail.com | Web: halbahalbisamaj.vercel.app
+                  <p className="text-[7.5px] sm:text-[8.5px] text-slate-600 mt-0.5">
+                    Helpline: +91 9926018058 | Email: halbahalbiujjain79@gmail.com 
                   </p>
-                  <p className="text-[8px] text-slate-400 italic mt-0.5">
+                  <p className="text-[7px] sm:text-[8px] text-slate-400 italic mt-0.5">
                     Official Samaj ID card property. Misuse or unauthorized alteration is prohibited.
                   </p>
                 </div>
@@ -1206,7 +1211,7 @@ const MembershipCardModal = ({ isOpen, onClose }) => {
             )}
 
             {/* Action Buttons */}
-            <div className="mt-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3">
               <button
                 onClick={handlePrint}
                 disabled={printing}

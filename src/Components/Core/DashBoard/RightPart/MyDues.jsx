@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useSelector } from "react-redux";
 import {
   FiCheckCircle,
@@ -9,11 +9,18 @@ import {
   FiShield,
   FiRefreshCw,
   FiCalendar,
+  FiChevronDown,
+  FiChevronUp,
+  FiArrowRight,
+  FiUsers,
+  FiInfo,
+  FiAward,
 } from "react-icons/fi";
-import { FaRupeeSign, FaReceipt } from "react-icons/fa";
+import { FaRupeeSign, FaReceipt, FaHistory } from "react-icons/fa";
 import toast from "react-hot-toast";
+import { Link } from "react-router-dom";
 import { apiConnector } from "../../../../services/apiConnector";
-import { paymentEndpoints } from "../../../../services/apis";
+import { familyContributionEndpoints, paymentEndpoints } from "../../../../services/apis";
 import ReceiptModal from "../../../Common/ReceiptModal";
 
 const loadRazorpay = () =>
@@ -38,81 +45,224 @@ const MyDues = () => {
   const { token } = useSelector((state) => state.auth);
   const { user } = useSelector((state) => state.profile);
 
+  // States
   const [loading, setLoading] = useState(true);
-  const [payingId, setPayingId] = useState(null);
-  const [summary, setSummary] = useState(null);
-  const [contributions, setContributions] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [hasFamily, setHasFamily] = useState(true);
+  const [summaryData, setSummaryData] = useState(null);
+  const [historyData, setHistoryData] = useState(null);
+
+  // Pay-Until Quote & Checkout states
+  const [selectedTarget, setSelectedTarget] = useState("");
+  const [quote, setQuote] = useState(null);
+  const [isQuoting, setIsQuoting] = useState(false);
+  const [paying, setPaying] = useState(false);
+
+  // Receipt Modal
   const [selectedReceipt, setSelectedReceipt] = useState(null);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
 
-  const fetchDuesData = async () => {
-    try {
-      setLoading(true);
-      const authConfig = { Authorization: `Bearer ${token}` };
-      const [summaryRes, contribRes] = await Promise.all([
-        apiConnector("GET", paymentEndpoints.MY_CONTRIBUTIONS_SUMMARY_API, null, authConfig),
-        apiConnector("GET", paymentEndpoints.MY_CONTRIBUTIONS_API, null, authConfig, { limit: 100 }),
-      ]);
+  // UI Filters & Toggles
+  const [timelineFilter, setTimelineFilter] = useState("ALL");
+  const [showLegacyDues, setShowLegacyDues] = useState(false);
+  const [legacySummary, setLegacySummary] = useState(null);
+  const [legacyContributions, setLegacyContributions] = useState([]);
+  const [loadingLegacy, setLoadingLegacy] = useState(false);
 
-      if (summaryRes?.data?.success) {
-        setSummary(summaryRes.data.data.summary);
-      }
-      if (contribRes?.data?.success) {
-        setContributions(contribRes.data.data.contributions || []);
-      }
-    } catch (err) {
-      console.error("Error fetching dues data:", err);
-      toast.error(err?.response?.data?.message || "Failed to load dues information");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Month selector dropdown state & outside click
+  const [isMonthDropdownOpen, setIsMonthDropdownOpen] = useState(false);
+  const monthDropdownRef = useRef(null);
 
   useEffect(() => {
-    if (token) {
-      fetchDuesData();
+    const handleOutsideClick = (e) => {
+      if (monthDropdownRef.current && !monthDropdownRef.current.contains(e.target)) {
+        setIsMonthDropdownOpen(false);
+      }
+    };
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setIsMonthDropdownOpen(false);
+      }
+    };
+    if (isMonthDropdownOpen) {
+      document.addEventListener("mousedown", handleOutsideClick);
+      document.addEventListener("keydown", handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isMonthDropdownOpen]);
+
+  // Fetch Family Summary and History
+  const fetchFamilyContributionData = useCallback(async (isRefresh = false) => {
+    if (!token) return;
+    try {
+      if (isRefresh) setRefreshing(true);
+      else setLoading(true);
+
+      const authHeaders = { Authorization: `Bearer ${token}` };
+
+      const [summaryRes, historyRes] = await Promise.allSettled([
+        apiConnector("GET", familyContributionEndpoints.MY_FAMILY_SUMMARY_API, null, authHeaders),
+        apiConnector("GET", familyContributionEndpoints.MY_FAMILY_HISTORY_API, null, authHeaders),
+      ]);
+
+      if (summaryRes.status === "fulfilled" && summaryRes.value?.data?.success) {
+        if (summaryRes.value.data.hasFamily === false) {
+          setHasFamily(false);
+          setSummaryData(null);
+        } else {
+          setHasFamily(true);
+          const sData = summaryRes.value.data.data;
+          setSummaryData(sData);
+
+          // Auto-select immediate next due month or next 3 months by default
+          if (sData?.account) {
+            const nextY = sData.account.nextDueYear;
+            const nextM = sData.account.nextDueMonth;
+            setSelectedTarget(`${nextY}-${nextM}`);
+          }
+        }
+      }
+
+      if (historyRes.status === "fulfilled" && historyRes.value?.data?.success) {
+        setHistoryData(historyRes.value.data.data);
+      }
+    } catch (err) {
+      console.error("Error fetching family contribution data:", err);
+      toast.error(err?.response?.data?.message || "Failed to load family contribution information");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
   }, [token]);
 
-  // Payment Handler with server-side HMAC verification
-  const handlePayNow = async (due) => {
-    if (!due) return;
-    const dueAmount = due.remainingAmount || (due.totalPayable - due.paidAmount) || due.expectedAmount;
-    if (dueAmount <= 0) {
-      toast.error("No pending dues for this month.");
+  useEffect(() => {
+    fetchFamilyContributionData();
+  }, [fetchFamilyContributionData]);
+
+  // Compute target month options based on nextDue
+  const targetOptions = useMemo(() => {
+    if (!summaryData?.account) return [];
+    const { nextDueYear, nextDueMonth } = summaryData.account;
+    const options = [];
+
+    let curY = nextDueYear;
+    let curM = nextDueMonth;
+
+    // Generate up to 24 upcoming monthly intervals
+    for (let i = 1; i <= 24; i++) {
+      const monthName = MONTH_NAMES[curM - 1];
+      let label = `${monthName} ${curY}`;
+      if (i === 1) label += " (Next Due Month)";
+      else if (i === 3) label += " (Quarter - 3 Months)";
+      else if (i === 6) label += " (Half Year - 6 Months)";
+      else if (i === 12) label += " (Full Year - 12 Months)";
+      else if (curM === 3) label += " (Financial Year End)";
+
+      options.push({
+        year: curY,
+        month: curM,
+        value: `${curY}-${curM}`,
+        label,
+        count: i,
+      });
+
+      curM++;
+      if (curM > 12) {
+        curM = 1;
+        curY++;
+      }
+    }
+    return options;
+  }, [summaryData]);
+
+  // Fetch Pay-Until Quote when selected target changes
+  const fetchQuote = useCallback(async (targetValue) => {
+    if (!targetValue || !token) return;
+    const [yStr, mStr] = targetValue.split("-");
+    const toYear = parseInt(yStr, 10);
+    const toMonth = parseInt(mStr, 10);
+
+    try {
+      setIsQuoting(true);
+      const res = await apiConnector(
+        "POST",
+        familyContributionEndpoints.GET_QUOTE_API,
+        { toYear, toMonth },
+        { Authorization: `Bearer ${token}` }
+      );
+
+      if (res?.data?.success) {
+        setQuote(res.data.data?.quote || res.data.data);
+      }
+    } catch (err) {
+      console.error("Error fetching pay-until quote:", err);
+      toast.error(err?.response?.data?.message || "Failed to calculate quote");
+    } finally {
+      setIsQuoting(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    if (selectedTarget) {
+      fetchQuote(selectedTarget);
+    }
+  }, [selectedTarget, fetchQuote]);
+
+  // Razorpay Checkout Handler for Family Contribution
+  const handlePayNow = async () => {
+    if (!quote || quote.netPayableRupees === undefined) {
+      toast.error("Please select a valid payment target first.");
       return;
     }
 
-    setPayingId(due._id || due.id);
-    const toastId = toast.loading("Initializing secure payment gateway...");
+    if (quote.netPayableRupees <= 0) {
+      toast.success("No payment required. Your dues are already covered by advance credits!");
+      return;
+    }
+
+    setPaying(true);
+    const toastId = toast.loading("Initializing secure Razorpay gateway...");
+    const receiptAuthHeaders = { Authorization: "Bearer " + token };
 
     try {
       const isLoaded = await loadRazorpay();
       if (!isLoaded) {
-        throw new Error("Razorpay SDK could not be loaded. Please check your connection.");
+        throw new Error("Razorpay SDK could not be loaded. Please check your internet connection.");
       }
 
-      const orderRes = await apiConnector(
+      // Step 1: Prepare payment order
+      const prepRes = await apiConnector(
         "POST",
-        paymentEndpoints.CREATE_CONTRIBUTION_ORDER_API(due._id || due.id),
-        { amount: dueAmount },
+        familyContributionEndpoints.PREPARE_PAYMENT_API,
+        {
+          toYear: quote.toYear,
+          toMonth: quote.toMonth,
+        },
         { Authorization: `Bearer ${token}` }
       );
 
-      const orderData = orderRes?.data?.data;
-      if (!orderData?.order?.id || !orderData?.key) {
-        throw new Error("Payment order creation failed on server.");
+      const prepData = prepRes?.data?.data;
+      if (!prepData?.orderId || (!prepData?.keyId && !prepData?.key) || !prepData?.paymentId) {
+        throw new Error("Payment order could not be generated by server.");
       }
+      // Normalize backend field names
+      const orderId = prepData.orderId;
+      const rzpKey = prepData.key || prepData.keyId;
+      const rzpAmount = prepData.amountPaise;
 
       toast.dismiss(toastId);
 
+      // Step 2: Open Razorpay Popup
       const checkout = new window.Razorpay({
-        key: orderData.key,
-        amount: orderData.order.amount,
-        currency: orderData.order.currency || "INR",
-        name: "श्री हल्बा / हल्बी समाज",
-        description: `Monthly Contribution - ${due.monthName || due.month}/${due.year}`,
-        order_id: orderData.order.id,
+        key: rzpKey,
+        amount: rzpAmount,
+        currency: "INR",
+        name: "श्री हल्बा / हल्बी समाज कल्याण समिति",
+        description: `Family Contribution: ${summaryData?.family?.familyName || "Family"} (${quote.fromYear}-${quote.fromMonth} to ${quote.toYear}-${quote.toMonth})`,
+        order_id: orderId,
         prefill: {
           name: `${user?.firstName || ""} ${user?.lastName || ""}`.trim(),
           email: user?.email,
@@ -122,16 +272,16 @@ const MyDues = () => {
           color: "#059669",
         },
         handler: async (response) => {
-          const verifyToastId = toast.loading("Verifying payment with Samaj server...");
+          const verifyToastId = toast.loading("Verifying payment and updating family ledger...");
           try {
             const verifyRes = await apiConnector(
               "POST",
-              paymentEndpoints.VERIFY_CONTRIBUTION_API(due._id || due.id),
+              familyContributionEndpoints.VERIFY_PAYMENT_API,
               {
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-                amount: dueAmount,
+                paymentId: prepData.paymentId,
+                razorpayOrderId: response.razorpay_order_id,
+                razorpayPaymentId: response.razorpay_payment_id,
+                razorpaySignature: response.razorpay_signature,
               },
               { Authorization: `Bearer ${token}` }
             );
@@ -139,9 +289,23 @@ const MyDues = () => {
             toast.dismiss(verifyToastId);
             if (verifyRes?.data?.success) {
               toast.success("Contribution recorded and verified successfully!");
-              await fetchDuesData();
-              // Open receipt automatically
-              handleViewReceipt(due._id || due.id);
+              await fetchFamilyContributionData(true);
+
+              try {
+                const receiptRes = await apiConnector(
+                  "GET",
+                  familyContributionEndpoints.GET_RECEIPT_API(prepData.paymentId),
+                  null,
+                  receiptAuthHeaders
+                );
+                if (receiptRes?.data?.success && receiptRes.data.data?.receipt) {
+                  setSelectedReceipt(receiptRes.data.data.receipt);
+                  setIsReceiptModalOpen(true);
+                }
+              } catch (receiptError) {
+                console.error("Payment verified, but receipt could not be loaded:", receiptError);
+                toast.error("Payment verified, but the receipt could not be loaded. You can open it from payment history.");
+              }
             } else {
               toast.error(verifyRes?.data?.message || "Verification failed");
             }
@@ -150,12 +314,12 @@ const MyDues = () => {
             console.error("Payment verification failed:", vErr);
             toast.error(vErr?.response?.data?.message || "Verification failed on server");
           } finally {
-            setPayingId(null);
+            setPaying(false);
           }
         },
         modal: {
           ondismiss: () => {
-            setPayingId(null);
+            setPaying(false);
             toast("Payment window closed.");
           },
         },
@@ -164,18 +328,19 @@ const MyDues = () => {
       checkout.open();
     } catch (err) {
       toast.dismiss(toastId);
-      setPayingId(null);
+      setPaying(false);
       console.error("Payment error:", err);
       toast.error(err?.response?.data?.message || err.message || "Failed to start payment");
     }
   };
 
-  const handleViewReceipt = async (contributionId) => {
+  // View Receipt Handler
+  const handleViewReceipt = async (paymentId) => {
     const loadingToast = toast.loading("Loading official receipt...");
     try {
       const res = await apiConnector(
         "GET",
-        paymentEndpoints.CONTRIBUTION_RECEIPT_API(contributionId),
+        familyContributionEndpoints.GET_RECEIPT_API(paymentId),
         null,
         { Authorization: `Bearer ${token}` }
       );
@@ -191,7 +356,88 @@ const MyDues = () => {
     }
   };
 
-  const currentDue = summary?.currentDue;
+  // Fetch Legacy Individual Dues (if user toggles)
+  const fetchLegacyDues = async () => {
+    if (legacySummary) return; // already loaded
+    try {
+      setLoadingLegacy(true);
+      const authConfig = { Authorization: `Bearer ${token}` };
+      const [sumRes, contribRes] = await Promise.all([
+        apiConnector("GET", paymentEndpoints.MY_CONTRIBUTIONS_SUMMARY_API, null, authConfig),
+        apiConnector("GET", paymentEndpoints.MY_CONTRIBUTIONS_API, null, authConfig, { limit: 50 }),
+      ]);
+      if (sumRes?.data?.success) setLegacySummary(sumRes.data.data.summary);
+      if (contribRes?.data?.success) setLegacyContributions(contribRes.data.data.contributions || []);
+    } catch (err) {
+      console.error("Failed to load legacy dues:", err);
+    } finally {
+      setLoadingLegacy(false);
+    }
+  };
+
+  const handleToggleLegacy = () => {
+    const nextState = !showLegacyDues;
+    setShowLegacyDues(nextState);
+    if (nextState) fetchLegacyDues();
+  };
+
+  // Timeline list filtered
+  const filteredTimeline = useMemo(() => {
+    if (!historyData?.timeline) return [];
+    if (timelineFilter === "ALL") return historyData.timeline;
+    if (timelineFilter === "UNPAID") {
+      return historyData.timeline.filter((e) => ["DUE", "OVERDUE", "PARTIAL"].includes(e.status));
+    }
+    if (timelineFilter === "PAID") {
+      return historyData.timeline.filter((e) => ["PAID", "PAID_AHEAD"].includes(e.status));
+    }
+    return historyData.timeline;
+  }, [historyData, timelineFilter]);
+
+  if (loading) {
+    return (
+      <div className="min-h-[70vh] flex flex-col items-center justify-center gap-4">
+        <FiRefreshCw className="animate-spin text-emerald-500 text-3xl" />
+        <p className="text-sm font-semibold text-[var(--text-muted)]">
+          Loading your family contribution status...
+        </p>
+      </div>
+    );
+  }
+
+  // If user is not linked to any family
+  if (!hasFamily) {
+    return (
+      <div className="relative min-h-screen w-full bg-[var(--bg)] text-[var(--text-primary)] p-4 sm:p-8">
+        <div className="max-w-3xl mx-auto mt-12 ka-card p-8 text-center space-y-6 border border-amber-500/20 bg-amber-500/5">
+          <div className="w-16 h-16 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center mx-auto text-2xl">
+            <FiUsers />
+          </div>
+          <h2 className="text-2xl font-black text-[var(--text-primary)]">
+            No Family Profile Linked
+          </h2>
+          <p className="text-sm text-[var(--text-secondary)] leading-relaxed max-w-xl mx-auto">
+            The Samaj monthly contribution (₹60/month) is managed at the <strong>Family level</strong> instead of individual members. You are not currently registered under an active family profile.
+          </p>
+          <div className="pt-2 flex justify-center gap-4">
+            <Link to="/dashboard/family" className="btn-primary !px-6 !py-2.5 text-sm flex items-center gap-2">
+              <span>Go to Family Hub</span>
+              <FiArrowRight />
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const isHead = summaryData?.family?.isFamilyHead;
+  const paidThroughDisplay = summaryData?.account?.paidThroughDisplay || "None";
+  const nextDueText = summaryData?.account
+    ? `${MONTH_NAMES[summaryData.account.nextDueMonth - 1]} ${summaryData.account.nextDueYear}`
+    : "Up to Date";
+  const totalOutstanding = summaryData?.account?.totalOutstandingRupees || 0;
+  const advanceCredit = summaryData?.account?.advanceCreditRupees || 0;
+  const isUpToDate = totalOutstanding === 0;
 
   return (
     <div className="relative min-h-screen w-full bg-[var(--bg)] text-[var(--text-primary)] p-3 sm:p-6 overflow-hidden transition-colors duration-300">
@@ -206,386 +452,569 @@ const MyDues = () => {
               <span className="text-[var(--accent-primary)]">/</span>
               <span>Dashboard</span>
               <span className="text-[var(--accent-primary)]">/</span>
-              <span className="text-[var(--text-primary)]">My Dues</span>
+              <span className="text-[var(--text-primary)]">Family Contributions</span>
             </nav>
-            <h1 className="text-2xl sm:text-3xl font-black text-[var(--text-primary)] mt-1 tracking-tight">
-              Monthly Samaj <span className="text-gradient">Contributions</span>
-            </h1>
-            <p className="text-xs text-[var(--text-muted)] mt-0.5">
-              Standard Samaj monthly contribution of ₹60 for community welfare, education, and development.
+            <div className="flex items-center gap-3 mt-1 flex-wrap">
+              <h1 className="text-2xl sm:text-3xl font-black text-[var(--text-primary)] tracking-tight">
+                Family Monthly <span className="text-gradient">Contribution</span>
+              </h1>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
+                <FiUsers size={12} />
+                {summaryData?.family?.familyName || "Family"} (₹60/mo)
+              </span>
+            </div>
+            <p className="text-xs text-[var(--text-muted)] mt-1">
+              Recurring Samaj contribution of ₹60/month per family for community welfare, scholarships, and social security.
             </p>
           </div>
 
           <button
-            onClick={fetchDuesData}
-            disabled={loading}
+            onClick={() => fetchFamilyContributionData(true)}
+            disabled={refreshing}
             className="btn-secondary !py-2 !px-3.5 !text-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-            title="Refresh Dues"
+            title="Refresh Data"
           >
-            <FiRefreshCw size={13} className={loading ? "animate-spin" : ""} />
+            <FiRefreshCw size={13} className={refreshing ? "animate-spin" : ""} />
             <span>Refresh</span>
           </button>
         </div>
 
-        {/* 1. TOP SUMMARY CARDS (Calculated from Backend Ledger) */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-          <div className="ka-card p-4 flex flex-col justify-between border-l-4 border-l-amber-500">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
-              Current Due
-            </span>
-            <div className="mt-2 flex items-baseline gap-1">
-              <span className="text-2xl font-black text-amber-500">
-                ₹{currentDue ? currentDue.remainingAmount : 0}
-              </span>
-            </div>
-            <span className="text-[11px] text-[var(--text-muted)] mt-1 truncate">
-              {currentDue ? `${currentDue.monthName} ${currentDue.year}` : "All settled"}
+        {/* Family Role Notice if not Head */}
+        {!isHead && (
+          <div className="flex items-center gap-3 p-3.5 rounded-xl border border-sky-500/20 bg-sky-500/5 text-sky-300 text-xs">
+            <FiInfo size={16} className="shrink-0" />
+            <span>
+              You are viewing the contribution status for your family. The primary designated payer is your Family Head (
+              <strong>{summaryData?.family?.head?.firstName || "Family Head"}</strong>). However, any adult family member can contribute on behalf of the family.
             </span>
           </div>
+        )}
 
-          <div className="ka-card p-4 flex flex-col justify-between border-l-4 border-l-red-500">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
-              Outstanding
-            </span>
-            <div className="mt-2 flex items-baseline gap-1">
-              <span className="text-2xl font-black text-red-400">
-                ₹{summary?.totalOutstanding || 0}
-              </span>
-            </div>
-            <span className="text-[11px] text-[var(--text-muted)] mt-1">
-              {summary?.monthsPending || 0} month(s) pending
-            </span>
-          </div>
-
+        {/* 1. HERO STATUS CARDS */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+          {/* Card 1: Paid Through */}
           <div className="ka-card p-4 flex flex-col justify-between border-l-4 border-l-emerald-500">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
-              Total Paid
-            </span>
-            <div className="mt-2 flex items-baseline gap-1">
-              <span className="text-2xl font-black text-emerald-400">
-                ₹{summary?.totalPaid || 0}
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                Paid Through
+              </span>
+              <FiCalendar className="text-emerald-400" size={14} />
+            </div>
+            <div className="mt-2">
+              <span className="text-xl sm:text-2xl font-black text-emerald-400">
+                {paidThroughDisplay}
               </span>
             </div>
             <span className="text-[11px] text-[var(--text-muted)] mt-1">
-              {summary?.monthsPaid || 0} month(s) paid
+              Continuous paid status
             </span>
           </div>
 
-          <div className="ka-card p-4 flex flex-col justify-between border-l-4 border-l-sky-500">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
-              Paid Months
-            </span>
-            <div className="mt-2 flex items-baseline gap-1">
-              <span className="text-2xl font-black text-sky-400">
-                {summary?.monthsPaid || 0}
+          {/* Card 2: Next Due */}
+          <div className={`ka-card p-4 flex flex-col justify-between border-l-4 ${totalOutstanding > 0 ? "border-l-amber-500" : "border-l-sky-500"}`}>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                Next Due Month
+              </span>
+              <FiClock className={totalOutstanding > 0 ? "text-amber-400" : "text-sky-400"} size={14} />
+            </div>
+            <div className="mt-2">
+              <span className={`text-xl sm:text-2xl font-black ${totalOutstanding > 0 ? "text-amber-400" : "text-sky-400"}`}>
+                {nextDueText}
               </span>
             </div>
             <span className="text-[11px] text-[var(--text-muted)] mt-1">
-              Receipts available
+              {summaryData?.account?.unpaidMonthsCount > 0
+                ? `${summaryData.account.unpaidMonthsCount} month(s) awaiting payment`
+                : "Obligations current"}
             </span>
           </div>
 
-          <div className="ka-card p-4 flex flex-col justify-between border-l-4 border-l-purple-500 col-span-2 sm:col-span-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
-              Pending Months
-            </span>
-            <div className="mt-2 flex items-baseline gap-1">
-              <span className="text-2xl font-black text-purple-400">
-                {summary?.monthsPending || 0}
+          {/* Card 3: Total Outstanding */}
+          <div className={`ka-card p-4 flex flex-col justify-between border-l-4 ${totalOutstanding > 0 ? "border-l-red-500" : "border-l-emerald-500"}`}>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                Total Outstanding
+              </span>
+              <FaRupeeSign className={totalOutstanding > 0 ? "text-red-400" : "text-emerald-400"} size={12} />
+            </div>
+            <div className="mt-2">
+              <span className={`text-xl sm:text-2xl font-black ${totalOutstanding > 0 ? "text-red-400" : "text-emerald-400"}`}>
+                ₹{totalOutstanding}
               </span>
             </div>
             <span className="text-[11px] text-[var(--text-muted)] mt-1">
-              {summary?.monthsPending === 0 ? "Up to date" : "Action needed"}
+              {summaryData?.account?.outstandingLateFineRupees > 0
+                ? `Includes ₹${summaryData.account.outstandingLateFineRupees} late fine`
+                : "Zero late penalties"}
+            </span>
+          </div>
+
+          {/* Card 4: Advance Credit */}
+          <div className="ka-card p-4 flex flex-col justify-between border-l-4 border-l-purple-500">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                Advance Credit
+              </span>
+              <FiAward className="text-purple-400" size={14} />
+            </div>
+            <div className="mt-2">
+              <span className="text-xl sm:text-2xl font-black text-purple-400">
+                ₹{advanceCredit}
+              </span>
+            </div>
+            <span className="text-[11px] text-[var(--text-muted)] mt-1">
+              Auto-applied to future dues
             </span>
           </div>
         </div>
 
-        {/* 2. CURRENT ACTIVE DUE HERO CARD */}
-        {currentDue ? (
-          <div className="ka-card p-5 sm:p-7 relative overflow-hidden border border-amber-500/30 bg-gradient-to-br from-amber-500/5 via-[var(--surface)] to-[var(--surface-elevated)]">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border border-amber-500/40 bg-amber-500/10 text-amber-400">
-                    Current Due • {currentDue.status}
-                  </span>
-                  {currentDue.status === "OVERDUE" && (
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border border-red-500/40 bg-red-500/10 text-red-400">
-                      Overdue (Late Fee Applied)
+        {/* 2. PAY AHEAD / QUICK PAYMENT PANEL */}
+        <div className="ka-card p-6 sm:p-7 border border-[var(--border-subtle)] bg-[var(--surface-elevated)] relative overflow-hidden shadow-xl">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[var(--border-subtle)] pb-5">
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--accent-primary)]">
+                Fast Contribution Gateway
+              </span>
+              <h2 className="text-xl sm:text-2xl font-black text-[var(--text-primary)] mt-0.5">
+                Pay Ahead & Clear Contributions
+              </h2>
+              <p className="text-xs text-[var(--text-muted)] mt-1">
+                Select your target month. You can pay for 1 month, 6 months, or in advance up to 2 years with zero recurring hassle.
+              </p>
+            </div>
+
+            {isUpToDate && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-bold shrink-0">
+                <FiCheckCircle size={14} />
+                Up to Date
+              </span>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6 items-start">
+            {/* Target Selector */}
+            <div className="lg:col-span-6 space-y-4">
+              <div className="block">
+                <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
+                  Pay Until (Target Month):
+                </span>
+                <div ref={monthDropdownRef} className="mt-2 relative">
+                  {/* Visual Dropdown Button */}
+                  <button
+                    type="button"
+                    onClick={() => setIsMonthDropdownOpen((prev) => !prev)}
+                    aria-haspopup="listbox"
+                    aria-expanded={isMonthDropdownOpen}
+                    className="ka-month-select flex h-14 w-full items-center justify-between rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] px-4 pr-12 text-sm font-semibold text-[var(--text-primary)] outline-none transition focus:border-[var(--accent-primary)] focus:ring-2 focus:ring-[var(--accent-primary)]/20 cursor-pointer text-left relative min-w-0"
+                    style={{
+                      color: "var(--text-primary)",
+                      backgroundColor: "var(--surface)",
+                    }}
+                  >
+                    <span className="truncate pr-2 font-bold text-[var(--text-primary)]">
+                      {targetOptions.find((opt) => opt.value === selectedTarget)?.label || "Select Target Month"}
+                      {targetOptions.find((opt) => opt.value === selectedTarget) && (
+                        <span className="ml-2 text-xs font-medium text-[var(--text-muted)]">
+                          ({targetOptions.find((opt) => opt.value === selectedTarget)?.count} month{targetOptions.find((opt) => opt.value === selectedTarget)?.count > 1 ? "s" : ""})
+                        </span>
+                      )}
                     </span>
-                  )}
-                </div>
+                    <FiChevronDown
+                      className={`absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] transition-transform duration-200 pointer-events-none ${
+                        isMonthDropdownOpen ? "rotate-180 text-[var(--accent-primary)]" : ""
+                      }`}
+                      size={18}
+                    />
+                  </button>
 
-                <div>
-                  <h3 className="text-2xl sm:text-3xl font-black text-[var(--text-primary)]">
-                    {currentDue.monthName} {currentDue.year}
-                  </h3>
-                  <p className="text-xs text-[var(--text-muted)] mt-1 flex items-center gap-1.5">
-                    <FiCalendar size={13} />
-                    <span>
-                      Due Date:{" "}
-                      {new Date(currentDue.dueDate).toLocaleDateString("en-IN", {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                      })}
-                    </span>
-                  </p>
-                </div>
-
-                {/* Amount breakdown */}
-                <div className="flex flex-wrap items-center gap-4 text-xs pt-1">
-                  <div className="flex items-center gap-1.5 text-[var(--text-secondary)]">
-                    <span>Monthly Contribution:</span>
-                    <span className="font-bold text-[var(--text-primary)]">₹{currentDue.expectedAmount}</span>
-                  </div>
-                  {Boolean(currentDue.lateFee && currentDue.lateFee > 0) && (
-                    <div className="flex items-center gap-1.5 text-red-400">
-                      <span>Late Fee:</span>
-                      <span className="font-bold">₹{currentDue.lateFee}</span>
-                    </div>
-                  )}
-                  {Boolean(currentDue.paidAmount && currentDue.paidAmount > 0) && (
-                    <div className="flex items-center gap-1.5 text-emerald-400">
-                      <span>Already Paid:</span>
-                      <span className="font-bold">₹{currentDue.paidAmount}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Action column */}
-              <div className="flex flex-col sm:flex-row md:flex-col items-start md:items-end justify-between gap-3 pt-3 md:pt-0 border-t md:border-t-0 border-[var(--border-subtle)]">
-                <div className="text-left md:text-right">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] block">
-                    Total Payable Amount
-                  </span>
-                  <span className="text-3xl sm:text-4xl font-black text-amber-400">
-                    ₹{currentDue.remainingAmount}
-                  </span>
-                </div>
-
-                <button
-                  onClick={() => handlePayNow(currentDue)}
-                  disabled={payingId === currentDue.id}
-                  className="btn-primary !py-3 !px-7 !text-sm font-bold flex items-center justify-center gap-2 w-full sm:w-auto cursor-pointer shadow-lg shadow-emerald-500/20 disabled:opacity-50"
-                >
-                  <FaRupeeSign size={14} />
-                  <span>{payingId === currentDue.id ? "Processing..." : "PAY NOW"}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="ka-card p-6 sm:p-8 text-center flex flex-col items-center justify-center border border-emerald-500/20 bg-emerald-500/5">
-            <div className="w-12 h-12 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center mb-3">
-              <FiCheckCircle size={24} />
-            </div>
-            <h3 className="text-lg font-bold text-[var(--text-primary)]">You're All Caught Up!</h3>
-            <p className="text-xs text-[var(--text-muted)] mt-1 max-w-md">
-              There are no pending monthly contributions due for your account. Thank you for your continued commitment to the Samaj.
-            </p>
-          </div>
-        )}
-
-        {/* 3. CONTRIBUTION HISTORY */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <FaReceipt className="text-[var(--accent-primary)]" size={16} />
-              <h3 className="text-lg font-bold text-[var(--text-primary)] tracking-tight">
-                Contribution History & Ledger
-              </h3>
-            </div>
-            <span className="text-xs text-[var(--text-muted)]">
-              {contributions.length} recorded cycle(s)
-            </span>
-          </div>
-
-          {loading ? (
-            <div className="ka-card p-8 text-center text-xs text-[var(--text-muted)]">
-              <FiRefreshCw className="animate-spin mx-auto mb-2" size={20} />
-              <span>Loading contribution history...</span>
-            </div>
-          ) : contributions.length === 0 ? (
-            <div className="ka-card p-8 text-center text-xs text-[var(--text-muted)]">
-              No historical contribution records found for your account.
-            </div>
-          ) : (
-            <>
-              {/* Desktop Table View */}
-              <div className="hidden md:block overflow-x-auto ka-card">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="border-b border-[var(--border-subtle)] text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] bg-[var(--surface-elevated)]">
-                      <th className="py-3 px-4">Month / Cycle</th>
-                      <th className="py-3 px-4">Base Due</th>
-                      <th className="py-3 px-4">Late Fee</th>
-                      <th className="py-3 px-4">Total</th>
-                      <th className="py-3 px-4">Paid</th>
-                      <th className="py-3 px-4">Method</th>
-                      <th className="py-3 px-4">Payment Date</th>
-                      <th className="py-3 px-4">Status</th>
-                      <th className="py-3 px-4 text-right">Action / Receipt</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[var(--border-subtle)]">
-                    {contributions.map((c) => {
-                      const monthName = MONTH_NAMES[c.month - 1] || `Month ${c.month}`;
-                      const isPaid = c.status === "PAID";
-                      const isOverdue = c.status === "OVERDUE";
-                      const total = (c.expectedAmount || 0) + (c.lateFee || 0);
-
-                      return (
-                        <tr key={c._id} className="hover:bg-[var(--surface-elevated)]/50 transition-colors">
-                          <td className="py-3 px-4 font-bold text-[var(--text-primary)]">
-                            {monthName} {c.year}
-                          </td>
-                          <td className="py-3 px-4 text-[var(--text-secondary)]">₹{c.expectedAmount}</td>
-                          <td className="py-3 px-4 text-[var(--text-secondary)]">
-                            {c.lateFee ? `₹${c.lateFee}` : "₹0"}
-                          </td>
-                          <td className="py-3 px-4 font-bold text-[var(--text-primary)]">₹{total}</td>
-                          <td className="py-3 px-4 font-bold text-emerald-400">₹{c.paidAmount || 0}</td>
-                          <td className="py-3 px-4 uppercase text-[11px] font-semibold text-[var(--text-secondary)]">
-                            {c.paymentMethod && c.paymentMethod !== "NONE" ? c.paymentMethod : "—"}
-                          </td>
-                          <td className="py-3 px-4 text-[var(--text-muted)]">
-                            {c.paidAt
-                              ? new Date(c.paidAt).toLocaleDateString("en-IN", {
-                                  day: "numeric",
-                                  month: "short",
-                                  year: "numeric",
-                                })
-                              : "—"}
-                          </td>
-                          <td className="py-3 px-4">
+                  {/* Dropdown Options Menu */}
+                  {isMonthDropdownOpen && (
+                    <div
+                      role="listbox"
+                      className="absolute left-0 right-0 top-full mt-2 z-50 max-h-60 overflow-y-auto rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-1.5 shadow-2xl backdrop-blur-md"
+                      style={{
+                        backgroundColor: "var(--surface-elevated)",
+                        borderColor: "var(--border-subtle)",
+                      }}
+                    >
+                      {targetOptions.map((opt) => {
+                        const isSelected = selectedTarget === opt.value;
+                        return (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            role="option"
+                            aria-selected={isSelected}
+                            onClick={() => {
+                              setSelectedTarget(opt.value);
+                              setIsMonthDropdownOpen(false);
+                            }}
+                            className={`flex w-full items-center justify-between rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-semibold transition-colors cursor-pointer text-left ${
+                              isSelected
+                                ? "bg-[var(--accent-primary)]/15 text-[var(--accent-primary)] font-bold"
+                                : "text-[var(--text-primary)] hover:bg-[var(--surface-hover)] hover:text-[var(--accent-primary)]"
+                            }`}
+                            style={{
+                              color: isSelected ? "var(--accent-primary)" : "var(--text-primary)",
+                            }}
+                          >
+                            <span className="truncate">{opt.label}</span>
                             <span
-                              className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
-                                isPaid
-                                  ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400"
-                                  : isOverdue
-                                  ? "border-red-500/40 bg-red-500/10 text-red-400"
-                                  : "border-amber-500/40 bg-amber-500/10 text-amber-400"
+                              className={`ml-2 text-xs font-medium shrink-0 ${
+                                isSelected ? "text-[var(--accent-primary)]" : "text-[var(--text-muted)]"
                               }`}
                             >
-                              {c.status}
+                              {opt.count} mo{opt.count > 1 ? "s" : ""}
                             </span>
-                          </td>
-                          <td className="py-3 px-4 text-right">
-                            {isPaid ? (
-                              <button
-                                onClick={() => handleViewReceipt(c._id)}
-                                className="btn-secondary !py-1 !px-3 !text-[11px] inline-flex items-center gap-1 cursor-pointer"
-                              >
-                                <FiFileText size={12} />
-                                <span>View Receipt</span>
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => handlePayNow(c)}
-                                disabled={payingId === c._id}
-                                className="btn-primary !py-1 !px-3 !text-[11px] inline-flex items-center gap-1 cursor-pointer disabled:opacity-50"
-                              >
-                                <FaRupeeSign size={10} />
-                                <span>{payingId === c._id ? "..." : "Pay Now"}</span>
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Accessible native select fallback */}
+                  <select
+                    value={selectedTarget}
+                    onChange={(e) => setSelectedTarget(e.target.value)}
+                    className="sr-only"
+                    tabIndex={-1}
+                    aria-hidden="true"
+                  >
+                    {targetOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label} ({opt.count} month{opt.count > 1 ? "s" : ""})
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
-              {/* Mobile Stacked Cards View */}
-              <div className="md:hidden space-y-3">
-                {contributions.map((c) => {
-                  const monthName = MONTH_NAMES[c.month - 1] || `Month ${c.month}`;
-                  const isPaid = c.status === "PAID";
-                  const isOverdue = c.status === "OVERDUE";
-                  const total = (c.expectedAmount || 0) + (c.lateFee || 0);
+              {/* Quick Preset Buttons */}
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                  Quick Select Intervals:
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {targetOptions.slice(0, 4).map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setSelectedTarget(opt.value)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer ${
+                        selectedTarget === opt.value
+                          ? "border-[var(--accent-primary)] bg-[var(--accent-primary)]/10 text-[var(--accent-primary)]"
+                          : "border-[var(--border-subtle)] bg-[var(--surface)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                      }`}
+                    >
+                      {opt.count === 1 ? "Next 1 Mo" : `${opt.count} Months`}
+                    </button>
+                  ))}
+                  {targetOptions.length >= 12 && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedTarget(targetOptions[11].value)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer ${
+                        selectedTarget === targetOptions[11].value
+                          ? "border-[var(--accent-primary)] bg-[var(--accent-primary)]/10 text-[var(--accent-primary)]"
+                          : "border-[var(--border-subtle)] bg-[var(--surface)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                      }`}
+                    >
+                      1 Year (12 Mo)
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Month Breakdown Pill List */}
+              {quote?.monthBreakdown && quote.monthBreakdown.length > 0 && (
+                <div className="pt-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] block mb-1.5">
+                    Covered Months Breakdown ({quote.monthBreakdown.length} Months):
+                  </span>
+                  <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto pr-1">
+                    {quote.monthBreakdown.map((m) => (
+                      <span
+                        key={m.ledgerId || `${m.year}-${m.month}`}
+                        className={`text-[11px] px-2.5 py-1 rounded-md font-medium border flex items-center gap-1.5 ${
+                          m.lateFineRupees > 0
+                            ? "border-red-500/30 bg-red-500/10 text-red-300"
+                            : m.isFuture
+                            ? "border-sky-500/30 bg-sky-500/10 text-sky-300"
+                            : "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                        }`}
+                      >
+                        <span>{m.monthName} {m.year}</span>
+                        <span className="font-bold">₹{m.totalRupees}</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Quote Summary & Pay Button */}
+            <div className="lg:col-span-6 p-5 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] space-y-4">
+              <div className="flex justify-between items-center border-b border-[var(--border-subtle)] pb-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                  Live Quote Breakdown
+                </span>
+                {isQuoting && <FiRefreshCw className="animate-spin text-emerald-400" size={13} />}
+              </div>
+
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between text-[var(--text-secondary)]">
+                  <span>Number of Months:</span>
+                  <span className="font-bold text-[var(--text-primary)]">{quote?.monthCount || 0} month(s)</span>
+                </div>
+                <div className="flex justify-between text-[var(--text-secondary)]">
+                  <span>Principal Contribution (₹60/mo):</span>
+                  <span className="font-bold text-[var(--text-primary)]">₹{quote?.totalPrincipalRupees || 0}</span>
+                </div>
+                {quote?.totalLateFineRupees > 0 && (
+                  <div className="flex justify-between text-red-400">
+                    <span>Overdue Late Fines:</span>
+                    <span className="font-bold">+ ₹{quote.totalLateFineRupees}</span>
+                  </div>
+                )}
+                {quote?.availableCreditRupees > 0 && (
+                  <div className="flex justify-between text-purple-400 font-semibold">
+                    <span>Advance Credit Offset:</span>
+                    <span>- ₹{quote.availableCreditRupees}</span>
+                  </div>
+                )}
+                <div className="pt-3 border-t border-[var(--border-subtle)] flex justify-between items-baseline">
+                  <span className="text-sm font-black uppercase text-[var(--text-primary)]">Net Payable:</span>
+                  <span className="text-2xl font-black text-emerald-400">
+                    ₹{quote?.netPayableRupees ?? 0}
+                  </span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handlePayNow}
+                disabled={paying || isQuoting || (quote?.netPayableRupees === 0 && quote?.monthCount === 0)}
+                className="w-full btn-primary !py-3 !text-sm flex items-center justify-center gap-2 font-bold cursor-pointer disabled:opacity-50 mt-2 shadow-lg shadow-emerald-500/20"
+              >
+                {paying ? (
+                  <>
+                    <FiRefreshCw className="animate-spin" />
+                    <span>Processing Payment...</span>
+                  </>
+                ) : (
+                  <>
+                    <FiCreditCard size={16} />
+                    <span>Proceed to Secure Payment (₹{quote?.netPayableRupees ?? 0})</span>
+                  </>
+                )}
+              </button>
+
+              <p className="text-[10px] text-center text-[var(--text-muted)] flex items-center justify-center gap-1">
+                <FiShield size={12} className="text-emerald-400" />
+                <span>Encrypted 256-bit Razorpay Gateway • Instant Official Receipt</span>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* 3. MONTH-BY-MONTH TIMELINE & PAYMENT RECEIPTS TABS */}
+        <div className="ka-card p-6 border border-[var(--border-subtle)] bg-[var(--surface-elevated)] space-y-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-[var(--border-subtle)] pb-4">
+            <div>
+              <h2 className="text-lg font-black text-[var(--text-primary)]">
+                Contribution History & Ledger
+              </h2>
+              <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                Audit trail of all generated monthly obligations and verified payments.
+              </p>
+            </div>
+
+            {/* Filter Pills */}
+            <div className="flex items-center gap-1.5 bg-[var(--surface)] p-1 rounded-xl border border-[var(--border-subtle)]">
+              {["ALL", "UNPAID", "PAID"].map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setTimelineFilter(f)}
+                  className={`px-3 py-1 rounded-lg text-[11px] font-bold uppercase transition cursor-pointer ${
+                    timelineFilter === f
+                      ? "bg-[var(--accent-primary)] text-slate-950 shadow-sm"
+                      : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                  }`}
+                >
+                  {f === "ALL" ? "All Months" : f === "UNPAID" ? "Dues Only" : "Paid Months"}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Month-by-Month Obligations Grid */}
+          <div>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-3">
+              Monthly Obligations ({filteredTimeline.length})
+            </h3>
+
+            {filteredTimeline.length === 0 ? (
+              <div className="py-8 text-center text-sm text-[var(--text-muted)]">
+                No contribution records found for the selected filter.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {filteredTimeline.map((item) => {
+                  const isPaid = item.status === "PAID" || item.status === "PAID_AHEAD";
+                  const isOverdue = item.status === "OVERDUE";
+                  const isPartial = item.status === "PARTIAL";
+
+                  let badgeClass = "border-amber-500/30 bg-amber-500/10 text-amber-300";
+                  if (isPaid) badgeClass = "border-emerald-500/30 bg-emerald-500/10 text-emerald-300";
+                  else if (isOverdue) badgeClass = "border-red-500/30 bg-red-500/10 text-red-300";
+                  else if (isPartial) badgeClass = "border-sky-500/30 bg-sky-500/10 text-sky-300";
 
                   return (
-                    <div key={c._id} className="ka-card p-4 space-y-3">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h4 className="font-bold text-sm text-[var(--text-primary)]">
-                            {monthName} {c.year}
-                          </h4>
-                          <span className="text-[11px] text-[var(--text-muted)]">
-                            Due: {new Date(c.dueDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                    <div
+                      key={item._id}
+                      className="p-3.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] flex flex-col justify-between gap-2.5 transition hover:border-[var(--accent-primary)]/40"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <FiCalendar className="text-[var(--text-muted)]" size={13} />
+                          <span className="text-sm font-bold text-[var(--text-primary)]">
+                            {MONTH_NAMES[item.contributionMonth - 1]} {item.contributionYear}
                           </span>
                         </div>
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
-                            isPaid
-                              ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400"
-                              : isOverdue
-                              ? "border-red-500/40 bg-red-500/10 text-red-400"
-                              : "border-amber-500/40 bg-amber-500/10 text-amber-400"
-                          }`}
-                        >
-                          {c.status}
+                        <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md border ${badgeClass}`}>
+                          {item.status.replace("_", " ")}
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-[var(--border-subtle)]">
-                        <div>
-                          <span className="text-[10px] uppercase text-[var(--text-muted)] block">Total Due</span>
-                          <span className="font-bold text-[var(--text-primary)]">₹{total}</span>
+                      <div className="text-xs space-y-1">
+                        <div className="flex justify-between text-[var(--text-muted)]">
+                          <span>Principal:</span>
+                          <span className="font-semibold text-[var(--text-primary)]">₹{item.contributionAmountRupees}</span>
                         </div>
-                        <div>
-                          <span className="text-[10px] uppercase text-[var(--text-muted)] block">Paid Amount</span>
-                          <span className="font-bold text-emerald-400">₹{c.paidAmount || 0}</span>
-                        </div>
-                        {c.paymentMethod && c.paymentMethod !== "NONE" && (
-                          <div>
-                            <span className="text-[10px] uppercase text-[var(--text-muted)] block">Mode</span>
-                            <span className="text-[var(--text-secondary)] uppercase">{c.paymentMethod}</span>
+                        {item.lateFineAmountRupees > 0 && (
+                          <div className="flex justify-between text-red-400">
+                            <span>Late Fine:</span>
+                            <span className="font-semibold">+ ₹{item.lateFineAmountRupees}</span>
                           </div>
                         )}
-                        {c.paidAt && (
-                          <div>
-                            <span className="text-[10px] uppercase text-[var(--text-muted)] block">Paid On</span>
-                            <span className="text-[var(--text-secondary)]">
-                              {new Date(c.paidAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="pt-2 border-t border-[var(--border-subtle)]">
-                        {isPaid ? (
-                          <button
-                            onClick={() => handleViewReceipt(c._id)}
-                            className="btn-secondary !py-1.5 !px-3 !text-xs w-full justify-center flex items-center gap-1.5"
-                          >
-                            <FiFileText size={13} />
-                            <span>View Receipt</span>
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handlePayNow(c)}
-                            disabled={payingId === c._id}
-                            className="btn-primary !py-2 !px-4 !text-xs w-full justify-center flex items-center gap-1.5 disabled:opacity-50"
-                          >
-                            <FaRupeeSign size={12} />
-                            <span>{payingId === c._id ? "Processing..." : `Pay ₹${total - (c.paidAmount || 0)}`}</span>
-                          </button>
-                        )}
+                        <div className="flex justify-between text-[var(--text-muted)] pt-1 border-t border-[var(--border-subtle)]">
+                          <span>Remaining Due:</span>
+                          <span className={`font-black ${item.remainingRupees > 0 ? "text-amber-400" : "text-emerald-400"}`}>
+                            ₹{item.remainingRupees}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   );
                 })}
               </div>
-            </>
+            )}
+          </div>
+
+          {/* Payment Receipts History Table */}
+          {historyData?.payments && historyData.payments.length > 0 && (
+            <div className="pt-4 border-t border-[var(--border-subtle)]">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-3 flex items-center gap-2">
+                <FaReceipt className="text-emerald-400" />
+                <span>Verified Payment Receipts ({historyData.payments.length})</span>
+              </h3>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs text-[var(--text-secondary)]">
+                  <thead className="bg-[var(--surface)] text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] border-b border-[var(--border-subtle)]">
+                    <tr>
+                      <th className="py-2.5 px-3">Receipt No</th>
+                      <th className="py-2.5 px-3">Date</th>
+                      <th className="py-2.5 px-3">Amount</th>
+                      <th className="py-2.5 px-3">Method</th>
+                      <th className="py-2.5 px-3">Status</th>
+                      <th className="py-2.5 px-3 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[var(--border-subtle)]">
+                    {historyData.payments.map((p) => (
+                      <tr key={p._id} className="hover:bg-[var(--surface)]/50 transition">
+                        <td className="py-3 px-3 font-mono font-bold text-[var(--text-primary)]">
+                          {p.receiptNumber || "N/A"}
+                        </td>
+                        <td className="py-3 px-3">
+                          {p.receiptDate ? new Date(p.receiptDate).toLocaleDateString("en-IN") : "N/A"}
+                        </td>
+                        <td className="py-3 px-3 font-black text-emerald-400">
+                          ₹{p.amountRupees}
+                        </td>
+                        <td className="py-3 px-3 font-medium">
+                          <span className="px-2 py-0.5 rounded-full bg-[var(--surface)] border border-[var(--border-subtle)] text-[10px] uppercase font-bold">
+                            {p.paymentMethod}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3">
+                          <span className="text-[10px] font-bold uppercase text-emerald-400">
+                            {p.status}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 text-right">
+                          <button
+                            type="button"
+                            onClick={() => handleViewReceipt(p._id)}
+                            className="btn-secondary !py-1 !px-2.5 !text-[11px] inline-flex items-center gap-1 cursor-pointer"
+                          >
+                            <FiFileText size={11} />
+                            <span>View Receipt</span>
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 4. LEGACY INDIVIDUAL DUES (BACKWARD COMPATIBILITY ACCORDION) */}
+        <div className="border border-[var(--border-subtle)] rounded-2xl bg-[var(--surface)] overflow-hidden">
+          <button
+            type="button"
+            onClick={handleToggleLegacy}
+            className="w-full px-5 py-4 flex items-center justify-between text-left text-xs font-bold text-[var(--text-muted)] hover:text-[var(--text-primary)] transition cursor-pointer"
+          >
+            <div className="flex items-center gap-2">
+              <FaHistory size={13} />
+              <span>View Past Individual Member Dues (Historical Archive)</span>
+            </div>
+            {showLegacyDues ? <FiChevronUp size={16} /> : <FiChevronDown size={16} />}
+          </button>
+
+          {showLegacyDues && (
+            <div className="p-5 border-t border-[var(--border-subtle)] bg-[var(--surface-elevated)] space-y-4">
+              {loadingLegacy ? (
+                <div className="py-4 text-center text-xs text-[var(--text-muted)]">
+                  Loading historical records...
+                </div>
+              ) : legacyContributions.length === 0 ? (
+                <p className="text-xs text-[var(--text-muted)]">
+                  No previous individual records found for your account. All contributions are now tracked under your Family Ledger.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {legacyContributions.slice(0, 6).map((c) => (
+                      <div key={c._id} className="p-2.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface)] text-xs">
+                        <div className="font-bold text-[var(--text-primary)]">{c.monthName || c.month}/{c.year}</div>
+                        <div className="text-[11px] text-emerald-400 font-semibold">₹{c.paidAmount || c.expectedAmount} ({c.status})</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>
 
-      {/* Official Printable Receipt Modal */}
+      {/* Official Receipt Modal */}
       <ReceiptModal
         isOpen={isReceiptModalOpen}
         onClose={() => setIsReceiptModalOpen(false)}

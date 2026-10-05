@@ -6,7 +6,7 @@ export const endpoints = {
   VERIFY_OTP_API: BASE_URL + "/auth/verifyOTP",
   SIGNUP_API: BASE_URL + "/auth/signUP",
   LOGIN_API: BASE_URL + "/auth/login",
-  GOOGLE_AUTH_LOGIN_API : BASE_URL + "/auth/google-login",
+  GOOGLE_AUTH_LOGIN_API: BASE_URL + "/auth/google",
   LOGOUT_API: BASE_URL + "/auth/logout",
   RESETPASSTOKEN_API: BASE_URL + "/auth/forgotpasswordToken",
   RESETPASSWORD_API: BASE_URL + "/auth/forgotPassword",
@@ -17,10 +17,12 @@ export const endpoints = {
 export const profileEndpoints = {
   GET_USER_DETAILS_API: BASE_URL + "/profile/getAllUserDetails",
   MEMBER_DIRECTORY_API: BASE_URL + "/profile/directory",
+  FAMILY_DIRECTORY_API: BASE_URL + "/profile/directory/families",
+  FAMILY_DIRECTORY_DETAIL_API: (familyId) => BASE_URL + `/profile/directory/families/${familyId}`,
+  UNLINKED_DIRECTORY_API: BASE_URL + "/profile/directory/unlinked",
   GET_USER_ENROLLED_COURSES_API: BASE_URL + "/profile/getEnrolledCourses",
   GET_ALL_COURSES_OF_INSTRUCTOR_FOR_DASHBOARD : BASE_URL + "/profile/getAllCoursesOfInstructorForInstructorDashBoard",
   GET_INSTRUCTOR_DASHBOARD_DATA: BASE_URL + "/profile/GetInstructorDasboardData",
-  
 }
 
 export const adminEndpoints = {
@@ -36,6 +38,12 @@ export const adminEndpoints = {
   UPDATE_USER_STATUS_API: (userId) => BASE_URL + `/admin/users/${userId}/status`,
   UPDATE_USER_ROLES_API: (userId) => BASE_URL + `/admin/users/${userId}/roles`,
   ANONYMIZE_USER_API: (userId) => BASE_URL + `/admin/users/${userId}/anonymize`,
+  // Direct Member-to-Admin Assignment
+  ELIGIBLE_MEMBERS_API: BASE_URL + "/admin/members/eligible",
+  ASSIGN_MEMBER_ROLES_API: (userId) => BASE_URL + `/admin/members/${userId}/roles`,
+  REVOKE_MEMBER_ACCESS_API: (userId) => BASE_URL + `/admin/members/${userId}/access`,
+  ACTIVE_ADMINISTRATORS_API: BASE_URL + "/admin/administrators",
+  ROLE_HISTORY_API: BASE_URL + "/admin/role-history",
 }
 
 export const familyEndpoints = {
@@ -145,9 +153,29 @@ export const paymentEndpoints = {
   WAIVE_CONTRIBUTION_API: (contributionId) => BASE_URL + `/payments/contributions/${contributionId}/waive`,
 }
 
+export const familyContributionEndpoints = {
+  MY_FAMILY_SUMMARY_API: BASE_URL + "/payments/family-contributions/me",
+  MY_FAMILY_HISTORY_API: BASE_URL + "/payments/family-contributions/me/history",
+  GET_QUOTE_API: BASE_URL + "/payments/family-contributions/quote",
+  PREPARE_PAYMENT_API: BASE_URL + "/payments/family-contributions/prepare-payment",
+  VERIFY_PAYMENT_API: BASE_URL + "/payments/family-contributions/verify-payment",
+  GET_RECEIPT_API: (paymentId) => BASE_URL + `/payments/family-contributions/receipt/${paymentId}`,
+
+  // Admin APIs
+  ADMIN_ACCOUNTS_API: BASE_URL + "/payments/admin/family-contributions",
+  ADMIN_ACCOUNT_DETAIL_API: (familyId) => BASE_URL + `/payments/admin/family-contributions/${familyId}`,
+  RECORD_CASH_API: (familyId) => BASE_URL + `/payments/admin/family-contributions/${familyId}/cash`,
+  WAIVE_FINE_API: (familyId) => BASE_URL + `/payments/admin/family-contributions/${familyId}/waive-fine`,
+  RECORD_ADJUSTMENT_API: (familyId) => BASE_URL + `/payments/admin/family-contributions/${familyId}/adjustment`,
+  RECONCILE_FAMILY_API: (familyId) => BASE_URL + `/payments/admin/family-contributions/${familyId}/reconcile`,
+  RECONCILE_ALL_API: BASE_URL + "/payments/admin/family-contributions/reconcile-all",
+  GET_SETTINGS_API: BASE_URL + "/payments/admin/family-contributions/settings",
+  UPDATE_SETTINGS_API: BASE_URL + "/payments/admin/family-contributions/settings",
+}
+
 export const communityEndpoints = {
-  DHARAMSHALAS_API: BASE_URL + "/community/dharamshalas",
-  DHARAMSHALA_DETAIL_API: (id) => BASE_URL + `/community/dharamshalas/${id}`,
+  DHARAMSHALAS_API: BASE_URL + "/dharamshala/properties",
+  DHARAMSHALA_DETAIL_API: (id) => BASE_URL + `/dharamshala/properties/${id}`,
   ISSUES_API: BASE_URL + "/community/issues",
   UPDATE_ISSUE_STATUS_API: (issueId) => BASE_URL + `/community/issues/${issueId}/status`,
   ISSUE_RESPONSES_API: (issueId) => BASE_URL + `/community/issues/${issueId}/responses`,
@@ -197,6 +225,7 @@ export const notificationEndpoints = {
 }
 
 export const matrimonialEndpoints = {
+  FILTERS_API: BASE_URL + "/matrimonial/filters",
   MY_PROFILE_API: BASE_URL + "/matrimonial/profiles/me",
   PROFILE_VISIBILITY_API: BASE_URL + "/matrimonial/profiles/me/visibility",
   PROFILES_API: BASE_URL + "/matrimonial/profiles",
@@ -301,4 +330,101 @@ export const TestimonialEndPoints = {
 
 export const InstallmentEndPoints = {
   ADD_INSTALLMENT : BASE_URL + "/enrollment/add-installment"
+}
+
+export const suggestionEndpoints = {
+  // Meta
+  SUGGESTION_META_API: BASE_URL + "/suggestions/meta",
+  // Member
+  CREATE_SUGGESTION_API: BASE_URL + "/suggestions",
+  MY_SUGGESTIONS_API: BASE_URL + "/suggestions/me",
+  GET_SUGGESTION_API: (id) => BASE_URL + `/suggestions/${id}`,
+  ADD_MEMBER_MESSAGE_API: (id) => BASE_URL + `/suggestions/${id}/messages`,
+  DELETE_SUGGESTION_API: (id) => BASE_URL + `/suggestions/${id}`,
+  // Admin
+  ADMIN_LIST_SUGGESTIONS_API: BASE_URL + "/suggestions/admin/list",
+  ADMIN_UPDATE_STATUS_API: (id) => BASE_URL + `/suggestions/${id}/status`,
+  ADMIN_SET_PRIORITY_API: (id) => BASE_URL + `/suggestions/${id}/priority`,
+  ADMIN_ASSIGN_API: (id) => BASE_URL + `/suggestions/${id}/assign`,
+  ADMIN_REPLY_API: (id) => BASE_URL + `/suggestions/${id}/reply`,
+  ADMIN_DELETE_SUGGESTION_API: (id) => BASE_URL + `/suggestions/${id}/admin-delete`,
+}
+
+export const dharamshalaAdminEndpoints = {
+  // Amenities
+  LIST_AMENITIES_API: BASE_URL + "/admin/dharamshala/amenities",
+  CREATE_AMENITY_API: BASE_URL + "/admin/dharamshala/amenities",
+  // Properties (Dharamshalas)
+  LIST_PROPERTIES_API: BASE_URL + "/admin/dharamshala/properties",
+  CREATE_PROPERTY_API: BASE_URL + "/admin/dharamshala/properties",
+  GET_PROPERTY_API: (id) => BASE_URL + `/admin/dharamshala/properties/${id}`,
+  UPDATE_PROPERTY_API: (id) => BASE_URL + `/admin/dharamshala/properties/${id}`,
+  PUBLISH_PROPERTY_API: (id) => BASE_URL + `/admin/dharamshala/properties/${id}/publish`,
+  ARCHIVE_PROPERTY_API: (id) => BASE_URL + `/admin/dharamshala/properties/${id}/archive`,
+  // Photos
+  UPLOAD_IMAGES_API: (id) => BASE_URL + `/admin/dharamshala/properties/${id}/images`,
+  DELETE_IMAGE_API: (id, imageId) => BASE_URL + `/admin/dharamshala/properties/${id}/images/${imageId}`,
+  // Room Types
+  CREATE_ROOM_TYPE_API: (id) => BASE_URL + `/admin/dharamshala/properties/${id}/room-types`,
+  UPLOAD_ROOM_TYPE_IMAGES_API: (id, rtId) => BASE_URL + `/admin/dharamshala/properties/${id}/room-types/${rtId}/images`,
+  DELETE_ROOM_TYPE_IMAGE_API: (id, rtId, imageId) => BASE_URL + `/admin/dharamshala/properties/${id}/room-types/${rtId}/images/${imageId}`,
+  UPDATE_ROOM_TYPE_API: (id, rtId) => BASE_URL + `/admin/dharamshala/properties/${id}/room-types/${rtId}`,
+  DELETE_ROOM_TYPE_API: (id, rtId) => BASE_URL + `/admin/dharamshala/properties/${id}/room-types/${rtId}`,
+  // Membership Claims (§5.9, §7.8)
+  LIST_CLAIMS_API: BASE_URL + "/admin/dharamshala/claims",
+  GET_CLAIM_DOCUMENT_API: (claimId) => BASE_URL + `/admin/dharamshala/claims/${claimId}/document`,
+  REVIEW_CLAIM_API: (claimId) => BASE_URL + `/admin/dharamshala/claims/${claimId}/review`,
+  REVOKE_CLAIM_API: (claimId) => BASE_URL + `/admin/dharamshala/claims/${claimId}/revoke`,
+}
+
+export const dharamshalaPublicEndpoints = {
+  LIST_PROPERTIES_API: BASE_URL + "/dharamshala/properties",
+  GET_PROPERTY_DETAIL_API: (idOrSlug) => BASE_URL + `/dharamshala/properties/${idOrSlug}`,
+  CHECK_AVAILABILITY_API: (id) => BASE_URL + `/dharamshala/properties/${id}/availability`,
+  GET_CALENDAR_API: (id) => BASE_URL + `/dharamshala/properties/${id}/calendar`,
+  LIST_AMENITIES_API: BASE_URL + "/community/dharamshalas/amenities",
+  // Auth & Membership Claims (§9.1, §7.8)
+  GOOGLE_AUTH_API: BASE_URL + "/auth/google",
+  UPDATE_PHONE_API: BASE_URL + "/dharamshala/me/phone",
+  GET_ME_API: BASE_URL + "/dharamshala/me",
+  SUBMIT_CLAIM_API: BASE_URL + "/dharamshala/claims",
+  GET_MY_CLAIM_API: BASE_URL + "/dharamshala/claims/me",
+}
+
+// ── Phase 4-7: Booking Engine v2 Endpoints ──────────────────────────────────
+export const dharamshalaBookingV2Endpoints = {
+  // Booking (Phase 4)
+  QUOTE_API:           BASE_URL + "/dharamshala/bookings/quote",
+  CREATE_BOOKING_API:  BASE_URL + "/dharamshala/bookings",
+  MY_BOOKINGS_API:     BASE_URL + "/dharamshala/bookings/my",
+  GET_BOOKING_API:     (id) => BASE_URL + `/dharamshala/bookings/${id}`,
+  CANCEL_BOOKING_API:  (id) => BASE_URL + `/dharamshala/bookings/${id}/cancel`,
+
+  // Payment (Phase 5)
+  CREATE_ORDER_API:    (id) => BASE_URL + `/dharamshala/payments/${id}/pay`,
+  VERIFY_PAYMENT_API:  (id) => BASE_URL + `/dharamshala/payments/${id}/pay/verify`,
+  GET_LEDGER_API:      (id) => BASE_URL + `/dharamshala/payments/${id}/ledger`,
+  GET_RECEIPT_API:     (id, ledgerId) => BASE_URL + `/dharamshala/payments/${id}/receipt${ledgerId ? `?ledgerId=${encodeURIComponent(ledgerId)}` : ""}`,
+
+  // Admin Booking Management
+  ADMIN_LIST_BOOKINGS_API:   BASE_URL + "/dharamshala/bookings/admin/list",
+  ADMIN_APPROVE_BOOKING_API: (id) => BASE_URL + `/dharamshala/bookings/admin/${id}/approve`,
+  ADMIN_REJECT_BOOKING_API:  (id) => BASE_URL + `/dharamshala/bookings/admin/${id}/reject`,
+  ADMIN_CHECKIN_API:         (id) => BASE_URL + `/dharamshala/bookings/admin/${id}/checkin`,
+  ADMIN_CHECKOUT_API:        (id) => BASE_URL + `/dharamshala/bookings/admin/${id}/checkout`,
+  ADMIN_COLLECT_API:         (id) => BASE_URL + `/dharamshala/payments/${id}/collect`,
+  ADMIN_REFUND_API:          (id) => BASE_URL + `/dharamshala/payments/${id}/refund`,
+
+  // Staff Panel (Phase 6)
+  STAFF_TODAY_API:     BASE_URL + "/dharamshala/staff/today",
+  STAFF_SEARCH_API:    BASE_URL + "/dharamshala/staff/search",
+  STAFF_WALKIN_API:    BASE_URL + "/dharamshala/staff/walkin",
+  STAFF_CHECKIN_API:   (id) => BASE_URL + `/dharamshala/staff/${id}/checkin`,
+  STAFF_CHECKOUT_API:  (id) => BASE_URL + `/dharamshala/staff/${id}/checkout`,
+  STAFF_NOSHOW_API:    (id) => BASE_URL + `/dharamshala/staff/${id}/noshow`,
+
+  // Reports (Phase 7)
+  REPORT_BOOKINGS_API: BASE_URL + "/dharamshala/admin/reports/bookings",
+  REPORT_REVENUE_API:  BASE_URL + "/dharamshala/admin/reports/revenue",
+  REPORT_AUDIT_API:    BASE_URL + "/dharamshala/admin/reports/audit",
 }

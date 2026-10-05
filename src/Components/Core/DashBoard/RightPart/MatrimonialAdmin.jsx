@@ -1063,6 +1063,8 @@ const MatrimonialAdmin = () => {
         p.education,
         p.profession,
         p.about,
+        p.gotra,
+        p.kul,
         p.owner?.firstName,
         p.owner?.lastName,
         p.owner?.email,
@@ -1224,6 +1226,9 @@ const MatrimonialAdmin = () => {
                                 </p>
                                 <p className="mt-1 text-xs text-[var(--accent-primary)] font-medium">
                                   {profile.education || "Education not set"} · {profile.profession || "Profession not set"}
+                                </p>
+                                <p className="mt-0.5 text-xs text-[var(--text-muted)]">
+                                  Gotra: {profile.gotra || "Not set"} · Kul: {profile.kul || "Not set"}
                                 </p>
                                 <p className="mt-2 line-clamp-2 text-xs text-[var(--text-muted)] leading-relaxed">
                                   {profile.about || "No about note provided."}

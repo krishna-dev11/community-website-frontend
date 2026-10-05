@@ -30,6 +30,7 @@ import {
   FiUserX,
   FiRefreshCw,
   FiUser,
+  FiSearch,
 } from "react-icons/fi";
 import { useSelector } from "react-redux";
 import { apiConnector } from "../../../../services/apiConnector";
@@ -103,30 +104,53 @@ const AdminRegistrationQueue = () => {
   const { token } = useSelector((state) => state.auth);
   const { user } = useSelector((state) => state.profile);
   const [activeTab, setActiveTab] = useState("familyApplications");
-  const [users, setUsers] = useState([]);
-  const [familyApplications, setFamilyApplications] = useState([]);
-  const [invites, setInvites] = useState([]);
-  const [activeAdmins, setActiveAdmins] = useState([]);
-  const [inviteSubTab, setInviteSubTab] = useState("pending");
-  const [revokingInvite, setRevokingInvite] = useState(null);
-  const [resendingId, setResendingId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [activeUserId, setActiveUserId] = useState(null);
-  const [inviteForm, setInviteForm] = useState({ email: "", roles: ["CONTENT_ADMIN"] });
+  const [users, setUsers] = useState([]);
+  const [familyApplications, setFamilyApplications] = useState([]);
+  // Direct Role Management State (Replaces Email Invitations)
+  const [eligibleMembers, setEligibleMembers] = useState([]);
+  const [eligibleTotal, setEligibleTotal] = useState(0);
+  const [eligiblePage, setEligiblePage] = useState(1);
+  const [eligibleSearch, setEligibleSearch] = useState("");
+  const [eligibleLoading, setEligibleLoading] = useState(false);
+
+  const [activeAdministrators, setActiveAdministrators] = useState([]);
+  const [adminRoleFilter, setAdminRoleFilter] = useState("ALL");
+  const [adminSearch, setAdminSearch] = useState("");
+  const [adminsLoading, setAdminsLoading] = useState(false);
+
+  const [roleHistory, setRoleHistory] = useState([]);
+  const [historyFilter, setHistoryFilter] = useState("ALL");
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  // Sub-tabs under Admin Role Management: "members" | "active" | "history"
+  const [adminRoleSubTab, setAdminRoleSubTab] = useState("members");
+
+  // Role Assignment / Edit Modal State
+  const [roleModalMember, setRoleModalMember] = useState(null);
+  const [modalSelectedRoles, setModalSelectedRoles] = useState([]);
+  const [modalReason, setModalReason] = useState("");
+  const [isSavingRoles, setIsSavingRoles] = useState(false);
+
+  // Revoke All Access Confirmation Modal State
+  const [revokeAccessMember, setRevokeAccessMember] = useState(null);
+  const [revokeReason, setRevokeReason] = useState("");
+  const [isRevokingAccess, setIsRevokingAccess] = useState(false);
 
   const isSuperAdmin = user?.accountType === "Admin" && (user?.roles || []).includes("SUPER_ADMIN");
 
-  const AVAILABLE_ADMIN_ROLES = useMemo(() => [
-    { key: "CONTENT_ADMIN", label: "Content Admin", desc: "Notices, gallery & news" },
-    { key: "MODERATOR", label: "Moderator", desc: "Member verification & moderation" },
-    { key: "TREASURER", label: "Treasurer", desc: "Donations & financial records" },
-    { key: "MATRIMONIAL_ADMIN", label: "Matrimonial Admin", desc: "Matrimonial listings" },
-    { key: "SCHOLARSHIP_ADMIN", label: "Scholarship Admin", desc: "Educational aid & awards" },
-    { key: "JOB_ADMIN", label: "Job Admin", desc: "Employment & career postings" },
-    { key: "DHARAMSHALA_ADMIN", label: "Dharamshala Admin", desc: "Room bookings & facilities" },
-    ...(isSuperAdmin ? [{ key: "SUPER_ADMIN", label: "Super Admin", desc: "Complete administrative control" }] : []),
-  ], [isSuperAdmin]);
+  // Assignable administrative roles — SUPER_ADMIN is explicitly protected and excluded
+  const ASSIGNABLE_ADMIN_ROLES = useMemo(() => [
+    { key: "CONTENT_ADMIN", label: "Content Admin", desc: "सूचनाएं, पत्रिका, गैलरी व मीडिया (Notices, gallery & news)" },
+    { key: "MODERATOR", label: "Moderator", desc: "सदस्य सत्यापन व सामग्री मॉडरेशन (Member verification & moderation)" },
+    { key: "TREASURER", label: "Treasurer", desc: "दान, वित्तीय लेखा-जोखा व रसीदें (Donations & financial records)" },
+    { key: "MATRIMONIAL_ADMIN", label: "Matrimonial Admin", desc: "वैवाहिक प्रोफाइल व संपर्क अनुरोध (Matrimonial listings)" },
+    { key: "SCHOLARSHIP_ADMIN", label: "Scholarship Admin", desc: "शिक्षा सहायता व छात्रवृत्ति आवेदन (Educational aid & awards)" },
+    { key: "JOB_ADMIN", label: "Job Admin", desc: "रोजगार अवसर व आवेदन प्रबंधन (Employment & career postings)" },
+    { key: "DHARAMSHALA_ADMIN", label: "Dharamshala Admin", desc: "समाज भवन व कक्ष आरक्षण (Room bookings & facilities)" },
+  ], []);
 
   // Rejection / Correction Modal State
   const [rejectingUser, setRejectingUser] = useState(null);
@@ -167,28 +191,63 @@ const AdminRegistrationQueue = () => {
     }
   };
 
-  const fetchInvites = async () => {
-    setLoading(true);
+  const fetchEligibleMembers = async (search = eligibleSearch, page = 1) => {
+    setEligibleLoading(true);
     try {
-      const response = await apiConnector(
-        "GET",
-        adminEndpoints.ADMIN_INVITES_API,
-        null,
-        authConfig
-      );
-      setInvites(response.data?.data?.invites || []);
-      setActiveAdmins(response.data?.data?.activeAdmins || []);
+      const q = search.trim();
+      const url = `${adminEndpoints.ELIGIBLE_MEMBERS_API}?page=${page}&limit=20${q ? `&q=${encodeURIComponent(q)}` : ""}`;
+      const response = await apiConnector("GET", url, null, authConfig);
+      setEligibleMembers(response.data?.data?.members || []);
+      setEligibleTotal(response.data?.meta?.total || 0);
+      setEligiblePage(page);
     } catch (error) {
-      toast.error(error.response?.data?.message || "Unable to load admin invites");
+      toast.error(error.response?.data?.message || "सत्यापित सदस्यों की सूची लोड नहीं हो सकी");
     } finally {
-      setLoading(false);
+      setEligibleLoading(false);
+    }
+  };
+
+  const fetchActiveAdministrators = async (roleFilter = adminRoleFilter, search = adminSearch) => {
+    setAdminsLoading(true);
+    try {
+      let url = adminEndpoints.ACTIVE_ADMINISTRATORS_API;
+      const params = [];
+      if (roleFilter && roleFilter !== "ALL") params.push(`role=${encodeURIComponent(roleFilter)}`);
+      if (search?.trim()) params.push(`q=${encodeURIComponent(search.trim())}`);
+      if (params.length > 0) url += `?${params.join("&")}`;
+
+      const response = await apiConnector("GET", url, null, authConfig);
+      setActiveAdministrators(response.data?.data?.administrators || []);
+    } catch (error) {
+      toast.error(error.response?.data?.message || "सक्रिय प्रशासकों की सूची लोड नहीं हो सकी");
+    } finally {
+      setAdminsLoading(false);
+    }
+  };
+
+  const fetchRoleHistory = async (actionFilter = historyFilter) => {
+    setHistoryLoading(true);
+    try {
+      let url = adminEndpoints.ROLE_HISTORY_API;
+      if (actionFilter && actionFilter !== "ALL") url += `?action=${encodeURIComponent(actionFilter)}`;
+      const response = await apiConnector("GET", url, null, authConfig);
+      setRoleHistory(response.data?.data?.logs || []);
+    } catch (error) {
+      toast.error(error.response?.data?.message || "भूमिका इतिहास लोड नहीं हो सका");
+    } finally {
+      setHistoryLoading(false);
     }
   };
 
   useEffect(() => {
-    if (activeTab === "invites") fetchInvites();
-    else fetchQueue();
-  }, [activeTab]);
+    if (activeTab === "invites") {
+      if (adminRoleSubTab === "members") fetchEligibleMembers();
+      else if (adminRoleSubTab === "active") fetchActiveAdministrators();
+      else if (adminRoleSubTab === "history") fetchRoleHistory();
+    } else {
+      fetchQueue();
+    }
+  }, [activeTab, adminRoleSubTab]);
 
   const filteredUsers = users.filter((u) => {
     const searchText = `${u.firstName || ""} ${u.lastName || ""} ${u.email || ""} ${
@@ -275,88 +334,71 @@ const AdminRegistrationQueue = () => {
     }
   };
 
-  const toggleRole = (roleKey) => {
-    setInviteForm((prev) => {
-      const exists = prev.roles.includes(roleKey);
-      let updated;
-      if (exists) {
-        updated = prev.roles.filter((r) => r !== roleKey);
-      } else {
-        updated = [...prev.roles, roleKey];
-      }
-      return { ...prev, roles: updated.length > 0 ? updated : [roleKey] };
-    });
+  // Direct Role Modal Handlers
+  const openAssignRoleModal = (member) => {
+    setRoleModalMember(member);
+    setModalSelectedRoles(member.adminRoles || []);
+    setModalReason("");
   };
 
-  const createInvite = async (event) => {
-    event.preventDefault();
-    const cleanEmail = inviteForm.email.trim().toLowerCase();
-    if (!cleanEmail) {
-      toast.error("Please enter a valid email address");
-      return;
-    }
-    if (!inviteForm.roles || inviteForm.roles.length === 0) {
-      toast.error("Please select at least one administrator role");
-      return;
-    }
+  const toggleModalRole = (roleKey) => {
+    setModalSelectedRoles((prev) =>
+      prev.includes(roleKey) ? prev.filter((r) => r !== roleKey) : [...prev, roleKey]
+    );
+  };
 
-    setActiveUserId("invite");
+  const handleSaveRoles = async (e) => {
+    e.preventDefault();
+    if (!roleModalMember) return;
+    setIsSavingRoles(true);
     try {
-      await apiConnector(
-        "POST",
-        adminEndpoints.ADMIN_INVITES_API,
-        { email: cleanEmail, roles: inviteForm.roles },
+      const response = await apiConnector(
+        "PUT",
+        adminEndpoints.ASSIGN_MEMBER_ROLES_API(roleModalMember._id),
+        {
+          roles: modalSelectedRoles,
+          reason: modalReason.trim() || undefined,
+        },
         authConfig
       );
-      toast.success("Administrator invitation sent successfully");
-      setInviteForm({ email: "", roles: ["CONTENT_ADMIN"] });
-      await fetchInvites();
+      toast.success(response.data?.message || "प्रशासनिक भूमिकाएँ सफलतापूर्वक अद्यतन की गईं");
+      setRoleModalMember(null);
+      fetchEligibleMembers(eligibleSearch, eligiblePage);
+      fetchActiveAdministrators();
+      fetchRoleHistory();
     } catch (error) {
-      toast.error(error.response?.data?.message || "Unable to send invite");
+      toast.error(error.response?.data?.message || "भूमिका सौंपने में त्रुटि हुई");
     } finally {
-      setActiveUserId(null);
+      setIsSavingRoles(false);
     }
   };
 
-  const resendInvite = async (inviteId) => {
-    setResendingId(inviteId);
-    try {
-      await apiConnector(
-        "POST",
-        adminEndpoints.RESEND_ADMIN_INVITE_API(inviteId),
-        null,
-        authConfig
-      );
-      toast.success("Invitation resent with a fresh token and email");
-      await fetchInvites();
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Unable to resend invite");
-    } finally {
-      setResendingId(null);
-    }
+  const openRevokeAccessModal = (admin) => {
+    setRevokeAccessMember(admin);
+    setRevokeReason("");
   };
 
-  const initiateRevokeInvite = (invite) => {
-    setRevokingInvite(invite);
-  };
-
-  const confirmRevokeInvite = async () => {
-    if (!revokingInvite) return;
-    setActiveUserId(revokingInvite._id);
+  const handleConfirmRevokeAccess = async () => {
+    if (!revokeAccessMember) return;
+    setIsRevokingAccess(true);
     try {
-      await apiConnector(
-        "PATCH",
-        adminEndpoints.REVOKE_ADMIN_INVITE_API(revokingInvite._id),
-        { reason: "Revoked by admin" },
+      const response = await apiConnector(
+        "DELETE",
+        adminEndpoints.REVOKE_MEMBER_ACCESS_API(revokeAccessMember._id),
+        {
+          reason: revokeReason.trim() || undefined,
+        },
         authConfig
       );
-      toast.success("Invitation revoked successfully");
-      setRevokingInvite(null);
-      await fetchInvites();
+      toast.success(response.data?.message || "प्रशासनिक अधिकार सफलतापूर्वक हटा दिए गए");
+      setRevokeAccessMember(null);
+      fetchEligibleMembers(eligibleSearch, eligiblePage);
+      fetchActiveAdministrators();
+      fetchRoleHistory();
     } catch (error) {
-      toast.error(error.response?.data?.message || "Unable to revoke invite");
+      toast.error(error.response?.data?.message || "अधिकार हटाने में त्रुटि हुई");
     } finally {
-      setActiveUserId(null);
+      setIsRevokingAccess(false);
     }
   };
 
@@ -402,7 +444,7 @@ const AdminRegistrationQueue = () => {
                 key: "registrations",
                 label: `व्यक्तिगत कतार (${users.length})`,
               },
-              { key: "invites", label: "प्रशासक आमंत्रण (Admin Invites)" },
+              { key: "invites", label: "प्रशासक भूमिका प्रबंधन (Admin Roles)" },
             ].map((tab) => (
               <button
                 key={tab.key}
@@ -724,303 +766,177 @@ const AdminRegistrationQueue = () => {
           </div>
         ) : (
           /* =====================================================
-              TAB 3: COMPLETE ADMIN INVITATIONS & ACCESS MANAGEMENT
+              TAB 3: DIRECT ADMIN ROLE MANAGEMENT (NO EMAIL INVITES)
              ====================================================== */
           <div className="space-y-6">
-            {/* 1. Admin Invitation Form Card */}
-            <form onSubmit={createInvite} className="ka-card p-6 sm:p-7 shadow-xl border border-[var(--border-subtle)]">
-              <div className="mb-5 border-b border-[var(--border-subtle)] pb-4">
-                <div className="eyebrow-badge mb-1.5 flex items-center gap-1.5">
-                  <FiMail size={12} />
-                  <span>Admin Onboarding</span>
-                </div>
-                <h3 className="text-lg font-black text-[var(--text-primary)]">
-                  प्रशासक आमंत्रण (Admin Invitations)
-                </h3>
-                <p className="mt-1 text-xs text-[var(--text-secondary)] font-normal">
-                  Invite trusted people to help manage the Samaj website. Select one or more administrative roles to assign.
-                </p>
-              </div>
-
-              <div className="space-y-5">
+            {/* Header / Intro Card */}
+            <div className="ka-card p-6 shadow-xl border border-[var(--border-subtle)]">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                  <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                    Email Address <span className="text-red-400">*</span>
-                  </label>
-                  <div className="relative">
-                    <FiMail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" size={15} />
-                    <input
-                      required
-                      type="email"
-                      value={inviteForm.email}
-                      onChange={(e) => setInviteForm((prev) => ({ ...prev, email: e.target.value }))}
-                      placeholder="Enter administrator email address (e.g. admin@samaj.org)"
-                      className="ka-input !pl-10 text-xs sm:text-sm"
-                    />
+                  <div className="eyebrow-badge mb-1.5 flex items-center gap-1.5">
+                    <FiShield size={12} />
+                    <span>Role-Based Access Control</span>
                   </div>
+                  <h3 className="text-lg font-black text-[var(--text-primary)]">
+                    प्रशासक भूमिका प्रबंधन
+                  </h3>
+                  <p className="mt-1 text-xs text-[var(--text-secondary)] font-normal">
+                    सत्यापित समाज सदस्यों को सीधे प्रशासनिक भूमिकाएँ प्रदान करें। कोई ईमेल आमंत्रण या टोकन की आवश्यकता नहीं है।
+                  </p>
                 </div>
 
-                <div>
-                  <div className="mb-2 flex items-center justify-between">
-                    <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                      Select Role(s) <span className="text-red-400">*</span>
-                    </label>
-                    <span className="text-[11px] text-[var(--text-muted)]">
-                      {inviteForm.roles.length} role{inviteForm.roles.length > 1 ? "s" : ""} selected
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-                    {AVAILABLE_ADMIN_ROLES.map((role) => {
-                      const isSelected = inviteForm.roles.includes(role.key);
-                      return (
-                        <button
-                          key={role.key}
-                          type="button"
-                          onClick={() => toggleRole(role.key)}
-                          className={`flex flex-col items-start p-3 rounded-2xl border text-left transition-all cursor-pointer ${
-                            isSelected
-                              ? "bg-[var(--accent-primary)]/10 border-[var(--accent-primary)] text-[var(--accent-primary)] shadow-sm ring-1 ring-[var(--accent-primary)]/30"
-                              : "border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:border-[var(--border-strong)] hover:text-[var(--text-primary)]"
-                          }`}
-                        >
-                          <div className="flex w-full items-center justify-between mb-1">
-                            <span className="text-xs font-black uppercase tracking-wider">{role.label}</span>
-                            <div
-                              className={`h-4 w-4 rounded-full flex items-center justify-center text-[10px] ${
-                                isSelected
-                                  ? "bg-[var(--accent-primary)] text-black font-bold"
-                                  : "border border-[var(--border-subtle)]"
-                              }`}
-                            >
-                              {isSelected ? "✓" : ""}
-                            </div>
-                          </div>
-                          <span className="text-[10px] text-[var(--text-muted)] leading-tight">{role.desc}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="pt-2 flex justify-end">
-                  <button
-                    type="submit"
-                    disabled={activeUserId === "invite"}
-                    className="btn-primary !py-2.5 !px-7 font-bold text-xs flex items-center gap-2"
-                  >
-                    {activeUserId === "invite" ? (
-                      <>
-                        <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-black border-t-transparent" />
-                        <span>Sending Invitation...</span>
-                      </>
-                    ) : (
-                      <>
-                        <FiSend size={13} />
-                        <span>Send Invitation</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </form>
-
-            {/* 2. Admin & Invitations Management Tabs */}
-            <div className="space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border-subtle)] pb-3">
-                <div className="flex items-center gap-2">
+                {/* Sub-tab Navigation */}
+                <div className="flex flex-wrap items-center gap-2 bg-[var(--surface)] p-1.5 rounded-2xl border border-[var(--border-subtle)]">
                   <button
                     type="button"
-                    onClick={() => setInviteSubTab("pending")}
+                    onClick={() => setAdminRoleSubTab("members")}
                     className={`h-9 rounded-xl px-4 text-xs font-bold transition cursor-pointer flex items-center gap-2 ${
-                      inviteSubTab === "pending"
+                      adminRoleSubTab === "members"
                         ? "bg-[var(--accent-primary)] text-black shadow-sm"
-                        : "border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                        : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                     }`}
                   >
-                    <FiClock size={13} />
-                    <span>Pending Invitations ({invites.filter((i) => i.status === "PENDING").length})</span>
+                    <FiUsers size={13} />
+                    <span>सत्यापित सदस्य ({eligibleTotal})</span>
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => setInviteSubTab("active")}
+                    onClick={() => setAdminRoleSubTab("active")}
                     className={`h-9 rounded-xl px-4 text-xs font-bold transition cursor-pointer flex items-center gap-2 ${
-                      inviteSubTab === "active"
+                      adminRoleSubTab === "active"
                         ? "bg-[var(--accent-primary)] text-black shadow-sm"
-                        : "border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                        : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                     }`}
                   >
                     <FiUserCheck size={13} />
-                    <span>Active Administrators ({activeAdmins.length})</span>
+                    <span>सक्रिय प्रशासक ({activeAdministrators.length})</span>
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => setInviteSubTab("history")}
+                    onClick={() => setAdminRoleSubTab("history")}
                     className={`h-9 rounded-xl px-4 text-xs font-bold transition cursor-pointer flex items-center gap-2 ${
-                      inviteSubTab === "history"
+                      adminRoleSubTab === "history"
                         ? "bg-[var(--accent-primary)] text-black shadow-sm"
-                        : "border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                        : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                     }`}
                   >
                     <FiFileText size={13} />
-                    <span>History ({invites.filter((i) => i.status !== "PENDING").length})</span>
+                    <span>भूमिका इतिहास ({roleHistory.length})</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* =====================================================
+                SUB-TAB 1: VERIFIED MEMBERS (ELIGIBLE FOR ROLE ASSIGNMENT)
+               ====================================================== */}
+            {adminRoleSubTab === "members" && (
+              <div className="space-y-4">
+                {/* Search Bar & Stats */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <div className="relative w-full sm:w-96">
+                    <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" size={15} />
+                    <input
+                      type="text"
+                      value={eligibleSearch}
+                      onChange={(e) => {
+                        setEligibleSearch(e.target.value);
+                        fetchEligibleMembers(e.target.value, 1);
+                      }}
+                      placeholder="सत्यापित सदस्य खोजें (नाम या Member ID)..."
+                      className="ka-input !pl-10 text-xs sm:text-sm w-full"
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => fetchEligibleMembers(eligibleSearch, eligiblePage)}
+                    className="btn-secondary !h-9 !py-0 !px-3 text-xs flex items-center gap-1.5 shrink-0"
+                    title="Refresh list"
+                  >
+                    <FiRefreshCw size={12} className={eligibleLoading ? "animate-spin" : ""} />
+                    <span>रिफ्रेश</span>
                   </button>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={fetchInvites}
-                  className="btn-secondary !h-9 !py-0 !px-3 text-xs flex items-center gap-1.5"
-                  title="Refresh list"
-                >
-                  <FiRefreshCw size={12} className={loading ? "animate-spin" : ""} />
-                  <span>Refresh</span>
-                </button>
-              </div>
-
-              {/* Sub-Tab 1: Pending Invitations */}
-              {inviteSubTab === "pending" && (
-                <div className="space-y-3">
-                  {invites.filter((i) => i.status === "PENDING").length === 0 ? (
-                    <div className="ka-card p-10 text-center border-dashed border-[var(--border-subtle)]">
-                      <FiClock size={32} className="mx-auto text-[var(--text-muted)] mb-3" />
-                      <p className="text-sm font-bold text-[var(--text-primary)]">No pending invitations</p>
-                      <p className="text-xs text-[var(--text-muted)] mt-1">
-                        Use the form above to invite trusted members to join the administration team.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="grid gap-3 sm:grid-cols-1 md:grid-cols-2">
-                      {invites
-                        .filter((i) => i.status === "PENDING")
-                        .map((inv) => (
-                          <div
-                            key={inv._id}
-                            className="ka-card p-4 sm:p-5 flex flex-col justify-between border border-[var(--border-subtle)] shadow-md hover:border-[var(--border-strong)] transition-all"
-                          >
-                            <div>
-                              <div className="flex items-start justify-between gap-3 mb-3">
-                                <div className="flex items-center gap-3 min-w-0">
-                                  <div className="h-10 w-10 shrink-0 rounded-2xl bg-[var(--accent-primary)]/10 border border-[var(--accent-primary)]/20 flex items-center justify-center text-[var(--accent-primary)] font-black text-sm">
-                                    {inv.email?.[0]?.toUpperCase() || "A"}
-                                  </div>
-                                  <div className="min-w-0">
-                                    <p className="text-sm font-bold text-[var(--text-primary)] truncate">
-                                      {inv.email}
-                                    </p>
-                                    <p className="text-[11px] text-[var(--text-muted)]">
-                                      Invited: {new Date(inv.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
-                                    </p>
-                                  </div>
-                                </div>
-                                <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/10 border border-amber-400/30 px-2.5 py-0.5 text-[10px] font-bold text-amber-400">
-                                  <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
-                                  PENDING
-                                </span>
-                              </div>
-
-                              <div className="mb-4">
-                                <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1.5">
-                                  Assigned Role(s):
-                                </p>
-                                <div className="flex flex-wrap gap-1.5">
-                                  {(inv.roles || []).map((r) => (
-                                    <span
-                                      key={r}
-                                      className="inline-flex items-center gap-1 rounded-lg bg-[var(--surface-elevated)] border border-[var(--border-subtle)] px-2 py-0.5 text-[10px] font-bold text-[var(--accent-primary)]"
-                                    >
-                                      <FiShield size={9} />
-                                      {r.replace(/_/g, " ")}
-                                    </span>
-                                  ))}
+                {eligibleLoading ? (
+                  <div className="flex h-48 items-center justify-center">
+                    <div className="h-8 w-8 animate-spin rounded-full border-3 border-[var(--accent-primary)] border-t-transparent" />
+                  </div>
+                ) : eligibleMembers.length === 0 ? (
+                  <div className="ka-card p-12 text-center border-dashed border-[var(--border-subtle)]">
+                    <FiUsers size={36} className="mx-auto text-[var(--text-muted)] mb-3" />
+                    <p className="text-sm font-bold text-[var(--text-primary)]">कोई सत्यापित सदस्य नहीं मिला</p>
+                    <p className="text-xs text-[var(--text-muted)] mt-1">
+                      {eligibleSearch ? "खोज परिणाम के लिए कोई सदस्य नहीं मिला।" : "सत्यापित सक्रिय सदस्य यहां दिखाई देंगे।"}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid gap-3 sm:grid-cols-1 md:grid-cols-2">
+                    {eligibleMembers.map((member) => (
+                      <div
+                        key={member._id}
+                        className="ka-card p-4 sm:p-5 flex flex-col justify-between border border-[var(--border-subtle)] shadow-md hover:border-[var(--border-strong)] transition-all"
+                      >
+                        <div>
+                          <div className="flex items-start justify-between gap-3 mb-3">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <img
+                                src={
+                                  member.imageUrl ||
+                                  `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(
+                                    member.name || "Member"
+                                  )}`
+                                }
+                                alt=""
+                                className="h-12 w-12 rounded-2xl border border-[var(--border-subtle)] object-cover shadow-sm shrink-0"
+                                onError={(e) => {
+                                  e.target.onerror = null;
+                                  e.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(
+                                    member.firstName || "Member"
+                                  )}`;
+                                }}
+                              />
+                              <div className="min-w-0">
+                                <h4 className="text-sm font-bold text-[var(--text-primary)] truncate">
+                                  {member.name}
+                                </h4>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <span className="font-mono text-[11px] text-[var(--accent-primary)] font-bold">
+                                    {member.memberId || "SMJ-MEMBER"}
+                                  </span>
+                                  <span className="text-[10px] text-[var(--text-muted)]">·</span>
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400">
+                                    <FiCheckCircle size={10} />
+                                    सत्यापित सदस्य
+                                  </span>
                                 </div>
                               </div>
                             </div>
 
-                            <div className="border-t border-[var(--border-subtle)] pt-3 flex items-center justify-between gap-2 text-xs">
-                              <span className="text-[11px] text-[var(--text-muted)] flex items-center gap-1">
-                                <FiClock size={11} />
-                                Expires: {new Date(inv.expiresAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}
+                            {/* Admin Status Pill */}
+                            {member.isAdmin ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-[var(--accent-primary)]/10 border border-[var(--accent-primary)]/30 px-2.5 py-0.5 text-[10px] font-bold text-[var(--accent-primary)] shrink-0">
+                                <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent-primary)]" />
+                                प्रशासक
                               </span>
-
-                              <div className="flex items-center gap-2">
-                                <button
-                                  type="button"
-                                  disabled={resendingId === inv._id}
-                                  onClick={() => resendInvite(inv._id)}
-                                  className="btn-secondary !h-8 !py-0 !px-3 text-[11px] font-bold flex items-center gap-1 text-[var(--accent-primary)] cursor-pointer"
-                                  title="Rotate token and resend invitation email"
-                                >
-                                  <FiRefreshCw size={11} className={resendingId === inv._id ? "animate-spin" : ""} />
-                                  <span>{resendingId === inv._id ? "Sending..." : "Resend"}</span>
-                                </button>
-
-                                <button
-                                  type="button"
-                                  onClick={() => initiateRevokeInvite(inv)}
-                                  className="btn-secondary !h-8 !py-0 !px-3 text-[11px] font-bold text-red-400 hover:text-red-300 hover:border-red-400/40 cursor-pointer"
-                                >
-                                  Revoke
-                                </button>
-                              </div>
-                            </div>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-gray-400/10 border border-gray-400/20 px-2.5 py-0.5 text-[10px] font-bold text-[var(--text-muted)] shrink-0">
+                                सदस्य
+                              </span>
+                            )}
                           </div>
-                        ))}
-                    </div>
-                  )}
-                </div>
-              )}
 
-              {/* Sub-Tab 2: Active Administrators */}
-              {inviteSubTab === "active" && (
-                <div className="space-y-3">
-                  {activeAdmins.length === 0 ? (
-                    <div className="ka-card p-10 text-center border-dashed border-[var(--border-subtle)]">
-                      <FiUserCheck size={32} className="mx-auto text-[var(--text-muted)] mb-3" />
-                      <p className="text-sm font-bold text-[var(--text-primary)]">No active administrators found</p>
-                    </div>
-                  ) : (
-                    <div className="grid gap-3 sm:grid-cols-1 md:grid-cols-2">
-                      {activeAdmins.map((admin) => (
-                        <div
-                          key={admin._id}
-                          className="ka-card p-4 sm:p-5 flex flex-col justify-between border border-[var(--border-subtle)] shadow-md"
-                        >
-                          <div>
-                            <div className="flex items-start justify-between gap-3 mb-3">
-                              <div className="flex items-center gap-3 min-w-0">
-                                <img
-                                  src={admin.imageUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(`${admin.firstName || "A"} ${admin.lastName || ""}`)}`}
-                                  alt=""
-                                  className="h-10 w-10 rounded-2xl border border-[var(--border-subtle)] object-cover shadow-sm"
-                                  onError={(e) => {
-                                    e.target.onerror = null;
-                                    e.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(admin.firstName || "A")}`;
-                                  }}
-                                />
-                                <div className="min-w-0">
-                                  <p className="text-sm font-bold text-[var(--text-primary)] truncate">
-                                    {admin.firstName} {admin.lastName}
-                                  </p>
-                                  <p className="text-[11px] text-[var(--text-muted)] truncate font-mono">
-                                    {admin.email}
-                                  </p>
-                                </div>
-                              </div>
-                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-400/10 border border-emerald-400/30 px-2.5 py-0.5 text-[10px] font-bold text-emerald-400">
-                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                                ACTIVE ADMIN
-                              </span>
-                            </div>
-
-                            <div className="mb-2">
-                              <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1.5">
-                                Current Role(s):
-                              </p>
+                          {/* Roles Display */}
+                          <div className="mb-3">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1.5">
+                              प्रशासनिक भूमिकाएँ (Roles):
+                            </p>
+                            {member.adminRoles && member.adminRoles.length > 0 ? (
                               <div className="flex flex-wrap gap-1.5">
-                                {(admin.roles || []).map((r) => (
+                                {member.adminRoles.map((r) => (
                                   <span
                                     key={r}
                                     className="inline-flex items-center gap-1 rounded-lg bg-[var(--accent-primary)]/10 border border-[var(--accent-primary)]/30 px-2 py-0.5 text-[10px] font-bold text-[var(--accent-primary)]"
@@ -1030,99 +946,363 @@ const AdminRegistrationQueue = () => {
                                   </span>
                                 ))}
                               </div>
-                            </div>
-                          </div>
-
-                          <div className="border-t border-[var(--border-subtle)] pt-3 text-[11px] text-[var(--text-muted)] flex items-center justify-between">
-                            <span>
-                              Joined: {new Date(admin.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
-                            </span>
-                            <span className="font-semibold text-emerald-400">Verified Samaj Admin</span>
+                            ) : (
+                              <p className="text-xs text-[var(--text-muted)] italic">
+                                कोई प्रशासनिक भूमिका नहीं सौंपी गई है
+                              </p>
+                            )}
                           </div>
                         </div>
+
+                        {/* Card Action Footer */}
+                        <div className="border-t border-[var(--border-subtle)] pt-3 flex items-center justify-between gap-2">
+                          <span className="text-[11px] text-[var(--text-muted)]">
+                            जुड़े: {new Date(member.joinedAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                          </span>
+
+                          <button
+                            type="button"
+                            onClick={() => openAssignRoleModal(member)}
+                            className={`btn-primary !h-8 !py-0 !px-3 text-xs font-bold flex items-center gap-1.5 cursor-pointer ${
+                              member.isAdmin ? "!bg-amber-500 hover:!bg-amber-400 !text-black" : ""
+                            }`}
+                          >
+                            <FiShield size={12} />
+                            <span>{member.isAdmin ? "भूमिकाएँ बदलें" : "भूमिका सौंपें"}</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Pagination */}
+                {eligibleTotal > 20 && (
+                  <div className="flex items-center justify-between border-t border-[var(--border-subtle)] pt-4">
+                    <span className="text-xs text-[var(--text-muted)]">
+                      कुल {eligibleTotal} में से {(eligiblePage - 1) * 20 + 1} - {Math.min(eligiblePage * 20, eligibleTotal)} सदस्य
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        disabled={eligiblePage <= 1}
+                        onClick={() => fetchEligibleMembers(eligibleSearch, eligiblePage - 1)}
+                        className="btn-secondary !h-8 !py-0 !px-3 text-xs font-bold disabled:opacity-40"
+                      >
+                        पिछला
+                      </button>
+                      <button
+                        type="button"
+                        disabled={eligiblePage * 20 >= eligibleTotal}
+                        onClick={() => fetchEligibleMembers(eligibleSearch, eligiblePage + 1)}
+                        className="btn-secondary !h-8 !py-0 !px-3 text-xs font-bold disabled:opacity-40"
+                      >
+                        अगला
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* =====================================================
+                SUB-TAB 2: ACTIVE ADMINISTRATORS
+               ====================================================== */}
+            {adminRoleSubTab === "active" && (
+              <div className="space-y-4">
+                {/* Filters & Search */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                    <span className="text-xs font-bold text-[var(--text-muted)]">भूमिका फ़िल्टर:</span>
+                    <select
+                      value={adminRoleFilter}
+                      onChange={(e) => {
+                        setAdminRoleFilter(e.target.value);
+                        fetchActiveAdministrators(e.target.value, adminSearch);
+                      }}
+                      className="ka-input !h-9 text-xs !py-0 !px-3"
+                    >
+                      <option value="ALL">सभी भूमिकाएँ (All Roles)</option>
+                      {ASSIGNABLE_ADMIN_ROLES.map((r) => (
+                        <option key={r.key} value={r.key}>
+                          {r.label}
+                        </option>
                       ))}
+                    </select>
+                  </div>
+
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <div className="relative flex-1 sm:w-64">
+                      <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" size={13} />
+                      <input
+                        type="text"
+                        value={adminSearch}
+                        onChange={(e) => {
+                          setAdminSearch(e.target.value);
+                          fetchActiveAdministrators(adminRoleFilter, e.target.value);
+                        }}
+                        placeholder="प्रशासक खोजें..."
+                        className="ka-input !pl-9 !h-9 text-xs w-full"
+                      />
                     </div>
-                  )}
+
+                    <button
+                      type="button"
+                      onClick={() => fetchActiveAdministrators(adminRoleFilter, adminSearch)}
+                      className="btn-secondary !h-9 !py-0 !px-3 text-xs flex items-center gap-1.5 shrink-0"
+                    >
+                      <FiRefreshCw size={12} className={adminsLoading ? "animate-spin" : ""} />
+                      <span>रिफ्रेश</span>
+                    </button>
+                  </div>
                 </div>
-              )}
 
-              {/* Sub-Tab 3: Invitation History */}
-              {inviteSubTab === "history" && (
-                <div className="space-y-3">
-                  {invites.filter((i) => i.status !== "PENDING").length === 0 ? (
-                    <div className="ka-card p-10 text-center border-dashed border-[var(--border-subtle)]">
-                      <FiFileText size={32} className="mx-auto text-[var(--text-muted)] mb-3" />
-                      <p className="text-sm font-bold text-[var(--text-primary)]">No invitation history available</p>
-                      <p className="text-xs text-[var(--text-muted)] mt-1">
-                        Accepted, expired, or revoked invitations will appear here.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="ka-card divide-y divide-[var(--border-subtle)] border border-[var(--border-subtle)] shadow-md overflow-hidden">
-                      {invites
-                        .filter((i) => i.status !== "PENDING")
-                        .map((inv) => {
-                          const isAccepted = inv.status === "ACCEPTED";
-                          const isExpired = inv.status === "EXPIRED";
-                          const isRevoked = inv.status === "REVOKED";
-
-                          let badgeClass = "bg-gray-500/10 text-gray-400 border-gray-500/30";
-                          if (isAccepted) badgeClass = "bg-emerald-400/10 text-emerald-400 border-emerald-400/30";
-                          else if (isExpired) badgeClass = "bg-amber-400/10 text-amber-400 border-amber-400/30";
-                          else if (isRevoked) badgeClass = "bg-red-400/10 text-red-400 border-red-400/30";
-
-                          return (
-                            <div key={inv._id} className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                {adminsLoading ? (
+                  <div className="flex h-48 items-center justify-center">
+                    <div className="h-8 w-8 animate-spin rounded-full border-3 border-[var(--accent-primary)] border-t-transparent" />
+                  </div>
+                ) : activeAdministrators.length === 0 ? (
+                  <div className="ka-card p-12 text-center border-dashed border-[var(--border-subtle)]">
+                    <FiUserCheck size={36} className="mx-auto text-[var(--text-muted)] mb-3" />
+                    <p className="text-sm font-bold text-[var(--text-primary)]">कोई सक्रिय प्रशासक नहीं मिला</p>
+                    <p className="text-xs text-[var(--text-muted)] mt-1">
+                      सत्यापित सदस्य टैब से सदस्यों को प्रशासनिक भूमिकाएँ प्रदान करें।
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid gap-3 sm:grid-cols-1 md:grid-cols-2">
+                    {activeAdministrators.map((admin) => (
+                      <div
+                        key={admin._id}
+                        className="ka-card p-4 sm:p-5 flex flex-col justify-between border border-[var(--border-subtle)] shadow-md hover:border-[var(--border-strong)] transition-all"
+                      >
+                        <div>
+                          <div className="flex items-start justify-between gap-3 mb-3">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <img
+                                src={
+                                  admin.imageUrl ||
+                                  `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(
+                                    admin.name || "Admin"
+                                  )}`
+                                }
+                                alt=""
+                                className="h-11 w-11 rounded-2xl border border-[var(--border-subtle)] object-cover shadow-sm shrink-0"
+                                onError={(e) => {
+                                  e.target.onerror = null;
+                                  e.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(
+                                    admin.firstName || "Admin"
+                                  )}`;
+                                }}
+                              />
                               <div className="min-w-0">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <p className="text-sm font-bold text-[var(--text-primary)] truncate">
-                                    {inv.email}
-                                  </p>
-                                  <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold ${badgeClass}`}>
-                                    {inv.status}
+                                <h4 className="text-sm font-bold text-[var(--text-primary)] truncate">
+                                  {admin.name}
+                                </h4>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <span className="font-mono text-[11px] text-[var(--accent-primary)] font-bold">
+                                    {admin.memberId || "SMJ-ADMIN"}
                                   </span>
                                 </div>
-                                <div className="flex flex-wrap items-center gap-1.5 text-xs text-[var(--text-muted)]">
-                                  <span>Roles: {(inv.roles || []).join(", ")}</span>
-                                  <span>•</span>
-                                  <span>Invited: {new Date(inv.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</span>
-                                  {inv.acceptedAt && (
-                                    <>
-                                      <span>•</span>
-                                      <span className="text-emerald-400">
-                                        Accepted: {new Date(inv.acceptedAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}
-                                      </span>
-                                    </>
-                                  )}
-                                  {inv.revokedAt && (
-                                    <>
-                                      <span>•</span>
-                                      <span className="text-red-400">
-                                        Revoked: {new Date(inv.revokedAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}
-                                      </span>
-                                    </>
-                                  )}
-                                </div>
                               </div>
+                            </div>
 
-                              {isExpired && (
-                                <button
-                                  type="button"
-                                  onClick={() => resendInvite(inv._id)}
-                                  disabled={resendingId === inv._id}
-                                  className="btn-secondary !h-8 !py-0 !px-3 text-[11px] font-bold text-[var(--accent-primary)] shrink-0 self-start sm:self-auto cursor-pointer"
-                                >
-                                  {resendingId === inv._id ? "Reissuing..." : "Send New Invite"}
-                                </button>
+                            {admin.isSuperAdmin ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-purple-500/10 border border-purple-500/30 px-2.5 py-0.5 text-[10px] font-bold text-purple-400 shrink-0">
+                                <FaCrown size={10} />
+                                SUPER ADMIN
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-400/10 border border-emerald-400/30 px-2.5 py-0.5 text-[10px] font-bold text-emerald-400 shrink-0">
+                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                                ACTIVE ADMIN
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="mb-3">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1.5">
+                              सक्रिय भूमिकाएँ (Active Roles):
+                            </p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {(admin.roles || []).map((r) => {
+                                if (r === "MEMBER") return null;
+                                const isSuper = r === "SUPER_ADMIN";
+                                return (
+                                  <span
+                                    key={r}
+                                    className={`inline-flex items-center gap-1 rounded-lg border px-2 py-0.5 text-[10px] font-bold ${
+                                      isSuper
+                                        ? "bg-purple-500/10 border-purple-500/30 text-purple-400"
+                                        : "bg-[var(--accent-primary)]/10 border-[var(--accent-primary)]/30 text-[var(--accent-primary)]"
+                                    }`}
+                                  >
+                                    <FiShield size={9} />
+                                    {r.replace(/_/g, " ")}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Actions Footer */}
+                        <div className="border-t border-[var(--border-subtle)] pt-3 flex items-center justify-between gap-2">
+                          <span className="text-[11px] text-[var(--text-muted)]">
+                            अद्यतन: {new Date(admin.assignedAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                          </span>
+
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => openAssignRoleModal(admin)}
+                              className="btn-secondary !h-8 !py-0 !px-3 text-xs font-bold text-[var(--accent-primary)] cursor-pointer"
+                            >
+                              भूमिकाएँ बदलें
+                            </button>
+
+                            {!admin.isSuperAdmin && (
+                              <button
+                                type="button"
+                                onClick={() => openRevokeAccessModal(admin)}
+                                className="btn-secondary !h-8 !py-0 !px-3 text-xs font-bold text-red-400 hover:text-red-300 hover:border-red-400/40 cursor-pointer"
+                                title="सभी प्रशासनिक अधिकार समाप्त करें"
+                              >
+                                अधिकार हटाएं
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* =====================================================
+                SUB-TAB 3: ROLE CHANGE HISTORY (AUDIT TRAIL)
+               ====================================================== */}
+            {adminRoleSubTab === "history" && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-[var(--text-muted)]">कार्रवाई फ़िल्टर:</span>
+                    <select
+                      value={historyFilter}
+                      onChange={(e) => {
+                        setHistoryFilter(e.target.value);
+                        fetchRoleHistory(e.target.value);
+                      }}
+                      className="ka-input !h-9 text-xs !py-0 !px-3"
+                    >
+                      <option value="ALL">सभी कार्रवाइयाँ (All Actions)</option>
+                      <option value="ADMIN_ROLE_ASSIGNED">भूमिका सौंपी गई (Role Assigned)</option>
+                      <option value="ADMIN_ROLES_UPDATED">भूमिकाएँ अद्यतन (Roles Updated)</option>
+                      <option value="ADMIN_ACCESS_REVOKED">अधिकार हटाए गए (Access Revoked)</option>
+                    </select>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => fetchRoleHistory(historyFilter)}
+                    className="btn-secondary !h-9 !py-0 !px-3 text-xs flex items-center gap-1.5"
+                  >
+                    <FiRefreshCw size={12} className={historyLoading ? "animate-spin" : ""} />
+                    <span>रिफ्रेश</span>
+                  </button>
+                </div>
+
+                {historyLoading ? (
+                  <div className="flex h-48 items-center justify-center">
+                    <div className="h-8 w-8 animate-spin rounded-full border-3 border-[var(--accent-primary)] border-t-transparent" />
+                  </div>
+                ) : roleHistory.length === 0 ? (
+                  <div className="ka-card p-12 text-center border-dashed border-[var(--border-subtle)]">
+                    <FiFileText size={36} className="mx-auto text-[var(--text-muted)] mb-3" />
+                    <p className="text-sm font-bold text-[var(--text-primary)]">कोई भूमिका इतिहास उपलब्ध नहीं है</p>
+                    <p className="text-xs text-[var(--text-muted)] mt-1">
+                      भूमिका आवंटन या निरस्तीकरण की प्रत्येक कार्रवाई यहाँ ऑडिट रिकॉर्ड के रूप में दर्ज होगी।
+                    </p>
+                  </div>
+                ) : (
+                  <div className="ka-card divide-y divide-[var(--border-subtle)] border border-[var(--border-subtle)] shadow-md overflow-hidden">
+                    {roleHistory.map((log) => {
+                      const isRevoke = log.action === "ADMIN_ACCESS_REVOKED" || log.action === "admin.access.revoked";
+                      const isAssigned = log.action === "ADMIN_ROLE_ASSIGNED" || log.action === "admin.role.assigned";
+
+                      return (
+                        <div key={log._id} className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span
+                                className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${
+                                  isRevoke
+                                    ? "bg-red-400/10 text-red-400 border-red-400/30"
+                                    : isAssigned
+                                    ? "bg-emerald-400/10 text-emerald-400 border-emerald-400/30"
+                                    : "bg-sky-400/10 text-sky-400 border-sky-400/30"
+                                }`}
+                              >
+                                {isRevoke ? "ACCESS REVOKED" : isAssigned ? "ROLE ASSIGNED" : "ROLES UPDATED"}
+                              </span>
+
+                              <p className="text-sm font-bold text-[var(--text-primary)] truncate">
+                                सदस्य: {log.target?.firstName ? `${log.target.firstName} ${log.target.lastName || ""}` : log.metadata?.name || "Member"}
+                                {log.target?.memberId && (
+                                  <span className="ml-2 font-mono text-xs text-[var(--accent-primary)]">
+                                    ({log.target.memberId})
+                                  </span>
+                                )}
+                              </p>
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--text-muted)]">
+                              <span>
+                                कर्ता (By): {log.actor?.firstName ? `${log.actor.firstName} ${log.actor.lastName || ""}` : "Super Admin"}
+                              </span>
+                              <span>•</span>
+                              <span>
+                                समय: {new Date(log.createdAt).toLocaleDateString("en-IN", {
+                                  day: "2-digit",
+                                  month: "short",
+                                  year: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </span>
+                              {log.reason && (
+                                <>
+                                  <span>•</span>
+                                  <span className="italic text-[var(--text-secondary)]">कारण: "{log.reason}"</span>
+                                </>
                               )}
                             </div>
-                          );
-                        })}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+
+                            {/* New Roles summary */}
+                            {log.newValue?.assignedRoles && (
+                              <div className="mt-2 flex items-center gap-1.5">
+                                <span className="text-[10px] font-bold uppercase text-[var(--text-muted)]">भूमिकाएँ:</span>
+                                <div className="flex flex-wrap gap-1">
+                                  {log.newValue.assignedRoles.map((r) => (
+                                    <span
+                                      key={r}
+                                      className="inline-flex items-center rounded bg-[var(--surface-elevated)] border border-[var(--border-subtle)] px-1.5 py-0.5 text-[9px] font-bold text-[var(--accent-primary)]"
+                                    >
+                                      {r.replace(/_/g, " ")}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -1340,9 +1520,323 @@ const AdminRegistrationQueue = () => {
         )}
 
         {/* =====================================================
-            REVOKE INVITATION CONFIRMATION MODAL
+            ROLE ASSIGNMENT / EDIT MODAL (SUPER ADMIN ONLY)
            ====================================================== */}
-        {revokingInvite && (
+        {roleModalMember && (
+<div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/80 p-2 sm:p-4 backdrop-blur-sm overflow-y-auto">
+  <div
+    className="
+      relative w-full max-w-2xl
+      max-h-[calc(100vh-1rem)] sm:max-h-[calc(100vh-2rem)]
+      overflow-y-auto
+      rounded-2xl sm:rounded-3xl
+      border border-[var(--border-subtle)]
+      bg-[var(--surface-elevated)]
+      shadow-2xl
+      my-1 sm:my-4
+    "
+  >
+    {/* ========================================================= */}
+    {/* MODAL HEADER */}
+    {/* ========================================================= */}
+    <div
+      className="
+        sticky top-0 z-10
+        flex items-start justify-between gap-3
+        border-b border-[var(--border-subtle)]
+        bg-[var(--surface-elevated)]
+        px-4 py-4
+        sm:px-6 sm:py-5
+      "
+    >
+      <div className="min-w-0 flex-1">
+        <div className="eyebrow-badge mb-1.5 flex w-fit items-center gap-1.5">
+          <FiShield size={12} />
+          <span>Direct Role Assignment</span>
+        </div>
+
+        <h3 className="text-sm sm:text-lg font-black leading-tight text-[var(--text-primary)]">
+          प्रशासनिक भूमिकाएँ प्रबंधित करें
+        </h3>
+
+        <p className="mt-1 text-[10px] sm:text-xs leading-relaxed text-[var(--text-muted)]">
+          सत्यापित सदस्य के लिए एक या अधिक प्रशासनिक भूमिकाएँ चुनें।
+        </p>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => setRoleModalMember(null)}
+        className="
+          shrink-0 rounded-xl p-2
+          text-[var(--text-muted)]
+          hover:bg-[var(--surface)]
+          hover:text-[var(--text-primary)]
+          active:scale-95
+          transition
+          cursor-pointer
+        "
+        aria-label="Close"
+      >
+        <FiX size={18} />
+      </button>
+    </div>
+
+    {/* ========================================================= */}
+    {/* MODAL BODY */}
+    {/* ========================================================= */}
+    <div className="px-4 py-4 sm:px-6 sm:py-5">
+
+      {/* ======================================================= */}
+      {/* TARGET MEMBER BANNER */}
+      {/* ======================================================= */}
+      <div
+        className="
+          flex items-center gap-3
+          rounded-2xl
+          border border-[var(--border-subtle)]
+          bg-[var(--surface)]
+          p-3
+          sm:p-3.5
+          mb-5
+        "
+      >
+        <img
+          src={
+            roleModalMember.imageUrl ||
+            `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(
+              roleModalMember.name || "Member"
+            )}`
+          }
+          alt=""
+          className="
+            h-11 w-11
+            sm:h-12 sm:w-12
+            shrink-0
+            rounded-xl
+            object-cover
+            border border-[var(--border-subtle)]
+            bg-[var(--surface-elevated)]
+          "
+        />
+
+        <div className="min-w-0 flex-1">
+          <h4 className="truncate text-sm sm:text-base font-bold text-[var(--text-primary)]">
+            {roleModalMember.name}
+          </h4>
+
+          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="font-mono text-[10px] sm:text-xs font-bold text-[var(--accent-primary)]">
+              {roleModalMember.memberId || "SMJ-MEMBER"}
+            </span>
+
+            <span className="hidden xs:inline text-[10px] text-[var(--text-muted)]">
+              ·
+            </span>
+
+            <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-bold text-emerald-400">
+              <FiCheckCircle size={10} />
+              <span>सत्यापित सदस्य</span>
+              <span className="hidden sm:inline">(Verified)</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* ======================================================= */}
+      {/* ROLES FORM */}
+      {/* ======================================================= */}
+      <form onSubmit={handleSaveRoles} className="space-y-5">
+
+        {/* ===================================================== */}
+        {/* ROLES SELECTION */}
+        {/* ===================================================== */}
+        <div>
+          <div className="mb-2.5 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
+            <label className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.16em] sm:tracking-[0.18em] text-[var(--text-muted)]">
+              प्रशासनिक भूमिकाएँ चुनें (Select Roles)
+            </label>
+
+            <span className="w-fit rounded-full bg-[var(--accent-primary)]/10 px-2.5 py-1 text-[10px] sm:text-[11px] font-bold text-[var(--accent-primary)]">
+              {modalSelectedRoles.length} चयनित
+              <span className="hidden sm:inline">
+                {" "}({modalSelectedRoles.length} Selected)
+              </span>
+            </span>
+          </div>
+
+          {/* Role Grid */}
+          <div
+            className="
+              grid
+              grid-cols-1
+              sm:grid-cols-2
+              gap-2.5
+              max-h-[320px]
+              sm:max-h-72
+              overflow-y-auto
+              pr-1
+              overscroll-contain
+            "
+          >
+            {ASSIGNABLE_ADMIN_ROLES.map((role) => {
+              const isSelected = modalSelectedRoles.includes(role.key);
+
+              return (
+                <button
+                  key={role.key}
+                  type="button"
+                  onClick={() => toggleModalRole(role.key)}
+                  className={`
+                    group
+                    flex flex-col items-start
+                    min-h-[82px]
+                    p-3 sm:p-3.5
+                    rounded-2xl
+                    border
+                    text-left
+                    transition-all
+                    cursor-pointer
+                    active:scale-[0.99]
+
+                    ${
+                      isSelected
+                        ? "bg-[var(--accent-primary)]/10 border-[var(--accent-primary)] text-[var(--accent-primary)] shadow-sm ring-1 ring-[var(--accent-primary)]/30"
+                        : "border-[var(--border-subtle)] bg-[var(--surface)] text-[var(--text-secondary)] hover:border-[var(--border-strong)] hover:text-[var(--text-primary)]"
+                    }
+                  `}
+                >
+                  <div className="mb-1.5 flex w-full items-start justify-between gap-2">
+                    <span className="min-w-0 text-[10px] sm:text-xs font-black uppercase tracking-wider leading-tight">
+                      {role.label}
+                    </span>
+
+                    <div
+                      className={`
+                        flex h-5 w-5 shrink-0 items-center justify-center
+                        rounded-full
+                        text-[10px]
+                        transition
+                        ${
+                          isSelected
+                            ? "bg-[var(--accent-primary)] text-black font-bold"
+                            : "border border-[var(--border-subtle)] bg-transparent"
+                        }
+                      `}
+                    >
+                      {isSelected ? "✓" : ""}
+                    </div>
+                  </div>
+
+                  <span className="text-[9px] sm:text-[10px] leading-relaxed text-[var(--text-muted)]">
+                    {role.desc}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ===================================================== */}
+        {/* REASON */}
+        {/* ===================================================== */}
+        <div>
+          <label className="mb-1.5 block text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.16em] sm:tracking-[0.18em] text-[var(--text-muted)]">
+            टिप्पणी / कारण
+            <span className="ml-1 normal-case tracking-normal opacity-70">
+              (Optional Reason for Audit Log)
+            </span>
+          </label>
+
+          <input
+            type="text"
+            value={modalReason}
+            onChange={(e) => setModalReason(e.target.value)}
+            placeholder="उदा. समाज कार्यकारिणी के निर्णयानुसार दायित्व सौंपा गया..."
+            className="
+              ka-input
+              w-full
+              text-xs
+              min-h-[42px]
+              sm:min-h-[44px]
+            "
+          />
+        </div>
+
+        {/* ===================================================== */}
+        {/* ACTION BUTTONS */}
+        {/* ===================================================== */}
+        <div
+          className="
+            flex flex-col-reverse
+            sm:flex-row
+            sm:items-center
+            sm:justify-end
+            gap-2.5 sm:gap-3
+            border-t border-[var(--border-subtle)]
+            pt-4
+          "
+        >
+          <button
+            type="button"
+            onClick={() => setRoleModalMember(null)}
+            className="
+              btn-secondary
+              w-full sm:w-auto
+              !py-2.5
+              !px-5
+              text-xs
+              font-bold
+              cursor-pointer
+              active:scale-[0.98]
+              transition
+            "
+          >
+            रद्द करें (Cancel)
+          </button>
+
+          <button
+            type="submit"
+            disabled={isSavingRoles}
+            className="
+              btn-primary
+              w-full sm:w-auto
+              !py-2.5
+              !px-5 sm:!px-6
+              text-xs
+              font-bold
+              flex items-center justify-center gap-2
+              cursor-pointer
+              disabled:cursor-not-allowed
+              disabled:opacity-60
+              active:scale-[0.98]
+              transition
+            "
+          >
+            {isSavingRoles ? (
+              <>
+                <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-black border-t-transparent" />
+                <span>सहेज रहे हैं...</span>
+              </>
+            ) : (
+              <>
+                <FiCheckCircle size={13} />
+                <span>भूमिकाएँ लागू करें (Assign Roles)</span>
+              </>
+            )}
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div>
+        )}
+
+        {/* =====================================================
+            REVOKE ALL ADMINISTRATIVE ACCESS CONFIRMATION MODAL
+           ====================================================== */}
+        {revokeAccessMember && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
             <div className="w-full max-w-md rounded-3xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-6 shadow-2xl">
               <div className="mb-4 flex items-center gap-3">
@@ -1351,40 +1845,60 @@ const AdminRegistrationQueue = () => {
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-[var(--text-primary)]">
-                    Revoke this invitation?
+                    प्रशासनिक अधिकार समाप्त करें?
                   </h3>
                   <p className="text-xs text-[var(--text-muted)]">
-                    This person will no longer be able to accept this invitation.
+                    क्या आप वाकई इस सदस्य के सभी प्रशासनिक अधिकार हटाना चाहते हैं?
                   </p>
                 </div>
               </div>
 
               <div className="my-4 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] p-4 space-y-2 text-xs">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Email Address</p>
-                  <p className="font-bold text-[var(--text-primary)] break-all">{revokingInvite.email}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">सदस्य (Member)</p>
+                  <p className="font-bold text-[var(--text-primary)]">
+                    {revokeAccessMember.name} ({revokeAccessMember.memberId || "SMJ-MEMBER"})
+                  </p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Assigned Role(s)</p>
-                  <p className="text-[var(--accent-primary)] font-semibold">{(revokingInvite.roles || []).join(", ")}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">हटाए जाने वाले अधिकार</p>
+                  <p className="text-red-400 font-semibold">
+                    {(revokeAccessMember.adminRoles || []).join(", ") || "सभी प्रशासनिक भूमिकाएँ"}
+                  </p>
                 </div>
+                <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-2.5 text-[11px] text-emerald-300">
+                  ✓ सदस्य का सामान्य समाज खाता, परिवार व सभी व्यक्तिगत रिकॉर्ड यथावत सक्रिय रहेंगे।
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1">
+                  हटाने का कारण (Reason)
+                </label>
+                <input
+                  type="text"
+                  value={revokeReason}
+                  onChange={(e) => setRevokeReason(e.target.value)}
+                  placeholder="उदा. कार्यकाल समाप्त / दायित्व परिवर्तन"
+                  className="ka-input text-xs w-full"
+                />
               </div>
 
               <div className="flex items-center justify-end gap-3 border-t border-[var(--border-subtle)] pt-4">
                 <button
                   type="button"
-                  onClick={() => setRevokingInvite(null)}
+                  onClick={() => setRevokeAccessMember(null)}
                   className="btn-secondary !py-2 !px-4 text-xs font-bold cursor-pointer"
                 >
-                  Cancel
+                  रद्द करें
                 </button>
                 <button
                   type="button"
-                  disabled={activeUserId === revokingInvite._id}
-                  onClick={confirmRevokeInvite}
+                  disabled={isRevokingAccess}
+                  onClick={handleConfirmRevokeAccess}
                   className="btn-primary !py-2 !px-5 text-xs font-bold !bg-red-600 hover:!bg-red-500 !text-white cursor-pointer"
                 >
-                  {activeUserId === revokingInvite._id ? "Revoking..." : "Revoke Invitation"}
+                  {isRevokingAccess ? "हटा रहे हैं..." : "अधिकार समाप्त करें"}
                 </button>
               </div>
             </div>

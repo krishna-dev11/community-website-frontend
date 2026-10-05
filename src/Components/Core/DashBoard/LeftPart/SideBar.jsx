@@ -2,12 +2,13 @@ import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import SlideBarButton from "./SlideBarButton";
-import { sidebarLinks } from "../../../../data/dashboard-links";
+import { memberLinks, adminLinks } from "../../../../data/dashboard-links";
 import { IoIosLogOut } from "react-icons/io";
 import { FiX } from "react-icons/fi";
 import ConfirmationModal from "../../../Common/ConfirmationModal";
 import { setLogOut } from "../../../../services/Operations/authAPI";
 import { useLanguage } from "../../../../i18n/LanguageContext";
+import { hasPermission } from "../../../../Utilities/permissions";
 
 const SideBar = ({ isSidebarOpen, setIsSidebarOpen }) => {
   const { loading: authLoading } = useSelector((state) => state.auth);
@@ -26,14 +27,29 @@ const SideBar = ({ isSidebarOpen, setIsSidebarOpen }) => {
     );
   }
 
-  const userAccountType = user?.accountType;
   const userRoles = user?.roles || [];
+  const accountType = user?.accountType || "";
+
+  // ── Filter admin links by permission ──────────────────────────────────────
+  const visibleAdminLinks = adminLinks.filter((link) =>
+    hasPermission(userRoles, accountType, link.permission)
+  );
+
+  // ── Group visible admin links into sections ────────────────────────────────
+  const adminSections = visibleAdminLinks.reduce((acc, link) => {
+    const key = link.section;
+    if (!acc[key]) {
+      acc[key] = { section: link.section, sectionHi: link.sectionHi, links: [] };
+    }
+    acc[key].links.push(link);
+    return acc;
+  }, {});
 
   return (
     <>
       {/* Mobile Backdrop Overlay */}
       {isSidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 md:hidden transition-opacity duration-300"
           onClick={() => setIsSidebarOpen(false)}
         />
@@ -61,37 +77,51 @@ const SideBar = ({ isSidebarOpen, setIsSidebarOpen }) => {
           </div>
         )}
 
-        {/* Scrollable Navigation Area - Fixed top padding issue */}
+        {/* Scrollable Navigation Area */}
         <div className="flex flex-col text-[var(--text-primary)] py-4 md:py-6 pb-28 gap-y-4 flex-1 min-h-0 px-2.5 md:px-4 overflow-y-auto custom-scrollbar">
-          {sidebarLinks.map((section, i) => {
-            const accountAllowed = !section.accountTypes || section.accountTypes.includes(userAccountType);
-            const roleAllowed = !section.roles || section.roles.some((role) => userRoles.includes(role) || role === userAccountType);
-            if (!accountAllowed || !roleAllowed) return null;
 
-            return (
-              <div key={i} className="flex flex-col gap-y-1.5">
-                <p className={`${isSidebarOpen ? "block" : "hidden"} md:block text-[var(--text-muted)] text-[10px] font-bold tracking-[0.2em] uppercase px-3 mb-1 select-none`}>
-                  {isHindi ? section.sectionHi || section.section : section.section}
-                </p>
+          {/* ── ACCOUNT / MEMBER SECTION ──────────────────────────────────── */}
+          <div className="flex flex-col gap-y-1.5">
+            <p className={`${isSidebarOpen ? "block" : "hidden"} md:block text-[var(--text-muted)] text-[10px] font-bold tracking-[0.2em] uppercase px-3 mb-1 select-none`}>
+              {isHindi ? "खाता व सेवाएं" : "Account"}
+            </p>
+            <div className="flex flex-col gap-1">
+              {memberLinks.map((link, idx) => (
+                <SlideBarButton
+                  key={idx}
+                  icon={link.icon}
+                  path={link.path}
+                  name={isHindi ? link.nameHi || link.name : link.name}
+                  isSidebarOpen={isSidebarOpen}
+                  onClick={() => setIsSidebarOpen(false)}
+                />
+              ))}
+            </div>
+          </div>
 
-                <div className="flex flex-col gap-1">
-                  {section.links.map((link, index) => (
-                    <SlideBarButton
-                      key={index}
-                      icon={link.icon}
-                      path={link.path}
-                      name={isHindi ? link.nameHi || link.name : link.name}
-                      isSidebarOpen={isSidebarOpen}
-                      onClick={() => setIsSidebarOpen(false)}
-                    />
-                  ))}
-                </div>
+          {/* ── ADMIN SECTIONS — only sections with at least 1 visible link ── */}
+          {Object.values(adminSections).map((section, i) => (
+            <div key={i} className="flex flex-col gap-y-1.5">
+              <p className={`${isSidebarOpen ? "block" : "hidden"} md:block text-[var(--text-muted)] text-[10px] font-bold tracking-[0.2em] uppercase px-3 mb-1 select-none`}>
+                {isHindi ? section.sectionHi || section.section : section.section}
+              </p>
+              <div className="flex flex-col gap-1">
+                {section.links.map((link, idx) => (
+                  <SlideBarButton
+                    key={idx}
+                    icon={link.icon}
+                    path={link.path}
+                    name={isHindi ? link.nameHi || link.name : link.name}
+                    isSidebarOpen={isSidebarOpen}
+                    onClick={() => setIsSidebarOpen(false)}
+                  />
+                ))}
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
 
-        {/* Fixed Bottom Actions - isolated from scroll area */}
+        {/* Fixed Bottom Actions */}
         <div className="mt-auto shrink-0 p-3 md:p-4 flex text-[var(--text-primary)] flex-col gap-y-2 border-t border-[var(--border-subtle)] bg-[var(--surface-elevated)] backdrop-blur-md z-10 shadow-[0_-4px_20px_rgba(0,0,0,0.15)]">
           <SlideBarButton
             icon="IoMdSettings"
