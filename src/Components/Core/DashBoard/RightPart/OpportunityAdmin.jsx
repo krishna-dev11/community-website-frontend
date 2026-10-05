@@ -1372,7 +1372,7 @@ import {
   FaWhatsapp,
   FaPlus,
 } from "react-icons/fa";
-import { FiCheckCircle, FiClock, FiSearch, FiPhone, FiMail, FiX, FiPlus as FiPlusIcon, FiAlertCircle } from "react-icons/fi";
+import { FiCheckCircle, FiClock, FiSearch, FiPhone, FiMail, FiX, FiPlus as FiPlusIcon, FiAlertCircle, FiEye, FiFileText, FiDownload } from "react-icons/fi";
 import { useSelector } from "react-redux";
 import { apiConnector } from "../../../../services/apiConnector";
 import { opportunityEndpoints } from "../../../../services/apis";
@@ -1589,6 +1589,7 @@ const ModuleEmptyState = ({ statusKey, moduleLabel }) => {
 
 const money = (value) => value ? `Rs. ${Number(value).toLocaleString("en-IN")}` : "Amount not set";
 const formatDate = (value) => value ? new Date(value).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "Not set";
+const formatDateTime = (value) => value ? new Date(value).toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "Not set";
 
 const initialJob = {
   title: "", companyName: "", description: "", location: "", employmentType: "FULL_TIME",
@@ -1598,7 +1599,171 @@ const initialJob = {
 
 const initialScholarship = {
   title: "", description: "", eligibility: "", amount: "", seats: "", applicationDeadline: "",
-  status: "OPEN", requiredDocument: { enabled: true, name: "", instructions: "" },
+  status: "OPEN", posterImage: null, requiredDocument: { enabled: true, name: "", instructions: "" },
+};
+
+const validateScholarshipPoster = (file) => {
+  if (!file) return "";
+  const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+  const ext = (file.name || "").split(".").pop()?.toLowerCase();
+  if (!allowedTypes.includes((file.type || "").toLowerCase()) && !["jpg", "jpeg", "png", "webp"].includes(ext)) {
+    return "Poster must be a JPG, PNG, or WEBP image.";
+  }
+  if (file.size > 10 * 1024 * 1024) return "Poster image must be 10 MB or smaller.";
+  return "";
+};
+
+const displayValue = (value) => {
+  if (value === undefined || value === null || value === "") return null;
+  if (Array.isArray(value)) return value.filter(Boolean).join(", ");
+  return String(value);
+};
+
+const DetailItem = ({ label, value }) => {
+  const shown = displayValue(value);
+  if (!shown) return null;
+  return (
+    <div className="min-w-0 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] p-3">
+      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--text-muted)]">{label}</p>
+      <p className="mt-1 whitespace-pre-line break-words text-xs font-semibold leading-relaxed text-[var(--text-primary)]">{shown}</p>
+    </div>
+  );
+};
+
+const DetailSection = ({ title, children }) => (
+  <section className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-4">
+    <h3 className="mb-3 text-xs font-black uppercase tracking-[0.18em] text-[var(--text-primary)]">{title}</h3>
+    {children}
+  </section>
+);
+
+const DocumentButton = ({ document, index }) => {
+  if (!document?.url) return null;
+  const name = document.fileName || document.name || `Document ${index + 1}`;
+  return (
+    <div className="flex min-w-0 flex-col gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0">
+        <p className="break-words text-xs font-bold text-[var(--text-primary)]">{name}</p>
+        <p className="mt-0.5 text-[10px] text-[var(--text-muted)]">
+          {[document.mimeType, document.size ? `${Math.round(document.size / 1024)} KB` : null].filter(Boolean).join(" · ") || "Uploaded proof"}
+        </p>
+      </div>
+      <div className="flex shrink-0 gap-2">
+        <a href={document.url} target="_blank" rel="noreferrer" className="btn-secondary !py-2 !px-3 !text-[11px] inline-flex items-center gap-1.5">
+          <FiEye size={13} /> View
+        </a>
+        <a href={document.url} download={name} target="_blank" rel="noreferrer" className="btn-primary !py-2 !px-3 !text-[11px] inline-flex items-center gap-1.5">
+          <FiDownload size={13} /> Download
+        </a>
+      </div>
+    </div>
+  );
+};
+
+const ScholarshipApplicationDetailsModal = ({ application, onClose }) => {
+  if (!application) return null;
+  const profile = application.applicant?.additionalDetails || {};
+  const snap = application.applicantSnapshot || {};
+  const fullName = application.applicantName || snap.fullName || `${application.applicant?.firstName || ""} ${application.applicant?.lastName || ""}`.trim() || "Applicant";
+  const reviewer = application.reviewedBy
+    ? `${application.reviewedBy.firstName || ""} ${application.reviewedBy.lastName || ""}`.trim() || application.reviewedBy.email
+    : "";
+  const documents = [
+    ...(application.requiredDocument?.url ? [{ ...application.requiredDocument, fileName: application.requiredDocument.fileName || application.requiredDocument.name || "Required proof" }] : []),
+    ...(application.documents || []),
+  ].filter((doc, index, list) => doc?.url && list.findIndex((item) => item.url === doc.url) === index);
+
+  return (
+    <div className="fixed inset-0 z-[1200] flex items-start justify-center overflow-y-auto bg-black/75 px-3 py-4 backdrop-blur-md sm:items-center sm:px-4">
+      <div className="flex max-h-[calc(100dvh-2rem)] w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-[var(--border-strong)] bg-[var(--surface)] shadow-2xl">
+        <div className="flex shrink-0 items-start justify-between gap-4 border-b border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-5">
+          <div className="min-w-0">
+            <p className="eyebrow-badge mb-2">Application Details</p>
+            <h2 className="break-words text-xl font-black text-[var(--text-primary)]">{fullName}</h2>
+            <p className="mt-1 break-words text-xs text-[var(--text-muted)]">{application.scholarship?.title || "Scholarship"} · Submitted {formatDateTime(application.createdAt)}</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <StatusBadge value={application.status} />
+              <span className="rounded-full border border-[var(--border-subtle)] bg-[var(--surface)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">
+                Updated {formatDateTime(application.updatedAt)}
+              </span>
+            </div>
+          </div>
+          <button type="button" onClick={onClose} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] text-[var(--text-muted)] hover:text-[var(--text-primary)]">
+            <FiX size={18} />
+          </button>
+        </div>
+
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
+          <div className="grid gap-4 lg:grid-cols-2">
+            <DetailSection title="Applicant Personal & Contact">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <DetailItem label="Full Name" value={fullName} />
+                <DetailItem label="Member ID" value={snap.memberId || application.applicant?.memberId} />
+                <DetailItem label="Email" value={snap.email || application.applicant?.email} />
+                <DetailItem label="Phone" value={snap.phone || profile.contactNumber} />
+                <DetailItem label="Gender" value={snap.gender || profile.gender} />
+                <DetailItem label="Date of Birth" value={snap.dateOfBirth || profile.dateOfBirth} />
+              </div>
+            </DetailSection>
+
+            <DetailSection title="Address & Community Profile">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <DetailItem label="Address" value={snap.address || profile.address} />
+                <DetailItem label="Current City" value={snap.currentCity || profile.currentCity} />
+                <DetailItem label="Native Place" value={snap.nativePlace || profile.nativePlace} />
+                <DetailItem label="Gotra" value={snap.gotra || profile.gotra} />
+                <DetailItem label="Profession" value={snap.profession || profile.profession} />
+                <DetailItem label="Profile Education" value={snap.education || profile.education} />
+              </div>
+            </DetailSection>
+          </div>
+
+          <DetailSection title="Scholarship & Eligibility">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <DetailItem label="Scholarship" value={application.scholarship?.title} />
+              <DetailItem label="Amount" value={application.scholarship?.amount ? money(application.scholarship.amount) : ""} />
+              <DetailItem label="Deadline" value={formatDate(application.scholarship?.applicationDeadline)} />
+              <DetailItem label="Seats" value={application.scholarship?.seats ? `${application.scholarship.approvedCount || 0}/${application.scholarship.seats}` : ""} />
+            </div>
+            <div className="mt-3 grid gap-3 lg:grid-cols-2">
+              <DetailItem label="Scholarship Eligibility" value={application.scholarship?.eligibility} />
+              <DetailItem label="Required Proof Config" value={application.scholarship?.requiredDocument?.name} />
+            </div>
+          </DetailSection>
+
+          <DetailSection title="Submitted Answers">
+            <div className="grid gap-3 lg:grid-cols-3">
+              <DetailItem label="Education / Academic Details" value={application.educationDetails} />
+              <DetailItem label="Family / Income Details" value={application.incomeDetails} />
+              <DetailItem label="Applicant Statement" value={application.statement} />
+            </div>
+          </DetailSection>
+
+          <DetailSection title="Uploaded Documents & Proofs">
+            {documents.length > 0 ? (
+              <div className="grid gap-3">
+                {documents.map((doc, index) => <DocumentButton key={doc.publicId || doc.url || index} document={doc} index={index} />)}
+              </div>
+            ) : (
+              <p className="rounded-xl border border-amber-500/25 bg-amber-500/10 p-3 text-xs font-semibold text-amber-300">No uploaded documents found on this application.</p>
+            )}
+          </DetailSection>
+
+          <DetailSection title="Review History">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <DetailItem label="Current Status" value={application.status?.replace(/_/g, " ")} />
+              <DetailItem label="Submitted At" value={formatDateTime(application.createdAt)} />
+              <DetailItem label="Reviewed At" value={formatDateTime(application.reviewedAt)} />
+              <DetailItem label="Reviewed By" value={reviewer} />
+            </div>
+            <div className="mt-3">
+              <DetailItem label="Latest Review Note / Reason" value={application.reviewNote || application.reviewReason} />
+            </div>
+          </DetailSection>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 // ============================================================================
@@ -1620,10 +1785,14 @@ const OpportunityAdmin = () => {
   const [jobForm, setJobForm]                             = useState(initialJob);
   const [scholarshipForm, setScholarshipForm]             = useState(initialScholarship);
   const [scholarshipDocumentFile, setScholarshipDocumentFile] = useState(null);
+  const [scholarshipPosterFile, setScholarshipPosterFile] = useState(null);
+  const [scholarshipPosterPreview, setScholarshipPosterPreview] = useState("");
+  const [removeScholarshipPoster, setRemoveScholarshipPoster] = useState(false);
   const [editingScholarshipId, setEditingScholarshipId]   = useState(null);
   const [drafts, setDrafts]                               = useState({});
   const [showJobForm, setShowJobForm]                     = useState(false);
   const [showScholarshipForm, setShowScholarshipForm]     = useState(false);
+  const [selectedScholarshipApplication, setSelectedScholarshipApplication] = useState(null);
 
   // ── Per-module status filters and search ──────────────────────────────────
   const [statusFilters, setStatusFilters] = useState({ ...MODULE_DEFAULT_STATUS });
@@ -1769,6 +1938,8 @@ const OpportunityAdmin = () => {
       if (scholarshipForm.seats) formData.append("seats", Number(scholarshipForm.seats));
       formData.append("requiredDocument", JSON.stringify(scholarshipForm.requiredDocument));
       if (scholarshipDocumentFile) formData.append("requiredDocumentFile", scholarshipDocumentFile);
+      if (scholarshipPosterFile) formData.append("scholarshipPosterImage", scholarshipPosterFile);
+      if (removeScholarshipPoster) formData.append("removePosterImage", "true");
 
       const endpoint = editingScholarshipId
         ? opportunityEndpoints.SCHOLARSHIP_API(editingScholarshipId)
@@ -1777,6 +1948,9 @@ const OpportunityAdmin = () => {
       toast.success(editingScholarshipId ? "Scholarship updated" : "Scholarship saved");
       setScholarshipForm(initialScholarship);
       setScholarshipDocumentFile(null);
+      setScholarshipPosterFile(null);
+      setScholarshipPosterPreview("");
+      setRemoveScholarshipPoster(false);
       setEditingScholarshipId(null);
       setShowScholarshipForm(false);
       await loadScholarships();
@@ -1814,6 +1988,7 @@ const OpportunityAdmin = () => {
     try {
       await apiConnector("PATCH", opportunityEndpoints.REVIEW_SCHOLARSHIP_APPLICATION_API(applicationId), { status, reason: draft.reason || undefined }, authConfig);
       toast.success("Scholarship application updated");
+      setSelectedScholarshipApplication((current) => current?._id === applicationId ? null : current);
       await loadScholarshipApplications();
     } catch (error) {
       toast.error(error.response?.data?.message || "Unable to review scholarship application");
@@ -2410,6 +2585,9 @@ const OpportunityAdmin = () => {
                         onClick={() => {
                           setShowScholarshipForm(false);
                           setEditingScholarshipId(null);
+                          setScholarshipPosterFile(null);
+                          setScholarshipPosterPreview("");
+                          setRemoveScholarshipPoster(false);
                         }}
                         className="flex h-8 w-8 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
                       >
@@ -2456,6 +2634,54 @@ const OpportunityAdmin = () => {
                           <input type="date" className={inputClass} value={scholarshipForm.applicationDeadline} onChange={(e) => setScholarshipForm((cur) => ({ ...cur, applicationDeadline: e.target.value }))} required />
                         </Field>
                       </div>
+                      <div className="sm:col-span-2 lg:col-span-3">
+                        <Field label="Scholarship Poster / Banner Image">
+                          <div className="grid gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] p-3">
+                            {(scholarshipPosterPreview || scholarshipForm.posterImage?.url) && (
+                              <div className="overflow-hidden rounded-xl border border-[var(--border-subtle)] bg-black/20">
+                                <img
+                                  src={scholarshipPosterPreview || scholarshipForm.posterImage?.url}
+                                  alt="Scholarship poster preview"
+                                  className="h-auto max-h-72 w-full object-contain"
+                                />
+                              </div>
+                            )}
+                            <input
+                              type="file"
+                              accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+                              className={`${inputClass} !py-2`}
+                              onChange={(e) => {
+                                const file = e.target.files?.[0] || null;
+                                const error = validateScholarshipPoster(file);
+                                if (error) {
+                                  toast.error(error);
+                                  e.target.value = "";
+                                  return;
+                                }
+                                setScholarshipPosterFile(file);
+                                setScholarshipPosterPreview(file ? URL.createObjectURL(file) : "");
+                                setRemoveScholarshipPoster(false);
+                              }}
+                            />
+                            <div className="flex flex-wrap gap-2">
+                              {(scholarshipPosterPreview || scholarshipForm.posterImage?.url) && (
+                                <Button
+                                  type="button"
+                                  onClick={() => {
+                                    setScholarshipPosterFile(null);
+                                    setScholarshipPosterPreview("");
+                                    setScholarshipForm((cur) => ({ ...cur, posterImage: null }));
+                                    setRemoveScholarshipPoster(Boolean(editingScholarshipId));
+                                  }}
+                                >
+                                  Remove Poster
+                                </Button>
+                              )}
+                              <p className="self-center text-[11px] text-[var(--text-muted)]">JPG, PNG or WEBP. Recommended wide banner/poster.</p>
+                            </div>
+                          </div>
+                        </Field>
+                      </div>
                     </div>
 
                     <div className="grid gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-3.5 sm:p-4">
@@ -2485,6 +2711,9 @@ const OpportunityAdmin = () => {
                           setEditingScholarshipId(null);
                           setScholarshipForm(initialScholarship);
                           setScholarshipDocumentFile(null);
+                          setScholarshipPosterFile(null);
+                          setScholarshipPosterPreview("");
+                          setRemoveScholarshipPoster(false);
                         }}
                       >
                         Cancel
@@ -2523,6 +2752,15 @@ const OpportunityAdmin = () => {
                               isDone ? "border-[var(--border-subtle)] bg-[var(--surface-elevated)] opacity-75" : "border-[var(--border-subtle)] bg-[var(--surface-elevated)]"
                             }`}
                           >
+                            {scholarship.posterImage?.url && (
+                              <div className="mb-4 overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)]">
+                                <img
+                                  src={scholarship.posterImage.url}
+                                  alt={`${scholarship.title} poster`}
+                                  className="h-auto max-h-56 w-full object-contain"
+                                />
+                              </div>
+                            )}
                             <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
                               <div className="min-w-0 flex-1 space-y-1.5">
                                 <div className="flex flex-wrap items-center gap-2 mb-1">
@@ -2565,6 +2803,7 @@ const OpportunityAdmin = () => {
                                       seats: scholarship.seats || "",
                                       applicationDeadline: scholarship.applicationDeadline ? new Date(scholarship.applicationDeadline).toISOString().slice(0, 10) : "",
                                       status: scholarship.status === "OPEN" ? "OPEN" : "DRAFT",
+                                      posterImage: scholarship.posterImage || null,
                                       requiredDocument: {
                                         enabled: Boolean(scholarship.requiredDocument?.enabled),
                                         name: scholarship.requiredDocument?.name || "",
@@ -2572,6 +2811,9 @@ const OpportunityAdmin = () => {
                                       },
                                     });
                                     setScholarshipDocumentFile(null);
+                                    setScholarshipPosterFile(null);
+                                    setScholarshipPosterPreview("");
+                                    setRemoveScholarshipPoster(false);
                                     setShowScholarshipForm(true);
                                   }}
                                 >
@@ -2675,6 +2917,14 @@ const OpportunityAdmin = () => {
                               ) : (
                                 <p className="mt-2 text-xs text-amber-400">No supporting document uploaded</p>
                               )}
+                              <button
+                                type="button"
+                                onClick={() => setSelectedScholarshipApplication(application)}
+                                className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-3 py-2 text-xs font-bold text-[var(--text-primary)] transition-colors hover:border-emerald-500/40 hover:text-emerald-300"
+                              >
+                                <FiEye size={14} />
+                                View Full Application Details
+                              </button>
                             </div>
                           </div>
 
@@ -2699,6 +2949,10 @@ const OpportunityAdmin = () => {
           </>
         )}
       </div>
+      <ScholarshipApplicationDetailsModal
+        application={selectedScholarshipApplication}
+        onClose={() => setSelectedScholarshipApplication(null)}
+      />
     </div>
   );
 };

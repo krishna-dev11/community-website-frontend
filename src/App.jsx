@@ -1,4 +1,5 @@
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
+import { useSelector } from "react-redux";
 import { initTheme } from "./Utilities/useTheme";
 import "./App.css";
 import HomePage from "./Pages/HomePage";
@@ -51,9 +52,21 @@ import ReligionFaithPage from "./Pages/ReligionFaithPage";
 import ConstitutionalStatusPage from "./Pages/ConstitutionalStatusPage";
 import LivelihoodsPage from "./Pages/LivelihoodsPage";
 import MembershipPage from "./Pages/MembershipPage";
+import { isOnlyDharamshalaStaff } from "./Utilities/permissions";
 
 // Initialize theme from localStorage before first React paint — prevents color flash
 initTheme();
+
+const StaffRestrictedRoute = ({ children }) => {
+  const { user } = useSelector((state) => state.profile);
+  const staffOnly = isOnlyDharamshalaStaff(user?.roles || []);
+
+  if (staffOnly) {
+    return <Navigate to="/dashboard/admin/community?tab=staff" replace />;
+  }
+
+  return children;
+};
 
 function App() {
 
@@ -202,13 +215,13 @@ function App() {
           }
         >
           <Route path="/dashboard/my-profile" element={<MyProfile />} />
-          <Route path="/dashboard/my-dues" element={<MyDues />} />
-          <Route path="/dashboard/my-jobs" element={<MyJobPosts />} />
-          <Route path="/dashboard/directory" element={<MemberDirectory />} />
-          <Route path="/dashboard/directory/family/:familyId" element={<MemberDirectory />} />
-          <Route path="/dashboard/family" element={<FamilyHub />} />
-          <Route path="/dashboard/community" element={<CommunityHub />} />
-          <Route path="/dashboard/suggestions" element={<MySuggestions />} />
+          <Route path="/dashboard/my-dues" element={<StaffRestrictedRoute><MyDues /></StaffRestrictedRoute>} />
+          <Route path="/dashboard/my-jobs" element={<StaffRestrictedRoute><MyJobPosts /></StaffRestrictedRoute>} />
+          <Route path="/dashboard/directory" element={<StaffRestrictedRoute><MemberDirectory /></StaffRestrictedRoute>} />
+          <Route path="/dashboard/directory/family/:familyId" element={<StaffRestrictedRoute><MemberDirectory /></StaffRestrictedRoute>} />
+          <Route path="/dashboard/family" element={<StaffRestrictedRoute><FamilyHub /></StaffRestrictedRoute>} />
+          <Route path="/dashboard/community" element={<StaffRestrictedRoute><CommunityHub /></StaffRestrictedRoute>} />
+          <Route path="/dashboard/suggestions" element={<StaffRestrictedRoute><MySuggestions /></StaffRestrictedRoute>} />
 
           {/* ── Admin routes — each guarded by a specific permission ─── */}
           <Route
@@ -230,7 +243,7 @@ function App() {
           <Route
             path="/dashboard/admin/community"
             element={
-              <PermissionRoute permission="community:moderate">
+              <PermissionRoute permissions={["community:moderate", "dharamshala:staff"]}>
                 <CommunityAdmin />
               </PermissionRoute>
             }
@@ -276,7 +289,7 @@ function App() {
             }
           />
 
-          <Route path="/dashboard/setting" element={<SettingIndex />} />
+          <Route path="/dashboard/setting" element={<StaffRestrictedRoute><SettingIndex /></StaffRestrictedRoute>} />
         </Route>
 
       </Routes>

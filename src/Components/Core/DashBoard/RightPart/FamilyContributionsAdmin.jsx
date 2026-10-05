@@ -1,986 +1,765 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
 import toast from "react-hot-toast";
 import {
-  FiSearch,
-  FiFilter,
-  FiDownload,
-  FiCalendar,
-  FiCheckCircle,
-  FiClock,
   FiAlertCircle,
-  FiFileText,
-  FiRefreshCw,
-  FiUsers,
-  FiX,
-  FiEye,
-  FiSettings,
-  FiDollarSign,
-  FiShield,
-  FiSliders,
   FiCheck,
+  FiDownload,
+  FiEye,
+  FiFileText,
+  FiFilter,
+  FiRefreshCw,
+  FiSearch,
+  FiShield,
+  FiX,
 } from "react-icons/fi";
-import { FaRupeeSign, FaReceipt, FaMoneyBillWave, FaHandHoldingUsd } from "react-icons/fa";
+import { FaMoneyBillWave, FaReceipt, FaRupeeSign } from "react-icons/fa";
 import { apiConnector } from "../../../../services/apiConnector";
 import { familyContributionEndpoints } from "../../../../services/apis";
 import ReceiptModal from "../../../Common/ReceiptModal";
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December"
+  "July", "August", "September", "October", "November", "December",
 ];
+
+const currentYear = new Date().getFullYear();
+const currentMonth = new Date().getMonth() + 1;
+
+const statusStyles = {
+  PAID: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
+  PAID_AHEAD: "border-cyan-500/30 bg-cyan-500/10 text-cyan-300",
+  UP_TO_DATE: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
+  DUE: "border-amber-500/30 bg-amber-500/10 text-amber-300",
+  PENDING: "border-amber-500/30 bg-amber-500/10 text-amber-300",
+  PARTIAL: "border-sky-500/30 bg-sky-500/10 text-sky-300",
+  OVERDUE: "border-red-500/30 bg-red-500/10 text-red-300",
+  ADVANCE: "border-cyan-500/30 bg-cyan-500/10 text-cyan-300",
+  SUCCESS: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
+  FAILED: "border-red-500/30 bg-red-500/10 text-red-300",
+};
+
+const formatMoney = (value) => `₹${Number(value || 0).toLocaleString("en-IN")}`;
+const compactStatus = (value) => String(value || "NA").replaceAll("_", " ");
+const formatDate = (value, withTime = false) => {
+  if (!value) return "—";
+  return new Date(value).toLocaleString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    ...(withTime ? { hour: "2-digit", minute: "2-digit" } : {}),
+  });
+};
+const ymLabel = (year, month) => (year && month ? `${MONTH_NAMES[Number(month) - 1]} ${year}` : "—");
+const memberName = (member) =>
+  member?.name || [member?.firstName, member?.middleName, member?.lastName].filter(Boolean).join(" ").trim() || "Member";
+const badgeClass = (status) =>
+  `inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-black uppercase tracking-wide ${statusStyles[status] || "border-[var(--border-subtle)] bg-[var(--surface)] text-[var(--text-muted)]"}`;
+const generateReceipt = () => {
+  const stamp = new Date().toISOString().slice(0, 10).replaceAll("-", "");
+  return `FCR-CASH-${stamp}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
+};
+
+const Field = ({ label, children }) => (
+  <label className="flex flex-col gap-1">
+    <span className="text-[10px] font-black uppercase tracking-wider text-[var(--text-muted)]">{label}</span>
+    {children}
+  </label>
+);
 
 const FamilyContributionsAdmin = () => {
   const { token } = useSelector((state) => state.auth);
   const { user } = useSelector((state) => state.profile);
+  const authConfig = useMemo(() => ({ headers: { Authorization: `Bearer ${token}` } }), [token]);
 
-  const authConfig = useMemo(
-    () => ({
-      headers: { Authorization: `Bearer ${token}` },
-    }),
-    [token]
-  );
-
-  // States
   const [loading, setLoading] = useState(false);
   const [accounts, setAccounts] = useState([]);
   const [metrics, setMetrics] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("ALL");
-  const [paginationMeta, setPaginationMeta] = useState({ page: 1, limit: 30, total: 0, pages: 1 });
+  const [pagination, setPagination] = useState({ page: 1, limit: 30, total: 0, pages: 1 });
+  const [filters, setFilters] = useState({
+    search: "",
+    status: "ALL",
+    method: "ALL",
+    month: "",
+    year: "",
+    fromDate: "",
+    toDate: "",
+  });
 
-  // Detail Modal
-  const [selectedFamilyId, setSelectedFamilyId] = useState(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
   const [detailData, setDetailData] = useState(null);
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [loadingDetail, setLoadingDetail] = useState(false);
 
-  // Record Cash Payment Modal
-  const [isCashModalOpen, setIsCashModalOpen] = useState(false);
-  const [cashFamily, setCashFamily] = useState(null);
-  const [cashTarget, setCashTarget] = useState("");
+  const [isCashOpen, setIsCashOpen] = useState(false);
+  const [cashFamilyId, setCashFamilyId] = useState("");
   const [cashQuote, setCashQuote] = useState(null);
-  const [quotingCash, setQuotingCash] = useState(false);
-  const [recordingCash, setRecordingCash] = useState(false);
+  const [cashLoading, setCashLoading] = useState(false);
   const [cashForm, setCashForm] = useState({
-    amount: "",
-    receiptNumber: "",
-    notes: "",
+    payerId: "",
+    targetMonth: `${currentYear}-${String(currentMonth).padStart(2, "0")}`,
+    amountRupees: "",
+    paymentDate: new Date().toISOString().slice(0, 10),
+    collectorName: `${user?.firstName || "Admin"} ${user?.lastName || ""}`.trim(),
+    receiptNumber: generateReceipt(),
+    paymentReference: "",
+    notes: "Offline family monthly contribution collected in cash.",
   });
 
-  // Waive Fine Modal / State
-  const [waivingFine, setWaivingFine] = useState(false);
-  const [waiveEntry, setWaiveEntry] = useState(null);
-  const [waiveReason, setWaiveReason] = useState("");
-  const [isWaiveModalOpen, setIsWaiveModalOpen] = useState(false);
-
-  // Rate Settings Modal
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  const [rateSettings, setRateSettings] = useState(null);
-  const [savingSettings, setSavingSettings] = useState(false);
-  const [settingsForm, setSettingsForm] = useState({
-    amountRupees: 60,
-    lateFineRupees: 2,
-    dueDayEnd: 10,
-    lateFineEnabled: true,
-    effectiveFromYear: new Date().getFullYear(),
-    effectiveFromMonth: new Date().getMonth() + 1,
-    description: "",
-  });
-
-  // Receipt Modal
   const [selectedReceipt, setSelectedReceipt] = useState(null);
-  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
+  const [isReceiptOpen, setIsReceiptOpen] = useState(false);
 
-  // Reconcile Action State
-  const [reconcilingId, setReconcilingId] = useState(null);
-  const [reconcilingAll, setReconcilingAll] = useState(false);
+  const selectedCashFamily = useMemo(
+    () => accounts.find((item) => String(item.family?._id) === String(cashFamilyId)),
+    [accounts, cashFamilyId]
+  );
 
-  // 1. Fetch Accounts List & Summary
+  useEffect(() => {
+    if (!isCashOpen || !selectedCashFamily) return;
+    const selectedMemberExists = (selectedCashFamily.members || []).some((member) => String(member._id) === String(cashForm.payerId));
+    if (selectedMemberExists) return;
+    const payer = selectedCashFamily.members?.find((m) => m.role === "FAMILY_ADMIN" || m.relationship === "SELF") || selectedCashFamily.members?.[0];
+    setCashForm((cur) => ({ ...cur, payerId: payer?._id || "" }));
+  }, [cashForm.payerId, isCashOpen, selectedCashFamily]);
+
   const fetchAccounts = useCallback(async (page = 1) => {
     if (!token) return;
+    setLoading(true);
     try {
-      setLoading(true);
-      const params = {
-        page,
-        limit: 30,
-      };
-      if (searchQuery.trim()) params.search = searchQuery.trim();
-      if (statusFilter && statusFilter !== "ALL") params.status = statusFilter;
+      const params = { page, limit: 30 };
+      if (filters.search.trim()) params.search = filters.search.trim();
+      if (filters.status !== "ALL") params.status = filters.status;
+      if (filters.method !== "ALL") params.paymentMethod = filters.method;
+      if (filters.month && filters.year) {
+        params.month = filters.month;
+        params.year = filters.year;
+      }
+      if (filters.fromDate) params.fromDate = filters.fromDate;
+      if (filters.toDate) params.toDate = filters.toDate;
 
-      const res = await apiConnector(
-        "GET",
-        familyContributionEndpoints.ADMIN_ACCOUNTS_API,
-        null,
-        authConfig,
-        params
-      );
-
+      const res = await apiConnector("GET", familyContributionEndpoints.ADMIN_ACCOUNTS_API, null, authConfig, params);
       if (res?.data?.success) {
         setAccounts(res.data.data.accounts || []);
         setMetrics(res.data.data.metrics || null);
-        if (res.data.data.pagination) {
-          setPaginationMeta(res.data.data.pagination);
-        }
+        setPagination(res.data.data.pagination || res.data.data.meta || { page, limit: 30, total: 0, pages: 1 });
       }
-    } catch (err) {
-      console.error("Error fetching family accounts:", err);
-      toast.error(err?.response?.data?.message || "Failed to load family contribution accounts");
+    } catch (error) {
+      console.error("Family contribution account load failed:", error);
+      toast.error(error?.response?.data?.message || "Failed to load family contribution ledger");
     } finally {
       setLoading(false);
     }
-  }, [token, authConfig, searchQuery, statusFilter]);
+  }, [authConfig, filters, token]);
 
   useEffect(() => {
     fetchAccounts(1);
   }, [fetchAccounts]);
 
-  // 2. Open Family Detail Modal
-  const handleOpenDetail = async (familyId) => {
-    setSelectedFamilyId(familyId);
-    setIsDetailModalOpen(true);
-    setLoadingDetail(true);
+  const openDetail = async (familyId) => {
+    setIsDetailOpen(true);
+    setDetailLoading(true);
+    setDetailData(null);
+    try {
+      const res = await apiConnector("GET", familyContributionEndpoints.ADMIN_ACCOUNT_DETAIL_API(familyId), null, authConfig);
+      if (res?.data?.success) setDetailData(res.data.data);
+    } catch (error) {
+      console.error("Family ledger detail failed:", error);
+      toast.error(error?.response?.data?.message || "Failed to load detailed family ledger");
+      setIsDetailOpen(false);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const openCash = (account) => {
+    const nextYear = account?.paidThrough?.nextDueYear || currentYear;
+    const nextMonth = account?.paidThrough?.nextDueMonth || currentMonth;
+    const payer = account?.members?.find((m) => m.role === "FAMILY_ADMIN" || m.relationship === "SELF") || account?.members?.[0];
+    setCashFamilyId(account?.family?._id || "");
+    setCashQuote(null);
+    setCashForm({
+      payerId: payer?._id || "",
+      targetMonth: `${nextYear}-${String(nextMonth).padStart(2, "0")}`,
+      amountRupees: "",
+      paymentDate: new Date().toISOString().slice(0, 10),
+      collectorName: `${user?.firstName || "Admin"} ${user?.lastName || ""}`.trim(),
+      receiptNumber: generateReceipt(),
+      paymentReference: "",
+      notes: "Offline family monthly contribution collected in cash.",
+    });
+    setIsCashOpen(true);
+  };
+
+  const fetchCashQuote = useCallback(async () => {
+    if (!isCashOpen || !cashFamilyId || !cashForm.targetMonth) return;
+    const [year, month] = cashForm.targetMonth.split("-").map(Number);
+    setCashLoading(true);
     try {
       const res = await apiConnector(
-        "GET",
-        familyContributionEndpoints.ADMIN_ACCOUNT_DETAIL_API(familyId),
-        null,
+        "POST",
+        familyContributionEndpoints.ADMIN_QUOTE_API(cashFamilyId),
+        { toYear: year, toMonth: month },
         authConfig
       );
       if (res?.data?.success) {
-        setDetailData(res.data.data);
+        const quote = res.data.data.quote || res.data.data;
+        setCashQuote(quote);
+        setCashForm((cur) => ({ ...cur, amountRupees: quote.netPayableRupees || quote.grossPayableRupees || "" }));
       }
-    } catch (err) {
-      console.error("Error loading account detail:", err);
-      toast.error(err?.response?.data?.message || "Failed to load family detail");
+    } catch (error) {
+      setCashQuote(null);
+      toast.error(error?.response?.data?.message || "Unable to calculate covered months");
     } finally {
-      setLoadingDetail(false);
+      setCashLoading(false);
     }
-  };
+  }, [authConfig, cashFamilyId, cashForm.targetMonth, isCashOpen]);
 
-  // 3. Open Cash Payment Modal
-  const handleOpenCashModal = (familyAccount) => {
-    setCashFamily(familyAccount);
-    const nextY = familyAccount.paidThrough?.nextDueYear || new Date().getFullYear();
-    const nextM = familyAccount.paidThrough?.nextDueMonth || new Date().getMonth() + 1;
-    setCashTarget(`${nextY}-${nextM}`);
-    setCashForm({
-      amount: "",
-      receiptNumber: `CASH-${Date.now().toString().slice(-6)}`,
-      notes: "Offline monthly contribution collected in cash.",
-    });
-    setIsCashModalOpen(true);
-  };
-
-  // Fetch Quote for Cash Payment
   useEffect(() => {
-    if (!isCashModalOpen || !cashFamily || !cashTarget) return;
+    fetchCashQuote();
+  }, [fetchCashQuote]);
 
-    const [yStr, mStr] = cashTarget.split("-");
-    const toYear = parseInt(yStr, 10);
-    const toMonth = parseInt(mStr, 10);
-
-    const getQuote = async () => {
-      try {
-        setQuotingCash(true);
-        const res = await apiConnector(
-          "POST",
-          familyContributionEndpoints.GET_QUOTE_API,
-          { toYear, toMonth, familyId: cashFamily.family?._id },
-          authConfig
-        );
-        if (res?.data?.success) {
-          setCashQuote(res.data.data);
-          setCashForm((prev) => ({
-            ...prev,
-            amount: res.data.data.netPayableRupees || "",
-          }));
-        }
-      } catch (err) {
-        console.error("Error fetching quote for cash:", err);
-      } finally {
-        setQuotingCash(false);
-      }
-    };
-
-    getQuote();
-  }, [isCashModalOpen, cashFamily, cashTarget, authConfig]);
-
-  // Submit Cash Payment
-  const handleSubmitCash = async (e) => {
-    e.preventDefault();
-    if (!cashFamily || !cashTarget || !cashForm.amount) {
-      toast.error("Please fill all required cash payment fields");
+  const submitCash = async (event) => {
+    event.preventDefault();
+    if (!cashFamilyId || !cashForm.payerId || !cashForm.amountRupees) {
+      toast.error("Select family, paying member, and amount before confirming");
       return;
     }
-
-    const [yStr, mStr] = cashTarget.split("-");
-    const toYear = parseInt(yStr, 10);
-    const toMonth = parseInt(mStr, 10);
-
+    const [toYear, toMonth] = cashForm.targetMonth.split("-").map(Number);
+    setCashLoading(true);
     try {
-      setRecordingCash(true);
       const res = await apiConnector(
         "POST",
-        familyContributionEndpoints.RECORD_CASH_API(cashFamily.family?._id),
+        familyContributionEndpoints.RECORD_CASH_API(cashFamilyId),
         {
-          amountRupees: Number(cashForm.amount),
+          payerId: cashForm.payerId,
+          amountRupees: Number(cashForm.amountRupees),
           toYear,
           toMonth,
+          paymentDate: cashForm.paymentDate,
+          collectorName: cashForm.collectorName,
           receiptNumber: cashForm.receiptNumber,
+          paymentReference: cashForm.paymentReference || cashForm.receiptNumber,
           notes: cashForm.notes,
         },
         authConfig
       );
-
       if (res?.data?.success) {
-        toast.success("Offline cash payment recorded and allocated successfully!");
-        setIsCashModalOpen(false);
-        fetchAccounts(paginationMeta.page);
-        if (selectedFamilyId === cashFamily.family?._id) {
-          handleOpenDetail(selectedFamilyId);
-        }
+        toast.success(`Cash contribution recorded. Receipt ${res.data.data.receiptNumber}`);
+        setIsCashOpen(false);
+        await fetchAccounts(pagination.page);
+        if (res.data.data.payment?._id) await openReceipt(res.data.data.payment._id);
       }
-    } catch (err) {
-      console.error("Error recording cash payment:", err);
-      toast.error(err?.response?.data?.message || "Failed to record cash payment");
+    } catch (error) {
+      console.error("Cash contribution failed:", error);
+      toast.error(error?.response?.data?.message || "Failed to record cash contribution");
     } finally {
-      setRecordingCash(false);
+      setCashLoading(false);
     }
   };
 
-  // 4. Open Waive Fine Modal
-  const handleOpenWaiveModal = (entry) => {
-    setWaiveEntry(entry);
-    setWaiveReason("");
-    setIsWaiveModalOpen(true);
-  };
-
-  // Submit Fine Waiver
-  const handleSubmitWaiveFine = async (e) => {
-    e.preventDefault();
-    if (!waiveEntry || !waiveReason.trim() || !selectedFamilyId) {
-      toast.error("Please provide a valid documented reason for fine waiver");
-      return;
-    }
-
+  const reconcileAll = async () => {
+    if (!window.confirm("Reconcile all active family contribution ledgers now?")) return;
+    const id = toast.loading("Reconciling family ledgers...");
     try {
-      setWaivingFine(true);
-      const res = await apiConnector(
-        "POST",
-        familyContributionEndpoints.WAIVE_FINE_API(selectedFamilyId),
-        {
-          year: waiveEntry.contributionYear,
-          month: waiveEntry.contributionMonth,
-          reason: waiveReason.trim(),
-        },
-        authConfig
-      );
-
-      if (res?.data?.success) {
-        toast.success("Late fine waived and audited successfully!");
-        setIsWaiveModalOpen(false);
-        handleOpenDetail(selectedFamilyId);
-        fetchAccounts(paginationMeta.page);
-      }
-    } catch (err) {
-      console.error("Error waiving fine:", err);
-      toast.error(err?.response?.data?.message || "Failed to waive late fine");
-    } finally {
-      setWaivingFine(false);
+      const res = await apiConnector("POST", familyContributionEndpoints.RECONCILE_ALL_API, null, authConfig);
+      toast.dismiss(id);
+      toast.success(res?.data?.message || "Family ledgers reconciled");
+      fetchAccounts(1);
+    } catch (error) {
+      toast.dismiss(id);
+      toast.error(error?.response?.data?.message || "Reconciliation failed");
     }
   };
 
-  // 5. Open Settings Modal
-  const handleOpenSettings = async () => {
-    setIsSettingsModalOpen(true);
+  const openReceipt = async (paymentId) => {
+    const id = toast.loading("Loading receipt...");
     try {
-      const res = await apiConnector(
-        "GET",
-        familyContributionEndpoints.GET_SETTINGS_API,
-        null,
-        authConfig
-      );
-      if (res?.data?.success) {
-        const cfg = res.data.data.activeConfig;
-        setRateSettings(res.data.data);
-        if (cfg) {
-          setSettingsForm({
-            amountRupees: cfg.amountRupees || cfg.amount || 60,
-            lateFineRupees: cfg.lateFineAmountRupees || 2,
-            dueDayEnd: cfg.dueDayEnd || 10,
-            lateFineEnabled: cfg.lateFineEnabled !== false,
-            effectiveFromYear: new Date().getFullYear(),
-            effectiveFromMonth: new Date().getMonth() + 1,
-            description: cfg.description || "",
-          });
-        }
-      }
-    } catch (err) {
-      console.error("Error fetching settings:", err);
-      toast.error("Failed to load contribution settings");
-    }
-  };
-
-  // Save Settings
-  const handleSaveSettings = async (e) => {
-    e.preventDefault();
-    try {
-      setSavingSettings(true);
-      const res = await apiConnector(
-        "POST",
-        familyContributionEndpoints.UPDATE_SETTINGS_API,
-        settingsForm,
-        authConfig
-      );
-
-      if (res?.data?.success) {
-        toast.success("Contribution rate configuration updated!");
-        setIsSettingsModalOpen(false);
-        fetchAccounts(paginationMeta.page);
-      }
-    } catch (err) {
-      console.error("Error updating settings:", err);
-      toast.error(err?.response?.data?.message || "Failed to update settings");
-    } finally {
-      setSavingSettings(false);
-    }
-  };
-
-  // 6. Single Family Reconcile
-  const handleReconcileSingle = async (familyId) => {
-    setReconcilingId(familyId);
-    try {
-      const res = await apiConnector(
-        "POST",
-        familyContributionEndpoints.RECONCILE_FAMILY_API(familyId),
-        null,
-        authConfig
-      );
-      if (res?.data?.success) {
-        toast.success("Family account ledger reconciled!");
-        fetchAccounts(paginationMeta.page);
-        if (selectedFamilyId === familyId) {
-          handleOpenDetail(familyId);
-        }
-      }
-    } catch (err) {
-      console.error("Reconciliation failed:", err);
-      toast.error("Reconciliation failed");
-    } finally {
-      setReconcilingId(null);
-    }
-  };
-
-  // 7. Bulk Reconcile All
-  const handleReconcileAll = async () => {
-    if (!window.confirm("Are you sure you want to reconcile all active family contribution ledgers? This will recompute all paid-through statuses.")) {
-      return;
-    }
-    setReconcilingAll(true);
-    try {
-      const res = await apiConnector(
-        "POST",
-        familyContributionEndpoints.RECONCILE_ALL_API,
-        null,
-        authConfig
-      );
-      if (res?.data?.success) {
-        toast.success(`Successfully reconciled ${res.data.data.reconciledCount} family accounts!`);
-        fetchAccounts(1);
-      }
-    } catch (err) {
-      console.error("Bulk reconcile failed:", err);
-      toast.error("Bulk reconcile failed");
-    } finally {
-      setReconcilingAll(false);
-    }
-  };
-
-  // View Receipt Modal
-  const handleViewReceipt = async (paymentId) => {
-    const toastId = toast.loading("Loading receipt...");
-    try {
-      const res = await apiConnector(
-        "GET",
-        familyContributionEndpoints.GET_RECEIPT_API(paymentId),
-        null,
-        authConfig
-      );
-      toast.dismiss(toastId);
+      const res = await apiConnector("GET", familyContributionEndpoints.GET_RECEIPT_API(paymentId), null, authConfig);
+      toast.dismiss(id);
       if (res?.data?.success) {
         setSelectedReceipt(res.data.data.receipt);
-        setIsReceiptModalOpen(true);
+        setIsReceiptOpen(true);
       }
-    } catch (err) {
-      toast.dismiss(toastId);
-      console.error("Receipt load failed:", err);
-      toast.error("Failed to load receipt");
+    } catch (error) {
+      toast.dismiss(id);
+      toast.error(error?.response?.data?.message || "Failed to load receipt");
     }
   };
 
+  const exportCsv = () => {
+    const headers = [
+      "Family", "Family Code", "Head", "Members", "Paid Through", "Next Due",
+      "Total Paid", "Outstanding", "Advance", "Status", "Last Payment Date", "Last Method",
+    ];
+    const rows = accounts.map((account) => [
+      account.family?.familyName,
+      account.family?.familyId || account.family?.familyCode,
+      account.currentHeadName,
+      (account.members || []).map((m) => `${m.name} (${m.relationship})`).join("; "),
+      account.paidThrough?.display,
+      account.paidThrough?.nextDueDisplay,
+      account.totalPaidRupees,
+      account.totalOutstandingRupees,
+      account.advanceCreditRupees,
+      account.statusLabel,
+      formatDate(account.lastPayment?.paymentDate),
+      account.lastPayment?.paymentMethod,
+    ]);
+    const csv = [headers, ...rows]
+      .map((row) => row.map((value) => `"${String(value ?? "").replaceAll('"', '""')}"`).join(","))
+      .join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `family_contribution_ledger_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const kpis = [
+    { label: "Total Families", value: metrics?.totalFamilies ?? metrics?.totalAccounts, tone: "border-l-cyan-400", hint: "Contribution accounts" },
+    { label: "Active Families", value: metrics?.activeFamilies, tone: "border-l-emerald-400", hint: "Verified active" },
+    { label: "Up-to-Date", value: metrics?.upToDateFamilies, tone: "border-l-green-400", hint: "No pending dues" },
+    { label: "Pending Dues", value: metrics?.pendingFamilies, tone: "border-l-amber-400", hint: "Balance due" },
+    { label: "Overdue", value: metrics?.overdueFamilies ?? metrics?.overdueCount, tone: "border-l-red-400", hint: "Needs follow-up" },
+    { label: "Total Collected", value: formatMoney(metrics?.totalCollectedRupees), tone: "border-l-emerald-400", hint: "Lifetime verified" },
+    { label: "Outstanding", value: formatMoney(metrics?.totalOutstandingRupees), tone: "border-l-orange-400", hint: "Principal + fines" },
+    { label: "Advance Credit", value: formatMoney(metrics?.totalAdvanceCreditRupees), tone: "border-l-cyan-400", hint: "Prepaid balance" },
+    { label: "This Month", value: formatMoney(metrics?.currentMonthCollectionRupees), tone: "border-l-sky-400", hint: `${metrics?.currentMonthPaymentCount || 0} payments` },
+    { label: "Collection %", value: `${metrics?.collectionPercentage ?? 0}%`, tone: "border-l-green-400", hint: "Paid vs payable" },
+  ];
+
   return (
-    <div className="w-full flex flex-col gap-6 text-[var(--text-primary)]">
-      {/* Top Controls & Actions */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-black text-[var(--text-primary)] tracking-tight">
-            Family Contribution <span className="text-gradient">Ledger</span>
-          </h2>
-          <p className="text-xs text-[var(--text-muted)] mt-0.5">
-            Automated family-level recurring contributions (₹60/month). Continuous paid-through tracking with zero gaps.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            type="button"
-            onClick={handleOpenSettings}
-            className="btn-secondary !py-2 !px-3.5 !text-xs flex items-center gap-1.5 cursor-pointer"
-          >
-            <FiSettings size={13} />
-            <span>Rate Settings</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleReconcileAll}
-            disabled={reconcilingAll}
-            className="btn-secondary !py-2 !px-3.5 !text-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-            title="Bulk recompute all family ledgers"
-          >
-            <FiRefreshCw size={13} className={reconcilingAll ? "animate-spin" : ""} />
-            <span>Reconcile All</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Summary KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-        <div className="ka-card p-4 border-l-4 border-l-emerald-500">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
-            Total Families
-          </span>
-          <div className="mt-1 text-2xl font-black text-[var(--text-primary)]">
-            {metrics?.totalAccounts || 0}
+    <div className="w-full space-y-6 text-[var(--text-primary)]">
+      <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-4 sm:p-5">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-300">
+              <FaRupeeSign />
+            </div>
+            <div>
+              <h2 className="text-xl font-black tracking-tight text-[var(--text-primary)]">Family Contribution Ledger</h2>
+              <p className="text-xs text-[var(--text-muted)]">
+                Family-level dues, paid-through tracking, member payer visibility, cash collections, receipts, and audit-ready summaries.
+              </p>
+            </div>
           </div>
-          <span className="text-[10px] text-[var(--text-muted)]">Active registered</span>
-        </div>
 
-        <div className="ka-card p-4 border-l-4 border-l-green-500">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
-            Up to Date
-          </span>
-          <div className="mt-1 text-2xl font-black text-green-400">
-            {metrics?.upToDate || 0}
-          </div>
-          <span className="text-[10px] text-green-500/80">No pending dues</span>
-        </div>
-
-        <div className="ka-card p-4 border-l-4 border-l-red-500">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
-            Overdue
-          </span>
-          <div className="mt-1 text-2xl font-black text-red-400">
-            {metrics?.overdue || 0}
-          </div>
-          <span className="text-[10px] text-red-500/80">Action required</span>
-        </div>
-
-        <div className="ka-card p-4 border-l-4 border-l-amber-500">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
-            Total Outstanding
-          </span>
-          <div className="mt-1 text-2xl font-black text-amber-400">
-            ₹{metrics?.totalOutstandingRupees || 0}
-          </div>
-          <span className="text-[10px] text-[var(--text-muted)]">Principal + Fines</span>
-        </div>
-
-        <div className="ka-card p-4 border-l-4 border-l-purple-500 col-span-2 sm:col-span-1">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
-            Advance Credits
-          </span>
-          <div className="mt-1 text-2xl font-black text-purple-400">
-            ₹{metrics?.totalAdvanceCreditRupees || 0}
-          </div>
-          <span className="text-[10px] text-[var(--text-muted)]">Pre-paid balance</span>
-        </div>
-      </div>
-
-      {/* Search & Status Tabs */}
-      <div className="ka-card p-4 flex flex-col sm:flex-row justify-between items-center gap-3">
-        {/* Status Filter Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
-          {[
-            { key: "ALL", label: "All" },
-            { key: "UP_TO_DATE", label: "Up to Date" },
-            { key: "OVERDUE", label: "Overdue" },
-            { key: "IN_ADVANCE", label: "In Advance" },
-          ].map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setStatusFilter(tab.key)}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition cursor-pointer whitespace-nowrap ${
-                statusFilter === tab.key
-                  ? "bg-[var(--accent-primary)] text-slate-950 shadow-sm"
-                  : "border border-[var(--border-subtle)] bg-[var(--surface)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-              }`}
-            >
-              {tab.label}
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={() => openCash(accounts[0] || null)} className="btn-primary !flex !items-center !gap-1.5 !px-4 !py-2 !text-xs">
+              <FaMoneyBillWave size={13} />
+              <span>Record Cash</span>
             </button>
-          ))}
-        </div>
-
-        {/* Search Input */}
-        <div className="relative w-full sm:w-72">
-          <FiSearch className="absolute left-3.5 top-3 text-[var(--text-muted)]" size={14} />
-          <input
-            type="text"
-            placeholder="Search Family Code or Head..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full h-9 pl-9 pr-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none focus:border-[var(--accent-primary)]"
-          />
+            <button type="button" onClick={reconcileAll} className="btn-secondary !flex !items-center !gap-1.5 !px-3.5 !py-2 !text-xs">
+              <FiRefreshCw size={13} />
+              <span>Reconcile</span>
+            </button>
+            <button type="button" onClick={exportCsv} className="btn-secondary !flex !items-center !gap-1.5 !px-3.5 !py-2 !text-xs">
+              <FiDownload size={13} />
+              <span>Export CSV</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Main Family Accounts Table */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+        {kpis.map((item) => (
+          <div key={item.label} className={`ka-card border-l-4 ${item.tone} p-4`}>
+            <span className="block text-[10px] font-black uppercase tracking-wider text-[var(--text-muted)]">{item.label}</span>
+            <strong className="mt-1 block text-xl font-black text-[var(--text-primary)] sm:text-2xl">{item.value ?? 0}</strong>
+            <span className="text-[10px] text-[var(--text-muted)]">{item.hint}</span>
+          </div>
+        ))}
+      </div>
+
+      <div className="ka-card space-y-4 p-4">
+        <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[var(--text-muted)]">
+          <FiFilter size={13} />
+          <span>Search & Filters</span>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-7">
+          <div className="relative xl:col-span-2">
+            <FiSearch className="absolute left-3 top-3 text-[var(--text-muted)]" size={14} />
+            <input
+              value={filters.search}
+              onChange={(e) => setFilters((cur) => ({ ...cur, search: e.target.value }))}
+              onKeyDown={(e) => e.key === "Enter" && fetchAccounts(1)}
+              placeholder="Family, head, member, code, receipt, transaction"
+              className="ka-input !h-10 !pl-9 !text-xs"
+            />
+          </div>
+          <select value={filters.status} onChange={(e) => setFilters((cur) => ({ ...cur, status: e.target.value }))} className="ka-input !h-10 !text-xs">
+            <option value="ALL">All Status</option>
+            <option value="UP_TO_DATE">Paid / Up-to-date</option>
+            <option value="PENDING">Due / Pending</option>
+            <option value="OVERDUE">Overdue</option>
+            <option value="ADVANCE">Advance</option>
+          </select>
+          <select value={filters.method} onChange={(e) => setFilters((cur) => ({ ...cur, method: e.target.value }))} className="ka-input !h-10 !text-xs">
+            <option value="ALL">All Methods</option>
+            <option value="CASH">Cash</option>
+            <option value="ONLINE">Online</option>
+            <option value="UPI">UPI</option>
+            <option value="BANK_TRANSFER">Bank Transfer</option>
+            <option value="CHEQUE">Cheque</option>
+          </select>
+          <select value={filters.month} onChange={(e) => setFilters((cur) => ({ ...cur, month: e.target.value }))} className="ka-input !h-10 !text-xs">
+            <option value="">Any Month</option>
+            {MONTH_NAMES.map((name, index) => <option key={name} value={index + 1}>{name}</option>)}
+          </select>
+          <input type="number" value={filters.year} onChange={(e) => setFilters((cur) => ({ ...cur, year: e.target.value }))} placeholder="Year" className="ka-input !h-10 !text-xs" />
+          <button type="button" onClick={() => fetchAccounts(1)} className="btn-primary !h-10 !text-xs">Apply</button>
+        </div>
+        <div className="grid gap-3 md:grid-cols-3">
+          <input type="date" value={filters.fromDate} onChange={(e) => setFilters((cur) => ({ ...cur, fromDate: e.target.value }))} className="ka-input !h-10 !text-xs" />
+          <input type="date" value={filters.toDate} onChange={(e) => setFilters((cur) => ({ ...cur, toDate: e.target.value }))} className="ka-input !h-10 !text-xs" />
+          <button
+            type="button"
+            onClick={() => setFilters({ search: "", status: "ALL", method: "ALL", month: "", year: "", fromDate: "", toDate: "" })}
+            className="btn-secondary !h-10 !text-xs"
+          >
+            Clear Filters
+          </button>
+        </div>
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-3">
+        <div className="ka-card p-4 xl:col-span-2">
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-black text-[var(--text-primary)]">
+            <FiFileText className="text-emerald-300" />
+            Monthly Collection Report
+          </h3>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            {(metrics?.monthlyReport || []).slice(0, 8).map((item) => (
+              <div key={`${item.year}-${item.month}`} className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] p-3">
+                <span className="text-[10px] font-bold uppercase text-[var(--text-muted)]">{item.label}</span>
+                <strong className="mt-1 block text-sm text-emerald-300">{formatMoney(item.amountRupees)}</strong>
+                <span className="text-[10px] text-[var(--text-muted)]">{item.count} payment(s)</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="ka-card p-4">
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-black text-[var(--text-primary)]">
+            <FaMoneyBillWave className="text-cyan-300" />
+            Cash vs Online
+          </h3>
+          <div className="space-y-2">
+            {(metrics?.methodBreakdown || []).map((item) => (
+              <div key={item.method} className="flex items-center justify-between rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] px-3 py-2 text-xs">
+                <span className="font-bold uppercase text-[var(--text-secondary)]">{item.method}</span>
+                <span className="font-black text-[var(--text-primary)]">{formatMoney(item.amountRupees)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
       <div className="ka-card overflow-hidden border border-[var(--border-subtle)]">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-[var(--text-secondary)]">
-            <thead className="bg-[var(--surface-elevated)] text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] border-b border-[var(--border-subtle)]">
-              <tr>
-                <th className="py-3 px-4">Family / Head</th>
-                <th className="py-3 px-3">Village / City</th>
-                <th className="py-3 px-3">Paid Through</th>
-                <th className="py-3 px-3">Next Due</th>
-                <th className="py-3 px-3">Outstanding</th>
-                <th className="py-3 px-3">Advance Credit</th>
-                <th className="py-3 px-3">Status</th>
-                <th className="py-3 px-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--border-subtle)]">
-              {loading ? (
+        {loading ? (
+          <div className="flex items-center justify-center gap-2 p-10 text-xs text-[var(--text-muted)]">
+            <FiRefreshCw className="animate-spin" />
+            <span>Loading family contribution ledger...</span>
+          </div>
+        ) : accounts.length === 0 ? (
+          <div className="p-10 text-center">
+            <FiAlertCircle className="mx-auto mb-2 text-2xl text-amber-300" />
+            <p className="font-bold text-[var(--text-primary)]">No family records found</p>
+            <p className="text-xs text-[var(--text-muted)]">Try clearing filters or reconcile active families.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[1180px] text-left text-xs">
+              <thead className="border-b border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[10px] font-black uppercase tracking-wider text-[var(--text-muted)]">
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-xs text-[var(--text-muted)]">
-                    <FiRefreshCw className="animate-spin inline-block mr-2" />
-                    Loading family contribution records...
-                  </td>
+                  <th className="px-4 py-3">Family / Head / Members</th>
+                  <th className="px-3 py-3">Monthly</th>
+                  <th className="px-3 py-3">Paid Through</th>
+                  <th className="px-3 py-3">Next Due</th>
+                  <th className="px-3 py-3">Paid</th>
+                  <th className="px-3 py-3">Outstanding</th>
+                  <th className="px-3 py-3">Advance</th>
+                  <th className="px-3 py-3">Last Payment</th>
+                  <th className="px-3 py-3">Status</th>
+                  <th className="px-4 py-3 text-right">Actions</th>
                 </tr>
-              ) : accounts.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="py-12 text-center text-xs text-[var(--text-muted)]">
-                    No family accounts matched your filters.
-                  </td>
-                </tr>
-              ) : (
-                accounts.map((acc) => {
-                  const isUpToDate = acc.statusCategory === "UP_TO_DATE";
-                  const isOverdue = acc.statusCategory === "OVERDUE";
-                  const isInAdvance = acc.statusCategory === "IN_ADVANCE";
-
-                  let badgeColor = "border-emerald-500/30 bg-emerald-500/10 text-emerald-400";
-                  if (isOverdue) badgeColor = "border-red-500/30 bg-red-500/10 text-red-400";
-                  else if (isInAdvance) badgeColor = "border-purple-500/30 bg-purple-500/10 text-purple-400";
-
-                  return (
-                    <tr key={acc._id} className="hover:bg-[var(--surface)]/60 transition">
-                      <td className="py-3.5 px-4">
-                        <div className="font-bold text-[var(--text-primary)]">
-                          {acc.family?.familyName || "Samaj Family"}
-                        </div>
-                        <div className="text-[11px] text-[var(--text-muted)] flex items-center gap-1.5 font-mono">
-                          <span>{acc.family?.familyId || acc.family?.familyCode || "CODE-N/A"}</span>
-                          <span>•</span>
-                          <span className="text-[var(--text-secondary)] font-sans">
-                            {acc.currentHead ? `${acc.currentHead.firstName} ${acc.currentHead.lastName || ""}` : "No Head Assigned"}
+              </thead>
+              <tbody className="divide-y divide-[var(--border-subtle)]">
+                {accounts.map((account) => (
+                  <tr key={account._id} className="bg-[var(--surface)]/50 align-top transition hover:bg-[var(--surface-elevated)]">
+                    <td className="px-4 py-4">
+                      <div className="font-black text-[var(--text-primary)]">{account.family?.familyName || "Family"}</div>
+                      <div className="mt-0.5 font-mono text-[10px] text-emerald-300">{account.family?.familyId || account.family?.familyCode || account.familyCode}</div>
+                      <div className="mt-2 text-[11px] text-[var(--text-muted)]">
+                        Head: <span className="font-bold text-[var(--text-secondary)]">{account.currentHeadName || "Not assigned"}</span>
+                      </div>
+                      <div className="mt-2 flex max-w-lg flex-wrap gap-1">
+                        {(account.members || []).slice(0, 4).map((member) => (
+                          <span key={member._id} className="rounded-full border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-2 py-0.5 text-[10px] text-[var(--text-secondary)]">
+                            {member.name} · {member.relationship}
                           </span>
+                        ))}
+                        {(account.members || []).length > 4 && (
+                          <span className="rounded-full border border-[var(--border-subtle)] px-2 py-0.5 text-[10px] text-[var(--text-muted)]">+{account.members.length - 4}</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-3 py-4 font-black text-[var(--text-primary)]">{formatMoney(account.monthlyContributionRupees || 60)}</td>
+                    <td className="px-3 py-4 text-[var(--text-secondary)]">{account.paidThrough?.display || "None"}</td>
+                    <td className="px-3 py-4 font-bold text-amber-300">{account.paidThrough?.nextDueDisplay || "—"}</td>
+                    <td className="px-3 py-4 font-black text-emerald-300">{formatMoney(account.totalPaidRupees)}</td>
+                    <td className="px-3 py-4 font-black text-amber-300">{formatMoney(account.totalOutstandingRupees)}</td>
+                    <td className="px-3 py-4 font-black text-cyan-300">{formatMoney(account.advanceCreditRupees)}</td>
+                    <td className="px-3 py-4">
+                      {account.lastPayment ? (
+                        <div className="space-y-0.5">
+                          <div className="font-bold text-[var(--text-primary)]">{formatMoney(account.lastPayment.amountRupees)}</div>
+                          <div className="text-[10px] text-[var(--text-muted)]">{formatDate(account.lastPayment.paymentDate)}</div>
+                          <div className="text-[10px] uppercase text-[var(--text-secondary)]">{account.lastPayment.paymentMethod} · {account.lastPayment.payerName}</div>
                         </div>
-                      </td>
-
-                      <td className="py-3.5 px-3 text-xs">
-                        {acc.family?.village || acc.family?.city || "—"}
-                      </td>
-
-                      <td className="py-3.5 px-3">
-                        <span className="font-bold text-emerald-400">
-                          {acc.paidThrough?.paidThroughDisplay || "None"}
-                        </span>
-                      </td>
-
-                      <td className="py-3.5 px-3">
-                        <span className={`font-semibold ${isOverdue ? "text-red-400" : "text-sky-300"}`}>
-                          {acc.paidThrough
-                            ? `${MONTH_NAMES[acc.paidThrough.nextDueMonth - 1]?.slice(0, 3)} ${acc.paidThrough.nextDueYear}`
-                            : "—"}
-                        </span>
-                      </td>
-
-                      <td className="py-3.5 px-3 font-bold text-red-400">
-                        ₹{acc.totalOutstandingRupees || 0}
-                      </td>
-
-                      <td className="py-3.5 px-3 font-bold text-purple-400">
-                        ₹{acc.advanceCreditRupees || 0}
-                      </td>
-
-                      <td className="py-3.5 px-3">
-                        <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${badgeColor}`}>
-                          {acc.statusCategory ? acc.statusCategory.replace("_", " ") : "ACTIVE"}
-                        </span>
-                      </td>
-
-                      <td className="py-3.5 px-4 text-right">
-                        <div className="inline-flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => handleOpenDetail(acc.family?._id)}
-                            className="btn-secondary !py-1 !px-2.5 !text-[11px] flex items-center gap-1 cursor-pointer"
-                            title="View Month Ledger"
-                          >
-                            <FiEye size={12} />
-                            <span>Ledger</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => handleOpenCashModal(acc)}
-                            className="btn-primary !py-1 !px-2.5 !text-[11px] flex items-center gap-1 cursor-pointer bg-emerald-600 hover:bg-emerald-500"
-                            title="Record Cash Payment"
-                          >
-                            <FaRupeeSign size={10} />
-                            <span>Cash</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => handleReconcileSingle(acc.family?._id)}
-                            disabled={reconcilingId === acc.family?._id}
-                            className="p-1.5 rounded-lg border border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface)] transition cursor-pointer disabled:opacity-50"
-                            title="Recalculate Paid-Through"
-                          >
-                            <FiRefreshCw size={12} className={reconcilingId === acc.family?._id ? "animate-spin" : ""} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+                      ) : "—"}
+                    </td>
+                    <td className="px-3 py-4"><span className={badgeClass(account.statusLabel)}>{compactStatus(account.statusLabel)}</span></td>
+                    <td className="px-4 py-4">
+                      <div className="flex justify-end gap-2">
+                        <button type="button" onClick={() => openDetail(account.family?._id)} className="btn-secondary !flex !items-center !gap-1 !px-2.5 !py-1.5 !text-[11px]">
+                          <FiEye size={12} />
+                          <span>Ledger</span>
+                        </button>
+                        <button type="button" onClick={() => openCash(account)} className="btn-primary !px-2.5 !py-1.5 !text-[11px]">Cash</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <div className="flex items-center justify-between border-t border-[var(--border-subtle)] p-3 text-xs text-[var(--text-muted)]">
+          <span>Page {pagination.page} of {pagination.pages || 1} · {pagination.total || accounts.length} families</span>
+          <div className="flex gap-2">
+            <button disabled={pagination.page <= 1} onClick={() => fetchAccounts(pagination.page - 1)} className="btn-secondary !px-3 !py-1.5 !text-xs disabled:opacity-40">Previous</button>
+            <button disabled={pagination.page >= pagination.pages} onClick={() => fetchAccounts(pagination.page + 1)} className="btn-secondary !px-3 !py-1.5 !text-xs disabled:opacity-40">Next</button>
+          </div>
         </div>
       </div>
 
-      {/* ══════════════════════════════════════════════════════════════
-          MODAL 1: FAMILY DETAILED LEDGER
-      ══════════════════════════════════════════════════════════════ */}
-      {isDetailModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-3 sm:p-6 overflow-y-auto">
-          <div className="relative w-full max-w-4xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)] rounded-2xl shadow-2xl overflow-hidden my-6 max-h-[90vh] flex flex-col">
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-subtle)] bg-[var(--surface)]">
+      {isDetailOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/75 p-3 backdrop-blur-sm">
+          <div className="my-6 flex max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] shadow-2xl">
+            <div className="flex items-start justify-between gap-4 border-b border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-4">
               <div>
-                <h3 className="text-base font-black text-[var(--text-primary)]">
-                  {detailData?.family?.familyName || "Family"} Contribution Ledger
-                </h3>
+                <h3 className="text-lg font-black text-[var(--text-primary)]">Detailed Family Ledger</h3>
                 <p className="text-xs text-[var(--text-muted)]">
-                  Code: {detailData?.family?.familyId || detailData?.family?.familyCode} • Head: {detailData?.family?.head?.firstName || "Unassigned"}
+                  {detailData?.family?.familyName || "Family"} · {detailData?.family?.familyCode || detailData?.family?.familyId || ""}
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => setIsDetailModalOpen(false)}
-                className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] transition cursor-pointer"
-              >
+              <button type="button" onClick={() => setIsDetailOpen(false)} className="rounded-lg p-1.5 text-[var(--text-muted)] hover:bg-[var(--surface)] hover:text-[var(--text-primary)]">
                 <FiX size={18} />
               </button>
             </div>
 
-            {/* Modal Body */}
-            <div className="p-6 overflow-y-auto space-y-6 flex-1">
-              {loadingDetail ? (
-                <div className="py-12 text-center text-xs text-[var(--text-muted)]">
-                  <FiRefreshCw className="animate-spin inline-block mr-2" />
-                  Loading detailed history...
-                </div>
-              ) : (
-                <>
-                  {/* Status Strip */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-[var(--surface)] p-3.5 rounded-xl border border-[var(--border-subtle)] text-xs">
-                    <div>
-                      <span className="text-[10px] text-[var(--text-muted)] uppercase font-bold block">Paid Through:</span>
-                      <span className="text-sm font-black text-emerald-400">{detailData?.paidThrough?.paidThroughDisplay || "None"}</span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-[var(--text-muted)] uppercase font-bold block">Next Due:</span>
-                      <span className="text-sm font-black text-sky-400">
-                        {detailData?.paidThrough
-                          ? `${MONTH_NAMES[detailData.paidThrough.nextDueMonth - 1]?.slice(0, 3)} ${detailData.paidThrough.nextDueYear}`
-                          : "—"}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-[var(--text-muted)] uppercase font-bold block">Outstanding:</span>
-                      <span className="text-sm font-black text-red-400">₹{detailData?.account?.outstandingTotalRupees || 0}</span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-[var(--text-muted)] uppercase font-bold block">Advance Credit:</span>
-                      <span className="text-sm font-black text-purple-400">₹{detailData?.account?.advanceCreditRupees || 0}</span>
+            {detailLoading ? (
+              <div className="flex items-center justify-center gap-2 p-12 text-xs text-[var(--text-muted)]">
+                <FiRefreshCw className="animate-spin" />
+                <span>Loading complete ledger...</span>
+              </div>
+            ) : detailData && (
+              <div className="space-y-5 overflow-y-auto p-4">
+                <div className="grid gap-3 lg:grid-cols-4">
+                  <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-4 lg:col-span-2">
+                    <div className="text-[10px] font-black uppercase tracking-wider text-[var(--text-muted)]">Family Members</div>
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                      {(detailData.members || []).map((member) => (
+                        <div key={member._id} className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface)] p-3 text-xs">
+                          <div className="font-black text-[var(--text-primary)]">{member.name}</div>
+                          <div className="mt-0.5 text-[10px] uppercase text-[var(--text-muted)]">{member.relationship} · {member.memberId || "No ID"}</div>
+                        </div>
+                      ))}
                     </div>
                   </div>
+                  <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-4">
+                    <span className="text-[10px] font-black uppercase text-[var(--text-muted)]">Paid Through</span>
+                    <strong className="mt-2 block text-xl text-emerald-300">{ymLabel(detailData.reconciliation?.paidThroughYear, detailData.reconciliation?.paidThroughMonth)}</strong>
+                    <span className="text-[10px] text-[var(--text-muted)]">Next due: {ymLabel(detailData.reconciliation?.nextDueYear, detailData.reconciliation?.nextDueMonth)}</span>
+                  </div>
+                  <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-4">
+                    <span className="text-[10px] font-black uppercase text-[var(--text-muted)]">Balance</span>
+                    <strong className="mt-2 block text-xl text-amber-300">{formatMoney(detailData.reconciliation?.totalOutstandingRupees)}</strong>
+                    <span className="text-[10px] text-cyan-300">Advance: {formatMoney(detailData.reconciliation?.advanceCreditRupees)}</span>
+                  </div>
+                </div>
 
-                  {/* Monthly Ledger Timeline */}
-                  <div>
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-3">
-                      Monthly Obligation Records ({detailData?.timeline?.length || 0})
-                    </h4>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left text-xs">
-                        <thead className="bg-[var(--surface)] text-[10px] uppercase font-bold text-[var(--text-muted)] border-b border-[var(--border-subtle)]">
-                          <tr>
-                            <th className="py-2.5 px-3">Month</th>
-                            <th className="py-2.5 px-3">Principal</th>
-                            <th className="py-2.5 px-3">Fine</th>
-                            <th className="py-2.5 px-3">Total Payable</th>
-                            <th className="py-2.5 px-3">Allocated</th>
-                            <th className="py-2.5 px-3">Remaining</th>
-                            <th className="py-2.5 px-3">Status</th>
-                            <th className="py-2.5 px-3 text-right">Action</th>
+                <div className="overflow-x-auto rounded-xl border border-[var(--border-subtle)]">
+                  <table className="w-full min-w-[1040px] text-left text-xs">
+                    <thead className="bg-[var(--surface-elevated)] text-[10px] font-black uppercase tracking-wider text-[var(--text-muted)]">
+                      <tr>
+                        <th className="px-3 py-3">Month</th>
+                        <th className="px-3 py-3">Amount Due</th>
+                        <th className="px-3 py-3">Amount Paid</th>
+                        <th className="px-3 py-3">Payment Date</th>
+                        <th className="px-3 py-3">Method</th>
+                        <th className="px-3 py-3">Receipt / Txn</th>
+                        <th className="px-3 py-3">Paid By</th>
+                        <th className="px-3 py-3">Adjustment</th>
+                        <th className="px-3 py-3">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[var(--border-subtle)]">
+                      {(detailData.timeline || detailData.ledgerEntries || []).map((entry) => {
+                        const firstPayment = entry.payments?.[0];
+                        return (
+                          <tr key={entry._id} className="align-top hover:bg-[var(--surface-elevated)]/60">
+                            <td className="px-3 py-3 font-black text-[var(--text-primary)]">{ymLabel(entry.contributionYear, entry.contributionMonth)}</td>
+                            <td className="px-3 py-3">{formatMoney(entry.amountDueRupees ?? entry.totalPayableRupees)}</td>
+                            <td className="px-3 py-3 font-black text-emerald-300">{formatMoney(entry.amountPaidRupees ?? entry.allocatedRupees)}</td>
+                            <td className="px-3 py-3 text-[var(--text-muted)]">{formatDate(firstPayment?.paymentDate, true)}</td>
+                            <td className="px-3 py-3 uppercase">{firstPayment?.paymentMethod || "—"}</td>
+                            <td className="px-3 py-3">
+                              {firstPayment?._id ? (
+                                <button type="button" onClick={() => openReceipt(firstPayment._id)} className="font-mono text-[10px] font-bold text-emerald-300 hover:underline">
+                                  {firstPayment.receiptNumber || firstPayment.transactionId || "View Receipt"}
+                                </button>
+                              ) : "—"}
+                            </td>
+                            <td className="px-3 py-3">{firstPayment?.paidBy?.name || "—"}</td>
+                            <td className="px-3 py-3">{entry.adjustmentRupees ? `Waived ${formatMoney(entry.adjustmentRupees)}` : "—"}</td>
+                            <td className="px-3 py-3"><span className={badgeClass(entry.status)}>{compactStatus(entry.status)}</span></td>
                           </tr>
-                        </thead>
-                        <tbody className="divide-y divide-[var(--border-subtle)]">
-                          {detailData?.timeline?.map((item) => (
-                            <tr key={item._id} className="hover:bg-[var(--surface)]/40 transition">
-                              <td className="py-2.5 px-3 font-bold text-[var(--text-primary)]">
-                                {MONTH_NAMES[item.contributionMonth - 1]} {item.contributionYear}
-                              </td>
-                              <td className="py-2.5 px-3">₹{item.contributionAmountRupees}</td>
-                              <td className="py-2.5 px-3 text-red-400">
-                                {item.lateFineAmountRupees > 0 ? `+ ₹${item.lateFineAmountRupees}` : "—"}
-                                {item.waivedFineRupees > 0 && (
-                                  <span className="text-[10px] text-emerald-400 block font-normal">(Waived ₹{item.waivedFineRupees})</span>
-                                )}
-                              </td>
-                              <td className="py-2.5 px-3 font-semibold text-[var(--text-primary)]">₹{item.totalPayableRupees}</td>
-                              <td className="py-2.5 px-3 font-semibold text-emerald-400">₹{item.allocatedRupees}</td>
-                              <td className="py-2.5 px-3 font-black text-amber-400">₹{item.remainingRupees}</td>
-                              <td className="py-2.5 px-3">
-                                <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-md border ${
-                                  item.status === "PAID" || item.status === "PAID_AHEAD"
-                                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-                                    : item.status === "OVERDUE"
-                                    ? "border-red-500/30 bg-red-500/10 text-red-300"
-                                    : "border-amber-500/30 bg-amber-500/10 text-amber-300"
-                                }`}>
-                                  {item.status}
-                                </span>
-                              </td>
-                              <td className="py-2.5 px-3 text-right">
-                                {item.lateFineAmountRupees > 0 && item.waivedFineRupees === 0 && (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleOpenWaiveModal(item)}
-                                    className="px-2 py-1 rounded bg-amber-500/10 text-amber-300 border border-amber-500/30 hover:bg-amber-500/20 text-[10px] font-bold uppercase cursor-pointer"
-                                  >
-                                    Waive Fine
-                                  </button>
-                                )}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
 
-                  {/* Payment History */}
-                  {detailData?.payments && detailData.payments.length > 0 && (
-                    <div className="pt-3 border-t border-[var(--border-subtle)]">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-3">
-                        Payment Receipts ({detailData.payments.length})
-                      </h4>
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-left text-xs">
-                          <thead className="bg-[var(--surface)] text-[10px] uppercase font-bold text-[var(--text-muted)] border-b border-[var(--border-subtle)]">
-                            <tr>
-                              <th className="py-2 px-3">Receipt No</th>
-                              <th className="py-2 px-3">Date</th>
-                              <th className="py-2 px-3">Amount</th>
-                              <th className="py-2 px-3">Method</th>
-                              <th className="py-2 px-3">Status</th>
-                              <th className="py-2 px-3 text-right">Receipt</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-[var(--border-subtle)]">
-                            {detailData.payments.map((p) => (
-                              <tr key={p._id}>
-                                <td className="py-2.5 px-3 font-mono font-bold text-[var(--text-primary)]">{p.receiptNumber}</td>
-                                <td className="py-2.5 px-3">{p.receiptDate ? new Date(p.receiptDate).toLocaleDateString("en-IN") : "—"}</td>
-                                <td className="py-2.5 px-3 font-bold text-emerald-400">₹{p.amountRupees}</td>
-                                <td className="py-2.5 px-3 text-[10px] uppercase font-bold">{p.paymentMethod}</td>
-                                <td className="py-2.5 px-3 text-emerald-400 font-bold">{p.status}</td>
-                                <td className="py-2.5 px-3 text-right">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleViewReceipt(p._id)}
-                                    className="btn-secondary !py-0.5 !px-2 !text-[10px]"
-                                  >
-                                    View
-                                  </button>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
+                <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-4">
+                  <h4 className="mb-3 flex items-center gap-2 text-sm font-black"><FaReceipt className="text-emerald-300" /> Online & Cash Payments</h4>
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[860px] text-left text-xs">
+                      <thead className="text-[10px] uppercase text-[var(--text-muted)]">
+                        <tr>
+                          <th className="py-2">Receipt</th>
+                          <th className="py-2">Payer</th>
+                          <th className="py-2">Amount</th>
+                          <th className="py-2">Date / Time</th>
+                          <th className="py-2">Method</th>
+                          <th className="py-2">Transaction / Reference</th>
+                          <th className="py-2">Collector</th>
+                          <th className="py-2 text-right">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[var(--border-subtle)]">
+                        {(detailData.payments || []).map((payment) => (
+                          <tr key={payment._id}>
+                            <td className="py-2 font-mono font-bold">{payment.receiptNumber || "—"}</td>
+                            <td className="py-2">{payment.payerName || memberName(payment.payer)}</td>
+                            <td className="py-2 font-black text-emerald-300">{formatMoney(payment.amountRupees)}</td>
+                            <td className="py-2">{formatDate(payment.paymentDate, true)}</td>
+                            <td className="py-2 uppercase">{payment.paymentMethod}</td>
+                            <td className="py-2 font-mono text-[10px]">{payment.transactionId || "—"}</td>
+                            <td className="py-2">{payment.collectorName || "—"}</td>
+                            <td className="py-2 text-right">
+                              {payment.status === "SUCCESS" && (
+                                <button type="button" onClick={() => openReceipt(payment._id)} className="btn-secondary !px-2.5 !py-1 !text-[10px]">View Receipt</button>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      {/* ══════════════════════════════════════════════════════════════
-          MODAL 2: RECORD OFFLINE CASH PAYMENT
-      ══════════════════════════════════════════════════════════════ */}
-      {isCashModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="relative w-full max-w-lg bg-[var(--surface-elevated)] border border-[var(--border-subtle)] rounded-2xl shadow-2xl overflow-hidden my-6">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-subtle)] bg-[var(--surface)]">
+      {isCashOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/75 p-3 backdrop-blur-sm">
+          <div className="my-6 w-full max-w-3xl overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] shadow-2xl">
+            <div className="flex items-start justify-between border-b border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-4">
               <div>
-                <h3 className="text-base font-black text-[var(--text-primary)]">
-                  Record Offline Cash Payment
-                </h3>
-                <p className="text-xs text-[var(--text-muted)]">
-                  Family: {cashFamily?.family?.familyName} ({cashFamily?.family?.familyId})
-                </p>
+                <h3 className="text-lg font-black text-[var(--text-primary)]">Record Cash Contribution</h3>
+                <p className="text-xs text-[var(--text-muted)]">Authoritative month coverage and balances are calculated by the backend.</p>
               </div>
-              <button
-                type="button"
-                onClick={() => setIsCashModalOpen(false)}
-                className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] transition cursor-pointer"
-              >
+              <button type="button" onClick={() => setIsCashOpen(false)} className="rounded-lg p-1.5 text-[var(--text-muted)] hover:bg-[var(--surface)] hover:text-[var(--text-primary)]">
                 <FiX size={18} />
               </button>
             </div>
 
-            <form onSubmit={handleSubmitCash} className="p-6 space-y-4">
-              {/* Target Month Selector */}
-              <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] block mb-1">
-                  Pay Until (Target Month):
-                </label>
-                <input
-                  type="month"
-                  value={cashTarget}
-                  onChange={(e) => setCashTarget(e.target.value)}
-                  className="w-full h-10 px-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] text-xs text-[var(--text-primary)] outline-none focus:border-[var(--accent-primary)]"
-                  required
-                />
-              </div>
+            <form onSubmit={submitCash} className="grid gap-4 p-4 md:grid-cols-2">
+              <Field label="Family">
+                <select value={cashFamilyId} onChange={(e) => setCashFamilyId(e.target.value)} className="ka-input !h-10 !text-xs" required>
+                  <option value="">Select family</option>
+                  {accounts.map((account) => (
+                    <option key={account._id} value={account.family?._id}>
+                      {account.family?.familyName} ({account.family?.familyId || account.family?.familyCode})
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Paying Family Member">
+                <select value={cashForm.payerId} onChange={(e) => setCashForm((cur) => ({ ...cur, payerId: e.target.value }))} className="ka-input !h-10 !text-xs" required>
+                  <option value="">Select payer</option>
+                  {(selectedCashFamily?.members || []).map((member) => (
+                    <option key={member._id} value={member._id}>{member.name} - {member.relationship}</option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Pay Until Month">
+                <input type="month" value={cashForm.targetMonth} onChange={(e) => setCashForm((cur) => ({ ...cur, targetMonth: e.target.value }))} className="ka-input !h-10 !text-xs" required />
+              </Field>
+              <Field label="Amount Collected">
+                <input type="number" min="1" value={cashForm.amountRupees} onChange={(e) => setCashForm((cur) => ({ ...cur, amountRupees: e.target.value }))} className="ka-input !h-10 !text-xs !font-black" required />
+              </Field>
 
-              {/* Live Quote Breakdown */}
               {cashQuote && (
-                <div className="p-3.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] text-xs space-y-1">
-                  <div className="flex justify-between text-[var(--text-muted)]">
-                    <span>Months Covered:</span>
-                    <span className="font-bold text-[var(--text-primary)]">{cashQuote.monthCount} month(s)</span>
+                <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3 text-xs md:col-span-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <FiShield className="text-emerald-300" />
+                    <strong className="text-emerald-300">Backend Quote:</strong>
+                    <span>{cashQuote.monthCount || 0} month(s)</span>
+                    <span>· Principal {formatMoney(cashQuote.totalPrincipalRupees)}</span>
+                    <span>· Fine {formatMoney(cashQuote.totalLateFineRupees)}</span>
+                    <span>· Credit {formatMoney(cashQuote.availableCreditRupees)}</span>
+                    <span>· Net {formatMoney(cashQuote.netPayableRupees)}</span>
                   </div>
-                  <div className="flex justify-between text-[var(--text-muted)]">
-                    <span>Principal Total:</span>
-                    <span className="font-bold text-[var(--text-primary)]">₹{cashQuote.totalPrincipalRupees}</span>
-                  </div>
-                  {cashQuote.totalLateFineRupees > 0 && (
-                    <div className="flex justify-between text-red-400">
-                      <span>Late Fines:</span>
-                      <span className="font-bold">+ ₹{cashQuote.totalLateFineRupees}</span>
+                  {cashQuote.monthBreakdown?.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {cashQuote.monthBreakdown.map((month) => (
+                        <span key={month.ledgerId || `${month.year}-${month.month}`} className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface)] px-2 py-1 text-[10px]">
+                          {month.monthName} {month.year}: {formatMoney(month.totalRupees)}
+                        </span>
+                      ))}
                     </div>
                   )}
-                  {cashQuote.availableCreditRupees > 0 && (
-                    <div className="flex justify-between text-purple-400 font-semibold">
-                      <span>Available Credit Offset:</span>
-                      <span>- ₹{cashQuote.availableCreditRupees}</span>
-                    </div>
-                  )}
-                  <div className="pt-2 border-t border-[var(--border-subtle)] flex justify-between items-baseline">
-                    <span className="font-bold uppercase text-[var(--text-primary)]">Calculated Net Due:</span>
-                    <span className="text-base font-black text-emerald-400">₹{cashQuote.netPayableRupees}</span>
-                  </div>
                 </div>
               )}
 
-              {/* Amount Collected */}
-              <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] block mb-1">
-                  Amount Collected (₹):
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  value={cashForm.amount}
-                  onChange={(e) => setCashForm({ ...cashForm, amount: e.target.value })}
-                  className="w-full h-10 px-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] text-sm font-bold text-[var(--text-primary)] outline-none focus:border-[var(--accent-primary)]"
-                  required
-                />
+              <Field label="Payment Date">
+                <input type="date" value={cashForm.paymentDate} onChange={(e) => setCashForm((cur) => ({ ...cur, paymentDate: e.target.value }))} className="ka-input !h-10 !text-xs" required />
+              </Field>
+              <Field label="Collector / Staff Name">
+                <input value={cashForm.collectorName} onChange={(e) => setCashForm((cur) => ({ ...cur, collectorName: e.target.value }))} className="ka-input !h-10 !text-xs" required />
+              </Field>
+              <Field label="Receipt Number">
+                <input value={cashForm.receiptNumber} onChange={(e) => setCashForm((cur) => ({ ...cur, receiptNumber: e.target.value }))} className="ka-input !h-10 !font-mono !text-xs" required />
+              </Field>
+              <Field label="Reference ID">
+                <input value={cashForm.paymentReference} onChange={(e) => setCashForm((cur) => ({ ...cur, paymentReference: e.target.value }))} className="ka-input !h-10 !text-xs" placeholder="Optional cash book / UPI ref" />
+              </Field>
+              <div className="md:col-span-2">
+                <Field label="Notes">
+                  <textarea rows={3} value={cashForm.notes} onChange={(e) => setCashForm((cur) => ({ ...cur, notes: e.target.value }))} className="ka-input !min-h-[84px] !resize-none !py-2 !text-xs" />
+                </Field>
               </div>
-
-              {/* Receipt Number */}
-              <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] block mb-1">
-                  Offline Receipt Number:
-                </label>
-                <input
-                  type="text"
-                  value={cashForm.receiptNumber}
-                  onChange={(e) => setCashForm({ ...cashForm, receiptNumber: e.target.value })}
-                  className="w-full h-10 px-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] text-xs font-mono text-[var(--text-primary)] outline-none focus:border-[var(--accent-primary)]"
-                  required
-                />
-              </div>
-
-              {/* Notes */}
-              <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] block mb-1">
-                  Notes / Reference:
-                </label>
-                <textarea
-                  rows={2}
-                  value={cashForm.notes}
-                  onChange={(e) => setCashForm({ ...cashForm, notes: e.target.value })}
-                  className="w-full p-2.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] text-xs text-[var(--text-primary)] outline-none focus:border-[var(--accent-primary)] resize-none"
-                />
-              </div>
-
-              {/* Actions */}
-              <div className="pt-2 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsCashModalOpen(false)}
-                  className="btn-secondary !py-2 !px-4 !text-xs cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={recordingCash || quotingCash}
-                  className="btn-primary !py-2 !px-5 !text-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                >
-                  {recordingCash ? (
-                    <>
-                      <FiRefreshCw className="animate-spin" />
-                      <span>Recording...</span>
-                    </>
-                  ) : (
-                    <>
-                      <FiCheck size={14} />
-                      <span>Confirm & Record</span>
-                    </>
-                  )}
+              <div className="flex justify-end gap-2 border-t border-[var(--border-subtle)] pt-4 md:col-span-2">
+                <button type="button" onClick={() => setIsCashOpen(false)} className="btn-secondary !px-4 !py-2 !text-xs">Cancel</button>
+                <button type="submit" disabled={cashLoading} className="btn-primary !flex !items-center !gap-1.5 !px-5 !py-2 !text-xs disabled:opacity-50">
+                  {cashLoading ? <FiRefreshCw className="animate-spin" /> : <FiCheck />}
+                  <span>{cashLoading ? "Saving..." : "Confirm Collection"}</span>
                 </button>
               </div>
             </form>
@@ -988,165 +767,7 @@ const FamilyContributionsAdmin = () => {
         </div>
       )}
 
-      {/* ══════════════════════════════════════════════════════════════
-          MODAL 3: WAIVE LATE FINE
-      ══════════════════════════════════════════════════════════════ */}
-      {isWaiveModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="relative w-full max-w-md bg-[var(--surface-elevated)] border border-[var(--border-subtle)] rounded-2xl shadow-2xl overflow-hidden p-6 space-y-4">
-            <h3 className="text-base font-black text-[var(--text-primary)]">
-              Waive Late Fine
-            </h3>
-            <p className="text-xs text-[var(--text-muted)]">
-              Month: {MONTH_NAMES[waiveEntry?.contributionMonth - 1]} {waiveEntry?.contributionYear} • Fine: ₹{waiveEntry?.lateFineAmountRupees}
-            </p>
-
-            <form onSubmit={handleSubmitWaiveFine} className="space-y-4">
-              <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] block mb-1">
-                  Reason for Waiver (Mandatory for Audit Trail):
-                </label>
-                <textarea
-                  rows={3}
-                  value={waiveReason}
-                  onChange={(e) => setWaiveReason(e.target.value)}
-                  placeholder="e.g. Medical hardship, committee approved exemption..."
-                  className="w-full p-2.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] text-xs text-[var(--text-primary)] outline-none focus:border-[var(--accent-primary)] resize-none"
-                  required
-                />
-              </div>
-
-              <div className="flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsWaiveModalOpen(false)}
-                  className="btn-secondary !py-2 !px-4 !text-xs cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={waivingFine || !waiveReason.trim()}
-                  className="btn-primary !py-2 !px-5 !text-xs cursor-pointer disabled:opacity-50"
-                >
-                  {waivingFine ? "Waiving..." : "Confirm Waiver"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ══════════════════════════════════════════════════════════════
-          MODAL 4: CONTRIBUTION RATE SETTINGS
-      ══════════════════════════════════════════════════════════════ */}
-      {isSettingsModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="relative w-full max-w-lg bg-[var(--surface-elevated)] border border-[var(--border-subtle)] rounded-2xl shadow-2xl overflow-hidden my-6">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-subtle)] bg-[var(--surface)]">
-              <div>
-                <h3 className="text-base font-black text-[var(--text-primary)]">
-                  Contribution Rate & Fine Configuration
-                </h3>
-                <p className="text-xs text-[var(--text-muted)]">
-                  Configures Samaj-wide baseline rules. All arithmetic stored in paise.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsSettingsModalOpen(false)}
-                className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] transition cursor-pointer"
-              >
-                <FiX size={18} />
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveSettings} className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] block mb-1">
-                    Monthly Contribution (₹):
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={settingsForm.amountRupees}
-                    onChange={(e) => setSettingsForm({ ...settingsForm, amountRupees: Number(e.target.value) })}
-                    className="w-full h-10 px-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] text-sm font-bold text-[var(--text-primary)] outline-none focus:border-[var(--accent-primary)]"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] block mb-1">
-                    Late Fine per Month (₹):
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={settingsForm.lateFineRupees}
-                    onChange={(e) => setSettingsForm({ ...settingsForm, lateFineRupees: Number(e.target.value) })}
-                    className="w-full h-10 px-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] text-sm font-bold text-[var(--text-primary)] outline-none focus:border-[var(--accent-primary)]"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] block mb-1">
-                  Due Day Grace Period End (Day of Month, e.g. 10):
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max="28"
-                  value={settingsForm.dueDayEnd}
-                  onChange={(e) => setSettingsForm({ ...settingsForm, dueDayEnd: Number(e.target.value) })}
-                  className="w-full h-10 px-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] text-xs text-[var(--text-primary)] outline-none focus:border-[var(--accent-primary)]"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] block mb-1">
-                  Reason / Revision Description:
-                </label>
-                <textarea
-                  rows={2}
-                  value={settingsForm.description}
-                  onChange={(e) => setSettingsForm({ ...settingsForm, description: e.target.value })}
-                  placeholder="e.g. Annual general body meeting rate revision..."
-                  className="w-full p-2.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] text-xs text-[var(--text-primary)] outline-none focus:border-[var(--accent-primary)] resize-none"
-                />
-              </div>
-
-              <div className="pt-2 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsSettingsModalOpen(false)}
-                  className="btn-secondary !py-2 !px-4 !text-xs cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={savingSettings}
-                  className="btn-primary !py-2 !px-5 !text-xs cursor-pointer disabled:opacity-50"
-                >
-                  {savingSettings ? "Saving Settings..." : "Save Configuration"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Official Receipt Modal */}
-      <ReceiptModal
-        isOpen={isReceiptModalOpen}
-        onClose={() => setIsReceiptModalOpen(false)}
-        receipt={selectedReceipt}
-      />
+      <ReceiptModal isOpen={isReceiptOpen} onClose={() => setIsReceiptOpen(false)} receipt={selectedReceipt} />
     </div>
   );
 };

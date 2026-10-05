@@ -89,6 +89,15 @@ export const adminLinks = [
   },
   // ── MATRIMONIAL_ADMIN / SUPER_ADMIN
   {
+    name: "Dharamshala Staff Panel",
+    nameHi: "Dharamshala Staff Panel",
+    path: "/dashboard/admin/community?tab=staff",
+    icon: "FaHotel",
+    permission: "dharamshala:staff",
+    section: "OPERATIONS",
+    sectionHi: "Operations",
+  },
+  {
     name: "Matrimonial Admin",
     nameHi: "वैवाहिक प्रबंधन",
     path: "/dashboard/admin/matrimonial",
@@ -159,7 +168,7 @@ export const adminLinks = [
 export const ADMIN_ROUTE_PERMISSIONS = {
   "/dashboard/admin/registrations":   "member:verify",
   "/dashboard/admin/family-lifecycle": "*",
-  "/dashboard/admin/community":       "community:moderate",
+  "/dashboard/admin/community":       ["community:moderate", "dharamshala:staff"],
   "/dashboard/admin/matrimonial":     "matrimonial:review",
   "/dashboard/admin/opportunities":   "job:moderate",        // checked further inside by tab
   "/dashboard/admin/content":         "notice:read",

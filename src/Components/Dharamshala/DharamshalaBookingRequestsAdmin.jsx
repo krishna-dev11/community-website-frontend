@@ -28,6 +28,24 @@ const formatDate = (value) => {
   });
 };
 
+const formatDateTime = (value) => {
+  if (!value) return "Not set";
+  return new Date(value).toLocaleString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+const DetailTile = ({ label, value, wide = false }) => (
+  <div className={`rounded-lg border border-[var(--border-subtle)] bg-black/10 p-3 ${wide ? "sm:col-span-2" : ""}`}>
+    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--text-muted)]">{label}</p>
+    <p className="mt-1 break-words text-sm font-semibold text-[var(--text-primary)]">{value ?? "—"}</p>
+  </div>
+);
+
 export default function DharamshalaBookingRequestsAdmin() {
   const token = useSelector((state) => state.auth.token);
   const [status, setStatus] = useState("PENDING_REVIEW");
@@ -44,7 +62,7 @@ export default function DharamshalaBookingRequestsAdmin() {
     try {
       const params = status === "ALL" ? { limit: 100 } : { status, limit: 100 };
       const response = await apiConnector("GET", API.ADMIN_LIST_BOOKINGS_API, null, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: "Bearer " + token },
         params,
       });
       setBookings(response.data?.data || []);
@@ -74,7 +92,7 @@ export default function DharamshalaBookingRequestsAdmin() {
     setDetailLoadingId(booking._id);
     try {
       const response = await apiConnector("GET", API.GET_LEDGER_API(booking._id), null, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: "Bearer " + token },
       });
       setLedgerById((current) => ({
         ...current,
@@ -91,11 +109,37 @@ export default function DharamshalaBookingRequestsAdmin() {
   const downloadReceipt = async (booking, ledgerId) => {
     try {
       const response = await apiConnector("GET", API.GET_RECEIPT_API(booking._id, ledgerId), null, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: "Bearer " + token },
       });
       downloadDharamshalaReceipt(response.data?.data);
     } catch (error) {
       toast.error(error.response?.data?.message || error.message || "Could not download receipt");
+    }
+  };
+
+  const viewIdDocument = async (booking) => {
+    try {
+      const response = await apiConnector("GET", API.GET_ID_DOCUMENT_API(booking._id), null, {
+        headers: { Authorization: "Bearer " + token },
+      });
+      const url = response.data?.data?.signedUrl;
+      if (!url) throw new Error("A signed document link was not returned");
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (error) {
+      toast.error(error.response?.data?.message || error.message || "Could not open the ID document");
+    }
+  };
+
+  const viewGuestAadhaar = async (booking, guestNumber) => {
+    try {
+      const response = await apiConnector("GET", API.GET_GUEST_AADHAAR_API(booking._id, guestNumber), null, {
+        headers: { Authorization: "Bearer " + token },
+      });
+      const url = response.data?.data?.signedUrl;
+      if (!url) throw new Error("A signed document link was not returned");
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (error) {
+      toast.error(error.response?.data?.message || error.message || "Could not open guest Aadhaar document");
     }
   };
 
@@ -114,7 +158,7 @@ export default function DharamshalaBookingRequestsAdmin() {
         ? API.ADMIN_APPROVE_BOOKING_API(booking._id)
         : API.ADMIN_REJECT_BOOKING_API(booking._id);
       await apiConnector("POST", endpoint, action === "reject" ? { reason: rejectionReason.trim() } : {}, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: "Bearer " + token },
       });
       toast.success(action === "approve" ? "Booking request approved" : "Booking request rejected");
       await loadBookings();
@@ -225,12 +269,96 @@ export default function DharamshalaBookingRequestsAdmin() {
                 </div>
                 {detailId === booking._id && (
                   <div className="mt-4 grid gap-4 border-t border-[var(--border-subtle)] pt-4 text-xs text-[var(--text-secondary)] lg:grid-cols-2">
+                    <section className="grid gap-3 lg:col-span-2 lg:grid-cols-2">
+                      <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)]/70 p-4">
+                        <h4 className="mb-3 font-bold text-[var(--text-primary)]">Booker information entered</h4>
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          <DetailTile label="Name" value={booking.bookerName || "Guest"} />
+                          <DetailTile label="Phone" value={booking.bookerPhone} />
+                          <DetailTile label="Email" value={booking.bookerEmail} />
+                          <DetailTile label="Address" value={booking.bookerAddress} />
+                          <DetailTile label="Booking source" value={booking.bookingSource || "ONLINE"} />
+                          <DetailTile label="Submitted on" value={formatDateTime(booking.createdAt)} />
+                        </div>
+                      </div>
+
+                      <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)]/70 p-4">
+                        <h4 className="mb-3 font-bold text-[var(--text-primary)]">Stay request</h4>
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          <DetailTile label="Dharamshala" value={booking.dharamshalaName} />
+                          <DetailTile label="Room summary" value={booking.roomTypeName} />
+                          <DetailTile label="Check-in" value={formatDate(booking.checkIn)} />
+                          <DetailTile label="Check-out" value={formatDate(booking.checkOut)} />
+                          <DetailTile label="Nights" value={booking.pricing?.nights ?? "—"} />
+                          <DetailTile label="Rooms / Guests" value={`${booking.roomsRequested || 0} room(s), ${booking.guestsTotal || 0} guest(s)`} />
+                          <DetailTile label="Purpose" value={booking.purpose} wide />
+                          <DetailTile label="Special requests" value={booking.specialRequests || "None"} wide />
+                        </div>
+                      </div>
+                    </section>
+
+                    <section className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)]/70 p-4 lg:col-span-2">
+                      <h4 className="mb-3 font-bold text-[var(--text-primary)]">Guest details entered by member</h4>
+                      {(booking.guestDetails || []).length === 0 ? (
+                        <p>No individual guest details were returned for this booking.</p>
+                      ) : (
+                        <div className="grid gap-2 md:grid-cols-2">
+                          {booking.guestDetails.map((guest) => (
+                            <div key={guest.guestNumber} className="rounded-lg border border-[var(--border-subtle)] bg-black/10 p-3">
+                              <div className="flex flex-wrap items-start justify-between gap-2">
+                                <div>
+                                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--text-muted)]">Guest {guest.guestNumber}</p>
+                                  <p className="mt-1 text-sm font-bold text-[var(--text-primary)]">{guest.fullName || "—"}</p>
+                                  <p className="mt-1 text-xs text-[var(--text-secondary)]">Phone: {guest.phone || "—"}</p>
+                                  <p className="mt-1 text-xs text-[var(--text-secondary)]">
+                                    Aadhaar: {guest.hasAadhaarDocument ? guest.aadhaarFileName || "Uploaded" : "Not uploaded"}
+                                  </p>
+                                </div>
+                                {guest.hasAadhaarDocument && (
+                                  <button
+                                    className="rounded-lg border border-[var(--border-subtle)] px-3 py-2 text-xs font-semibold text-[var(--text-primary)] hover:border-[var(--accent-primary)]"
+                                    onClick={() => viewGuestAadhaar(booking, guest.guestNumber)}
+                                  >
+                                    View Aadhaar
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </section>
+
+                    <section className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)]/70 p-4 lg:col-span-2">
+                      <h4 className="mb-3 font-bold text-[var(--text-primary)]">Policy, payment and admin status</h4>
+                      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                        <DetailTile label="Pricing tier" value={booking.pricing?.tier || "PUBLIC"} />
+                        <DetailTile label="Pricing unit" value={booking.pricing?.pricingUnit?.replace(/_/g, " ")} />
+                        <DetailTile label="Advance required" value={formatMoney(booking.pricing?.advancePaise)} />
+                        <DetailTile label="Balance due at" value={booking.policy?.balanceDueAt?.replace(/_/g, " ")} />
+                        <DetailTile label="Hold expires" value={formatDateTime(booking.holdExpiresAt)} />
+                        <DetailTile label="Terms accepted" value={booking.termsAcceptedAt ? formatDateTime(booking.termsAcceptedAt) : "Not recorded"} />
+                        <DetailTile label="Member declaration" value={booking.memberDeclaration ? "Yes" : "No"} />
+                        <DetailTile label="Admin note" value={booking.adminNote || "—"} />
+                      </div>
+                    </section>
                     <div className="grid content-start gap-2">
                       <h4 className="font-bold text-[var(--text-primary)]">Booking & pricing</h4>
                       <p>Source: {booking.bookingSource || "ONLINE"} · Tier: {booking.pricing?.tier || "PUBLIC"}</p>
                       <p>Subtotal: {formatMoney(booking.pricing?.subtotalPaise)} · Tax: {formatMoney(booking.pricing?.taxPaise || 0)}</p>
                       <p>Advance required: {formatMoney(booking.pricing?.advancePaise)} · Nights: {booking.pricing?.nights ?? "—"}</p>
+                      {(booking.roomSelections || []).map((selection) => (
+                        <p key={selection.roomTypeId}>
+                          {selection.roomTypeName}: {selection.rooms} room(s), {selection.guestsTotal} guest(s) · {formatMoney(selection.pricing?.totalPaise)}
+                        </p>
+                      ))}
                       <p>Special requests: {booking.specialRequests || "None"}</p>
+                      {booking.hasIdDocument && (
+                        <button className="w-fit rounded-lg border border-[var(--border-subtle)] px-3 py-2 font-semibold text-[var(--text-primary)] hover:border-[var(--accent-primary)]"
+                          onClick={() => viewIdDocument(booking)}>
+                          View private government ID
+                        </button>
+                      )}
                       <button className="w-fit rounded-lg border border-[var(--border-subtle)] px-3 py-2 font-semibold text-[var(--text-primary)] hover:border-[var(--accent-primary)]"
                         onClick={() => downloadReceipt(booking)}>
                         Download booking receipt

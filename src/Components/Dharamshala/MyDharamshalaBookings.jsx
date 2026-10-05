@@ -157,6 +157,17 @@ export default function MyDharamshalaBookings() {
     }
   };
 
+  const handleViewIdDocument = async (booking) => {
+    try {
+      const res = await apiConnector("GET", API.GET_ID_DOCUMENT_API(booking._id), null, authH);
+      const signedUrl = res.data?.data?.signedUrl;
+      if (!signedUrl) throw new Error("A signed document link was not returned");
+      window.open(signedUrl, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || "Could not open the ID document");
+    }
+  };
+
   const outstanding = (booking) =>
     Math.max(0, (booking.pricing?.totalPaise || 0) - (booking.paidPaise || 0));
   const successfulPayments = (bookingId) =>
@@ -236,6 +247,17 @@ export default function MyDharamshalaBookings() {
                 {b.purpose && <div className="span2"><span>Purpose</span><strong>{b.purpose}</strong></div>}
                 {b.specialRequests && <div className="span2"><span>Special requests</span><strong>{b.specialRequests}</strong></div>}
               </div>
+              {(b.roomSelections || []).length > 0 && (
+                <div className="mybk-allocation">
+                  <strong>Room selections</strong>
+                  {b.roomSelections.map((selection) => (
+                    <div key={selection.roomTypeId}>
+                      <span>{selection.roomTypeName} · {selection.rooms} room(s) · {selection.guestsTotal} guest(s)</span>
+                      <span>{fmt(selection.pricing?.totalPaise)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {/* Ledger */}
               {ledgerLoading[b._id] && <div className="mybk-ledger-loading">Loading payment history…</div>}
@@ -268,6 +290,11 @@ export default function MyDharamshalaBookings() {
 
               {/* Actions */}
               <div className="mybk-actions">
+                {b.hasIdDocument && (
+                  <button className="mybk-btn receipt" onClick={() => handleViewIdDocument(b)}>
+                    View uploaded ID document
+                  </button>
+                )}
                 {(b.bookingStatus === "AWAITING_PAYMENT" || ["CONFIRMED", "CHECKED_IN"].includes(b.bookingStatus)) &&
                   outstanding(b) > 0 && (
                   <button
@@ -330,6 +357,9 @@ export default function MyDharamshalaBookings() {
         .mybk-detail-grid strong.green{color:#059669}
         .mybk-detail-grid strong.purple{color:#7c3aed}
         .mybk-detail-grid strong.blue{color:#2563eb}
+        .mybk-allocation{display:grid;gap:6px;padding:10px 12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:9px;font-size:12px}
+        .mybk-allocation>strong{color:#374151}
+        .mybk-allocation>div{display:flex;justify-content:space-between;gap:8px;color:#6b7280}
         .mybk-ledger{background:#f9fafb;border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:6px}
         .mybk-ledger-loading{font-size:12px;color:#6b7280;padding:8px}
         .mybk-ledger-title{font-size:12px;font-weight:700;color:#374151;text-transform:uppercase;margin-bottom:4px}

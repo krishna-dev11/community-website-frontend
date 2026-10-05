@@ -38,6 +38,7 @@ const ReceiptModal = ({ isOpen, onClose, receipt }) => {
   const status = receipt.displayStatus || (receipt.status === "SUCCESS" || receipt.status === "PAID"
     ? "PAID & VERIFIED"
     : String(receipt.status || "VERIFIED").replaceAll("_", " "));
+  const isDonationReceipt = receipt.receiptType === "DONATION" || receipt.type === "DONATION";
 
   /**
    * Print / Save PDF
@@ -425,7 +426,7 @@ const ReceiptModal = ({ isOpen, onClose, receipt }) => {
         <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Contribution Receipt - ${safeReceiptNumber}</title>
+          <title>${isDonationReceipt ? "Donation" : "Contribution"} Receipt - ${safeReceiptNumber}</title>
           ${printStyles}
         </head>
         <body>
@@ -475,7 +476,9 @@ const ReceiptModal = ({ isOpen, onClose, receipt }) => {
         <div className="flex shrink-0 items-center justify-between gap-2 border-b border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-3 py-2.5 sm:px-6 sm:py-4 print:hidden">
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             <FiShield className="text-[var(--accent-primary)]" size={18} />
-            <span className="truncate text-[11px] font-bold text-[var(--text-primary)] sm:text-sm">Official Contribution Receipt</span>
+            <span className="truncate text-[11px] font-bold text-[var(--text-primary)] sm:text-sm">
+              {isDonationReceipt ? "Official Donation Receipt" : "Official Contribution Receipt"}
+            </span>
           </div>
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             <button onClick={handlePrint} className="btn-secondary !flex cursor-pointer items-center gap-1 !px-2 sm:!px-3 !py-1.5 !text-[10px] sm:!text-xs" title="Print Receipt">
@@ -497,10 +500,10 @@ const ReceiptModal = ({ isOpen, onClose, receipt }) => {
               श्री हल्बा / हल्बी समाज
             </h2>
             <p className="mx-auto mt-1 max-w-xl text-[9px] font-medium uppercase leading-relaxed tracking-wide text-slate-600 sm:mt-0.5 sm:text-xs">
-              Halba / Halbi Samaj Vikas Parishad • Monthly Membership Contribution
+              Halba / Halbi Samaj Vikas Parishad • {isDonationReceipt ? "Donation Receipt" : "Monthly Membership Contribution"}
             </p>
             <div className="mt-2 inline-block rounded-full border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-emerald-800 sm:mt-3 sm:px-3 sm:text-xs">
-              Payment Acknowledgment Receipt
+              {isDonationReceipt ? "Donation Payment Receipt" : "Payment Acknowledgment Receipt"}
             </div>
           </header>
 
@@ -516,15 +519,36 @@ const ReceiptModal = ({ isOpen, onClose, receipt }) => {
           </section>
 
           <section className="space-y-2 border-b border-slate-200 py-3 text-xs sm:py-4">
-            <h3 className="mb-3 text-[10px] font-bold uppercase tracking-widest text-slate-500">Member Details</h3>
+            <h3 className="mb-3 text-[10px] font-bold uppercase tracking-widest text-slate-500">
+              {isDonationReceipt ? "Donor Details" : "Member Details"}
+            </h3>
             <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-              <span className="font-medium text-slate-500">Member Name</span>
-              <span className="break-words text-left font-bold text-slate-900 sm:text-right">{receipt.member?.name || receipt.payerName || "Family Head"}</span>
+              <span className="font-medium text-slate-500">{isDonationReceipt ? "Donor Name" : "Member Name"}</span>
+              <span className="break-words text-left font-bold text-slate-900 sm:text-right">
+                {isDonationReceipt ? (receipt.donorName || "Donor") : (receipt.member?.name || receipt.payerName || "Family Head")}
+              </span>
             </div>
-            <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-              <span className="font-medium text-slate-500">Member ID</span>
-              <span className="break-all text-left font-mono font-bold text-slate-800 sm:text-right">{receipt.member?.memberId || receipt.payerMemberId || "Not recorded"}</span>
-            </div>
+            {isDonationReceipt ? (
+              <>
+                {receipt.donorPhone && (
+                  <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                    <span className="font-medium text-slate-500">Phone Number</span>
+                    <span className="break-all text-left font-bold text-slate-800 sm:text-right">{receipt.donorPhone}</span>
+                  </div>
+                )}
+                {receipt.donorEmail && (
+                  <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                    <span className="font-medium text-slate-500">Email</span>
+                    <span className="break-all text-left font-bold text-slate-800 sm:text-right">{receipt.donorEmail}</span>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                <span className="font-medium text-slate-500">Member ID</span>
+                <span className="break-all text-left font-mono font-bold text-slate-800 sm:text-right">{receipt.member?.memberId || receipt.payerMemberId || "Not recorded"}</span>
+              </div>
+            )}
             {receipt.familyName && (
               <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                 <span className="font-medium text-slate-500">Family</span>
@@ -553,8 +577,39 @@ const ReceiptModal = ({ isOpen, onClose, receipt }) => {
           </section>
 
           <section className="border-b border-slate-200 py-4">
-            <h3 className="mb-3 text-[10px] font-bold uppercase tracking-widest text-slate-500">Contribution Coverage</h3>
-            {hasMonthAllocations ? (
+            <h3 className="mb-3 text-[10px] font-bold uppercase tracking-widest text-slate-500">
+              {isDonationReceipt ? "Donation Details" : "Contribution Coverage"}
+            </h3>
+            {isDonationReceipt ? (
+              <div className="grid gap-3 text-xs sm:grid-cols-2">
+                <div className="rounded-lg bg-slate-50 p-2.5 sm:p-3">
+                  <span className="block text-slate-500">Campaign</span>
+                  <strong className="mt-1 block break-words text-sm text-slate-900">
+                    {receipt.campaignName || "General Donation Fund"}
+                  </strong>
+                </div>
+                <div className="rounded-lg bg-slate-50 p-2.5 sm:p-3">
+                  <span className="block text-slate-500">Payment Status</span>
+                  <strong className="mt-1 block text-sm uppercase text-emerald-700">{status}</strong>
+                </div>
+                {(receipt.paymentId || receipt.razorpayPaymentId) && (
+                  <div className="rounded-lg bg-slate-50 p-2.5 sm:p-3">
+                    <span className="block text-slate-500">Payment ID</span>
+                    <strong className="mt-1 block break-all font-mono text-xs text-slate-900">
+                      {receipt.paymentId || receipt.razorpayPaymentId}
+                    </strong>
+                  </div>
+                )}
+                {receipt.razorpayOrderId && (
+                  <div className="rounded-lg bg-slate-50 p-2.5 sm:p-3">
+                    <span className="block text-slate-500">Order ID</span>
+                    <strong className="mt-1 block break-all font-mono text-xs text-slate-900">
+                      {receipt.razorpayOrderId}
+                    </strong>
+                  </div>
+                )}
+              </div>
+            ) : hasMonthAllocations ? (
               <>
                 <div className="grid grid-cols-2 gap-3 text-xs sm:grid-cols-3">
                   <div className="rounded-lg bg-slate-50 p-2.5 sm:p-3">

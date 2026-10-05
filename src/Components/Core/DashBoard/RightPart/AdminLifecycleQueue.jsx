@@ -37,6 +37,38 @@ const StatusBadge = ({ status }) => {
   );
 };
 
+const formatDetailLabel = (value) =>
+  String(value)
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+
+const formatDetailValue = (value) => {
+  if (value === null || value === undefined || value === "") return "—";
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+  if (Array.isArray(value)) return value.map(formatDetailValue).join(", ");
+  if (typeof value === "object") return value.name || value.memberId || value._id || "—";
+  return String(value);
+};
+
+const DetailItem = ({ label, value }) => (
+  <div className="min-w-0">
+    <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--text-muted)]">{label}</p>
+    <p className="mt-0.5 break-words text-xs font-medium text-[var(--text-primary)]">{formatDetailValue(value)}</p>
+  </div>
+);
+
+const formatDate = (value) => {
+  if (!value) return "—";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? String(value)
+    : date.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+};
+
+const formatSubmittedValue = (key, value) =>
+  key.toLowerCase().includes("date") ? formatDate(value) : formatDetailValue(value);
+
 const ActionButton = ({ children, icon: Icon, tone = "neutral", ...props }) => {
   const classes = {
     neutral: "btn-secondary !py-1.5 !px-3 !text-xs",
@@ -106,6 +138,7 @@ const ReviewModal = ({ request, authConfig, onClose, onSuccess }) => {
   const [rejectionCategory, setRejectionCategory] = useState(REJECTION_CATEGORIES[0]);
   const [correctionRequired, setCorrectionRequired] = useState("");
   const [approvedNewHeadId, setApprovedNewHeadId] = useState(request?.data?.proposedSuccessor || "");
+  const [approvedTargetFamilyCode, setApprovedTargetFamilyCode] = useState(request?.data?.targetFamilyCode || "");
   const [busy, setBusy] = useState(false);
 
   const needsReason = action === "REJECT" || action === "REQUEST_CORRECTION";
@@ -116,6 +149,10 @@ const ReviewModal = ({ request, authConfig, onClose, onSuccess }) => {
       toast.error("Admin reason is mandatory for this action");
       return;
     }
+    if (action === "APPROVE" && request.type === "MEMBER_TRANSFER" && !approvedTargetFamilyCode.trim()) {
+      toast.error("Target family code is required to approve this member transfer");
+      return;
+    }
     setBusy(true);
     try {
       const payload = {
@@ -124,6 +161,10 @@ const ReviewModal = ({ request, authConfig, onClose, onSuccess }) => {
         ...(action === "REJECT" && { rejectionCategory }),
         ...(action === "REQUEST_CORRECTION" && { correctionRequired }),
         ...(action === "APPROVE" && approvedNewHeadId && { approvedData: { newHeadId: approvedNewHeadId } }),
+        ...(action === "APPROVE" &&
+          request.type === "MEMBER_TRANSFER" && {
+            approvedData: { targetFamilyCode: approvedTargetFamilyCode.trim().toUpperCase() },
+          }),
       };
 
       await apiConnector(
@@ -163,40 +204,90 @@ const ReviewModal = ({ request, authConfig, onClose, onSuccess }) => {
         </div>
 
         {/* Request details */}
-        <div className="p-5 border-b border-[var(--border-subtle)] bg-[var(--surface-elevated)] space-y-2 text-xs">
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Family</span>
-              <p className="text-[var(--text-primary)] font-medium">
-                {request.family?.familyName} <span className="opacity-60">({request.family?.familyCode})</span>
-              </p>
+        <div className="p-5 border-b border-[var(--border-subtle)] bg-[var(--surface-elevated)] space-y-4 text-xs">
+          <section className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] p-3">
+            <h4 className="mb-2 text-[10px] font-black uppercase tracking-[0.16em] text-[var(--accent-primary)]">Request & Family</h4>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <DetailItem label="Status" value={request.status} />
+              <DetailItem label="Submitted On" value={formatDate(request.createdAt)} />
+              <DetailItem label="Family" value={`${request.family?.familyName || "—"} (${request.family?.familyCode || "—"})`} />
+              <DetailItem label="SSSM ID" value={request.family?.sssmId} />
+              <DetailItem label="State" value={request.family?.state} />
+              <DetailItem label="Current City / Native Place" value={[request.family?.currentCity, request.family?.nativePlace].filter(Boolean).join(" / ") || "—"} />
+              <DetailItem label="Family Verification" value={request.family?.verificationStatus} />
+              <DetailItem label="Family Lifecycle" value={request.family?.lifecycleStatus} />
+              <DetailItem
+                label="Current Family Head"
+                value={request.family?.currentHeadMemberId
+                  ? `${request.family.currentHeadMemberId.firstName || ""} ${request.family.currentHeadMemberId.lastName || ""} (${request.family.currentHeadMemberId.memberId || "No ID"})`
+                  : request.family?.currentFamilyAdmin
+                    ? `${request.family.currentFamilyAdmin.firstName || ""} ${request.family.currentFamilyAdmin.lastName || ""} (${request.family.currentFamilyAdmin.memberId || "No ID"})`
+                    : "—"}
+              />
             </div>
-            <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">SSSM ID</span>
-              <p className="text-[var(--text-primary)] font-medium">{request.family?.sssmId || "—"}</p>
-            </div>
-          </div>
+          </section>
+
           {request.member && (
-            <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Affected Member</span>
-              <p className="text-[var(--text-primary)] font-medium">{request.member.firstName} {request.member.lastName} ({request.member.memberId})</p>
-            </div>
+            <section className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] p-3">
+              <div className="mb-3 flex items-center gap-3">
+                {request.member.imageUrl ? (
+                  <img src={request.member.imageUrl} alt="" className="h-12 w-12 rounded-full border border-[var(--border-subtle)] object-cover" />
+                ) : (
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--surface-elevated)] text-sm font-bold text-[var(--accent-primary)]">
+                    {request.member.firstName?.[0] || "?"}
+                  </div>
+                )}
+                <div>
+                  <h4 className="text-sm font-bold text-[var(--text-primary)]">
+                    {request.member.firstName} {request.member.lastName}
+                  </h4>
+                  <p className="text-[10px] text-[var(--text-muted)]">
+                    {request.member.memberId || "No member ID"} · {request.member.familyRole || "Member"}
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                <DetailItem label="Date of Birth" value={formatDate(request.member.additionalDetails?.dateOfBirth || request.member.dateOfBirth)} />
+                <DetailItem label="Gender" value={request.member.additionalDetails?.gender} />
+                <DetailItem label="Membership Status" value={request.member.membershipStatus} />
+                <DetailItem label="Account Status" value={request.member.accountStatus} />
+                <DetailItem label="Contact Number" value={request.member.additionalDetails?.contactNumber} />
+                <DetailItem label="Email" value={request.member.email} />
+                <DetailItem label="Current City" value={request.member.additionalDetails?.currentCity} />
+                <DetailItem label="Native Place" value={request.member.additionalDetails?.nativePlace} />
+                <DetailItem label="Gotra" value={request.member.additionalDetails?.gotra} />
+                <DetailItem label="Education" value={request.member.additionalDetails?.education} />
+                <DetailItem label="Profession" value={request.member.additionalDetails?.profession} />
+                <DetailItem label="Address" value={request.member.additionalDetails?.address} />
+              </div>
+            </section>
           )}
-          <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Requested By</span>
-            <p className="text-[var(--text-primary)] font-medium">{request.requestedBy?.firstName} {request.requestedBy?.lastName} <span className="opacity-60">({request.requestedBy?.email})</span></p>
-          </div>
-          <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Reason / Description</span>
-            <p className="text-[var(--text-secondary)] mt-0.5 leading-relaxed">{request.reason}</p>
-          </div>
-          {request.data && Object.keys(request.data).length > 0 && (
-            <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Additional Data</span>
-              <pre className="mt-1 rounded-xl bg-[var(--surface)] p-2.5 text-[10px] text-[var(--text-secondary)] overflow-x-auto">
-                {JSON.stringify(request.data, null, 2)}
-              </pre>
+
+          <section className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] p-3">
+            <h4 className="mb-2 text-[10px] font-black uppercase tracking-[0.16em] text-[var(--accent-primary)]">Submitted By</h4>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <DetailItem label="Name" value={`${request.requestedBy?.firstName || ""} ${request.requestedBy?.lastName || ""}`.trim() || "—"} />
+              <DetailItem label="Member ID" value={request.requestedBy?.memberId} />
+              <DetailItem label="Email" value={request.requestedBy?.email} />
+              <DetailItem label="Contact Number" value={request.requestedBy?.additionalDetails?.contactNumber || request.requestedBy?.contactNumber} />
+              <DetailItem label="Current City" value={request.requestedBy?.additionalDetails?.currentCity} />
+              <DetailItem label="Native Place" value={request.requestedBy?.additionalDetails?.nativePlace} />
             </div>
+          </section>
+
+          <section>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Reason / Description</span>
+            <p className="mt-1 whitespace-pre-wrap leading-relaxed text-[var(--text-secondary)]">{request.reason || "—"}</p>
+          </section>
+          {request.data && Object.keys(request.data).length > 0 && (
+            <section className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] p-3">
+              <h4 className="mb-2 text-[10px] font-black uppercase tracking-[0.16em] text-[var(--accent-primary)]">Submitted Details</h4>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {Object.entries(request.data).map(([key, value]) => (
+                  <DetailItem key={key} label={formatDetailLabel(key)} value={formatSubmittedValue(key, value)} />
+                ))}
+              </div>
+            </section>
           )}
           {request.documents?.length > 0 && (
             <div>
@@ -214,6 +305,19 @@ const ReviewModal = ({ request, authConfig, onClose, onSuccess }) => {
                     {doc.name || `Document ${i + 1}`}
                   </a>
                 ))}
+              </div>
+              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {request.documents
+                  .filter((doc) => doc.mimeType?.startsWith("image/"))
+                  .map((doc, i) => (
+                    <a key={`${doc.publicId || doc.url}-${i}`} href={doc.url} target="_blank" rel="noopener noreferrer">
+                      <img
+                        src={doc.url}
+                        alt={doc.name || `Supporting document ${i + 1}`}
+                        className="max-h-64 w-full rounded-xl border border-[var(--border-subtle)] bg-black/10 object-contain"
+                      />
+                    </a>
+                  ))}
               </div>
             </div>
           )}
@@ -261,6 +365,24 @@ const ReviewModal = ({ request, authConfig, onClose, onSuccess }) => {
                 onChange={(e) => setApprovedNewHeadId(e.target.value)}
                 required
               />
+            </label>
+          )}
+
+          {action === "APPROVE" && request.type === "MEMBER_TRANSFER" && (
+            <label className="flex flex-col gap-1.5">
+              <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                Confirm Target Family Code *
+              </span>
+              <input
+                className="ka-input !h-11 !py-0"
+                placeholder="FAM-XXXXXX"
+                value={approvedTargetFamilyCode}
+                onChange={(e) => setApprovedTargetFamilyCode(e.target.value.toUpperCase())}
+                required
+              />
+              <span className="text-[10px] text-[var(--text-muted)]">
+                Member will be moved to this active family after approval.
+              </span>
             </label>
           )}
 
@@ -495,6 +617,16 @@ const AdminLifecycleQueue = () => {
                           </span>
                         )}
                       </div>
+                      {req.member?.additionalDetails && (
+                        <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-2.5 text-[10px] sm:grid-cols-3">
+                          <DetailItem label="Date of Birth" value={formatDate(req.member.additionalDetails.dateOfBirth || req.member.dateOfBirth)} />
+                          <DetailItem label="Contact" value={req.member.additionalDetails.contactNumber} />
+                          <DetailItem label="Gender" value={req.member.additionalDetails.gender} />
+                          <DetailItem label="Current City" value={req.member.additionalDetails.currentCity} />
+                          <DetailItem label="Native Place" value={req.member.additionalDetails.nativePlace} />
+                          {req.data?.dateOfDeath && <DetailItem label="Date of Death" value={formatDate(req.data.dateOfDeath)} />}
+                        </div>
+                      )}
 
                       {/* Submitter */}
                       <div className="mt-1.5 text-xs text-[var(--text-muted)]">

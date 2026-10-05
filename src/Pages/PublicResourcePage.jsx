@@ -46,6 +46,27 @@ const formatDate = (value) => {
   }).format(new Date(value));
 };
 
+const Status = ({ value }) => {
+  const normalizedStatus = String(value || "").toUpperCase();
+  const statusClasses = {
+    PUBLISHED: "border-emerald-400/30 bg-emerald-500/10 text-emerald-200",
+    ACTIVE: "border-emerald-400/30 bg-emerald-500/10 text-emerald-200",
+    RESOLVED: "border-emerald-400/30 bg-emerald-500/10 text-emerald-200",
+    CLOSED: "border-slate-400/30 bg-slate-500/10 text-slate-200",
+    IN_PROGRESS: "border-sky-400/30 bg-sky-500/10 text-sky-200",
+    UNDER_REVIEW: "border-sky-400/30 bg-sky-500/10 text-sky-200",
+    PENDING: "border-amber-400/30 bg-amber-500/10 text-amber-200",
+    REJECTED: "border-red-400/30 bg-red-500/10 text-red-200",
+    REOPENED: "border-orange-400/30 bg-orange-500/10 text-orange-200",
+  };
+
+  return (
+    <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${statusClasses[normalizedStatus] || "border-white/10 bg-white/[0.03] text-gray-300"}`}>
+      {String(value).replace(/_/g, " ")}
+    </span>
+  );
+};
+
 const resourceConfig = {
   notices: {
     title: "Notices & Announcements",
@@ -229,6 +250,7 @@ const getRequiredDocument = (scholarship) => {
 
 const getCoverImage = (type, item) => {
   if (type === "videos") return item.thumbnailUrl || (item.videoId ? `https://img.youtube.com/vi/${item.videoId}/hqdefault.jpg` : undefined);
+  if (type === "scholarships") return item.posterImage?.url;
   if (type === "achievements") return item.recipientPhoto?.url || item.image?.url;
   if (type === "condolence") return item.photo?.url;
   if (type === "notices") return item.attachments?.[0]?.url;
@@ -568,6 +590,15 @@ const JobCard = ({ job, onDetails }) => {
 
 const ScholarshipDetail = ({ scholarship }) => (
   <div className="space-y-5 min-w-0">
+    {scholarship.posterImage?.url && (
+      <div className="overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)]">
+        <img
+          src={scholarship.posterImage.url}
+          alt={`${scholarship.title} poster`}
+          className="h-auto max-h-[60vh] w-full object-contain"
+        />
+      </div>
+    )}
     <div className="grid gap-3 sm:grid-cols-2">
       {[
         ["Amount", scholarship.amount ? `Rs. ${Number(scholarship.amount).toLocaleString("en-IN")}` : "Not disclosed"],
@@ -1164,13 +1195,13 @@ const PublicResourcePage = ({ type }) => {
                   }
                 }}
               >
-                {["gallery", "publications", "achievements", "condolence", "notices"].includes(type) ? (
-                  <div className={`aspect-[16/9] overflow-hidden bg-[var(--surface-elevated)] ${type === "achievements" ? "flex items-center justify-center p-3 sm:p-4" : ""}`}>
+                {["gallery", "publications", "achievements", "condolence", "notices", "scholarships"].includes(type) ? (
+                  <div className={`aspect-[16/9] overflow-hidden bg-[var(--surface-elevated)] ${["achievements", "scholarships"].includes(type) ? "flex items-center justify-center p-3 sm:p-4" : ""}`}>
                     {getCoverImage(type, item) ? (
                       <img
                         src={getCoverImage(type, item)}
                         alt={getTitle(type, item)}
-                        className={`h-full w-full transition-transform duration-500 group-hover:scale-105 ${type === "achievements" ? "object-contain" : "object-cover"}`}
+                        className={`h-full w-full transition-transform duration-500 group-hover:scale-105 ${["achievements", "scholarships"].includes(type) ? "object-contain" : "object-cover"}`}
                       />
                     ) : (
                       <div className="flex h-full items-center justify-center text-[var(--text-muted)]">
@@ -1331,65 +1362,147 @@ const PublicResourcePage = ({ type }) => {
 
       {/* ================= ITEM DETAIL MODAL (Requirement 18, 8, 12, 13) ================= */}
 {selectedItem && (
-  <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/80 px-4 py-6 backdrop-blur-md">
-    {/* Add flex flex-col and max-h-[92vh] with overflow-hidden on the card container */}
-    <div className="flex flex-col max-h-[92vh] w-full max-w-3xl ka-card p-0 shadow-2xl border border-[var(--border-strong)] overflow-hidden">
+  <div className="fixed inset-0 z-[1200] flex items-start justify-center overflow-y-auto bg-black/80 px-2 py-2 backdrop-blur-md sm:items-center sm:px-4 sm:py-4">
+    <div className="flex min-h-0 max-h-[calc(100dvh-1rem)] w-full max-w-3xl flex-col overflow-hidden border border-[var(--border-strong)] ka-card p-0 shadow-2xl sm:max-h-[calc(100dvh-2rem)]">
       
-      {/* 1. Fixed Header */}
-      <div className="p-6 sm:p-8 pb-4 border-b border-[var(--border-subtle)] flex items-start justify-between gap-4 shrink-0">
-        <div className="min-w-0">
-          <span className="eyebrow-badge mb-2">{config.label}</span>
-          <h2 className="mt-1 break-words text-2xl font-bold leading-snug text-[var(--text-primary)]">
+      <div className="flex shrink-0 items-start justify-between gap-3 border-b border-[var(--border-subtle)] p-4 sm:gap-4 sm:p-6">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="eyebrow-badge">{config.label}</span>
+            {selectedItem.status && <Status value={selectedItem.status} />}
+          </div>
+          <h2 className="mt-2 break-words text-xl font-bold leading-snug text-[var(--text-primary)] sm:text-2xl">
             {getTitle(type, selectedItem)}
           </h2>
-          <div className="mt-2 flex flex-wrap items-center gap-3 break-words text-xs text-[var(--text-muted)]">
-            <span>📅 {formatDate(getItemDate(type, selectedItem))}</span>
-            {selectedItem.category && <span>• 🏷️ {selectedItem.category}</span>}
-            {selectedItem.location && <span>• 📍 {selectedItem.location}</span>}
+          <div className="mt-3 flex flex-wrap gap-2 text-xs text-[var(--text-secondary)]">
+            <span className="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-2.5 py-1.5">
+              <FiCalendar className="shrink-0 text-[var(--accent-primary)]" />
+              <span className="break-words">{formatDate(getItemDate(type, selectedItem))}</span>
+            </span>
+            {selectedItem.category && (
+              <span className="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-2.5 py-1.5">
+                <FiFileText className="shrink-0 text-[var(--accent-primary)]" />
+                <span className="break-words">{selectedItem.category}</span>
+              </span>
+            )}
+            {selectedItem.location && (
+              <span className="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-2.5 py-1.5">
+                <FiMapPin className="shrink-0 text-[var(--accent-primary)]" />
+                <span className="break-words">{selectedItem.location}</span>
+              </span>
+            )}
           </div>
         </div>
         <button
           type="button"
           onClick={() => setSelectedItem(null)}
+          aria-label="Close details"
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer"
         >
           <FiX size={18} />
         </button>
       </div>
 
-      {/* 2. Scrollable Body Content (Yeh scroll karega!) */}
-      <div className="p-6 sm:p-8 overflow-y-auto min-w-0 space-y-6 break-words text-sm leading-relaxed text-[var(--text-secondary)] flex-1">
+      <div className="min-h-0 min-w-0 flex-1 space-y-5 overflow-y-auto overscroll-contain p-4 text-sm leading-relaxed text-[var(--text-secondary)] [overflow-wrap:anywhere] sm:space-y-6 sm:p-6">
         {type === "jobs" && <JobDetail job={selectedItem} />}
         {type === "scholarships" && <ScholarshipDetail scholarship={selectedItem} />}
 
-        {/* Solutions / Description / Attachments code jo tera pehle tha... */}
         {type === "solutions" && (
-          <>
-            {/* ... same solution content ... */}
-          </>
+          <div className="space-y-4">
+            {(selectedItem.description || selectedItem.summary) && (
+              <section className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-4 sm:p-5">
+                <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-[var(--accent-primary)]">
+                  Community Issue Description
+                </h3>
+                <p className="whitespace-pre-wrap text-sm leading-7 text-[var(--text-primary)]">
+                  {selectedItem.description || selectedItem.summary}
+                </p>
+              </section>
+            )}
+            {selectedItem.solutionSummary && selectedItem.solutionSummary !== (selectedItem.description || selectedItem.summary) && (
+              <section className="rounded-2xl border border-teal-400/20 bg-teal-500/5 p-4 sm:p-5">
+                <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-teal-300">Resolution Summary</h3>
+                <p className="whitespace-pre-wrap text-sm leading-7 text-[var(--text-primary)]">{selectedItem.solutionSummary}</p>
+              </section>
+            )}
+            {(selectedItem.solutionDetails || selectedItem.solution) && (
+              <section className="rounded-2xl border border-emerald-400/20 bg-emerald-500/5 p-4 sm:p-5">
+                <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-emerald-300">Detailed Solution</h3>
+                <p className="whitespace-pre-wrap text-sm leading-7 text-[var(--text-primary)]">
+                  {selectedItem.solutionDetails || selectedItem.solution}
+                </p>
+              </section>
+            )}
+            {(selectedItem.adminStatusNote || selectedItem.adminResponse || selectedItem.resolution) && (
+              <section className="rounded-2xl border border-sky-400/20 bg-sky-500/5 p-4 sm:p-5">
+                <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-sky-300">Committee / Admin Response</h3>
+                <p className="whitespace-pre-wrap text-sm leading-7 text-[var(--text-primary)]">
+                  {selectedItem.adminStatusNote || selectedItem.adminResponse || selectedItem.resolution}
+                </p>
+              </section>
+            )}
+            {selectedItem.priority && (
+              <p className="text-xs text-[var(--text-secondary)]">
+                <span className="font-bold text-[var(--text-muted)]">Priority:</span> {selectedItem.priority}
+              </p>
+            )}
+          </div>
         )}
 
         {type !== "solutions" && type !== "jobs" && type !== "scholarships" && (
-          <div className="whitespace-pre-line text-sm leading-relaxed text-[var(--text-primary)]">
+          <div className="whitespace-pre-wrap text-sm leading-7 text-[var(--text-primary)]">
             {getDescription(selectedItem)}
           </div>
         )}
 
-        {/* Attachments & other details */}
-        {selectedItem.attachments && selectedItem.attachments.length > 0 && (
-          <div className="pt-4 border-t border-[var(--border-subtle)]">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--accent-primary)] mb-3">
+        {Array.isArray(selectedItem.attachments) && selectedItem.attachments.length > 0 && (
+          <div className="border-t border-[var(--border-subtle)] pt-4">
+            <h4 className="mb-3 text-xs font-bold uppercase tracking-wider text-[var(--accent-primary)]">
               Attached Documents & Media
             </h4>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {/* map items */}
+            <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+              {selectedItem.attachments.map((attachment, index) => {
+                const url = typeof attachment === "string" ? attachment : attachment.url;
+                const name = typeof attachment === "string"
+                  ? attachment.split("/").pop()
+                  : attachment.name || attachment.originalName || `Attachment ${index + 1}`;
+                const isImage = attachment?.mimeType?.startsWith("image/") ||
+                  /\.(avif|gif|jpe?g|png|webp|bmp|svg)(\?.*)?$/i.test(url || "");
+                if (!url) return null;
+
+                return (
+                  <a
+                    key={attachment?._id || attachment?.publicId || url}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex min-w-0 flex-col overflow-hidden rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] transition hover:border-[var(--accent-primary)]/50"
+                  >
+                    {isImage ? (
+                      <img
+                        src={url}
+                        alt={name}
+                        loading="lazy"
+                        className="max-h-72 w-full bg-black/10 object-contain"
+                      />
+                    ) : (
+                      <span className="flex min-h-24 items-center justify-center text-[var(--accent-primary)]">
+                        <FiFileText size={28} />
+                      </span>
+                    )}
+                    <span className="flex min-w-0 items-center gap-2 border-t border-[var(--border-subtle)] px-3 py-2.5 text-xs font-semibold text-[var(--text-primary)]">
+                      <FiExternalLink className="shrink-0 text-[var(--accent-primary)]" />
+                      <span className="truncate" title={name}>{name}</span>
+                    </span>
+                  </a>
+                );
+              })}
             </div>
           </div>
         )}
       </div>
 
-      {/* 3. Fixed Footer */}
-      <div className="p-4 sm:p-6 pt-3 border-t border-[var(--border-subtle)] flex flex-wrap items-center justify-between gap-3 shrink-0 bg-[var(--surface)]">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-[var(--border-subtle)] bg-[var(--surface)] p-3 sm:p-4">
         {/* Report button — only for logged-in members on published jobs */}
         {type === "jobs" && token && selectedItem && (
           <button

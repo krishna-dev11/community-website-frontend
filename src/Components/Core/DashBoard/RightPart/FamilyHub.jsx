@@ -29,7 +29,7 @@ import {
 } from "react-icons/fi";
 import { useSelector } from "react-redux";
 import { apiConnector } from "../../../../services/apiConnector";
-import { familyEndpoints } from "../../../../services/apis";
+import { endpoints, familyEndpoints } from "../../../../services/apis";
 
 // ---------------------------------------------------------------------------
 // Primitive components
@@ -77,10 +77,21 @@ const Button = ({ children, tone = "neutral", icon: Icon, ...props }) => {
 };
 
 const Stat = ({ label, value }) => (
-  <div className="ka-card p-4">
-    <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">{label}</p>
-    <p className="mt-1 text-base font-bold text-[var(--text-primary)] truncate">
-      {value || <span className="text-[var(--text-muted)] italic font-normal">Not set</span>}
+  <div className="ka-card min-w-0 p-4">
+    <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+      {label}
+    </p>
+
+    <p
+      className="mt-1 text-base font-bold leading-6 text-[var(--text-primary)] whitespace-normal break-words"
+      style={{ overflowWrap: "anywhere" }}
+      title={value || "Not set"}
+    >
+      {value || (
+        <span className="text-[var(--text-muted)] italic font-normal">
+          Not set
+        </span>
+      )}
     </p>
   </div>
 );
@@ -443,7 +454,6 @@ const AddMemberModal = ({ familyId, authConfig, onClose, onSuccess }) => {
     email: "",
     temporaryPassword: "",
     identityNumber: "",
-    isMinor: false,
     profession: "",
     education: "",
     gotra: "",
@@ -451,8 +461,100 @@ const AddMemberModal = ({ familyId, authConfig, onClose, onSuccess }) => {
   const [docFile, setDocFile] = useState(null);
   const [photoFile, setPhotoFile] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [emailOtp, setEmailOtp] = useState("");
+  const [emailOtpSessionToken, setEmailOtpSessionToken] = useState("");
+  const [emailOtpSent, setEmailOtpSent] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [sendingEmailOtp, setSendingEmailOtp] = useState(false);
+  const [verifyingEmailOtp, setVerifyingEmailOtp] = useState(false);
 
   const update = (field, val) => setForm((prev) => ({ ...prev, [field]: val }));
+  const updateEmail = (value) => {
+    update("email", value);
+    setEmailOtp("");
+    setEmailOtpSessionToken("");
+    setEmailOtpSent(false);
+    setEmailVerified(false);
+  };
+  const birthDate = form.dateOfBirth ? new Date(`${form.dateOfBirth}T00:00:00`) : null;
+  const today = new Date();
+  const age = birthDate
+    ? today.getFullYear() -
+      birthDate.getFullYear() -
+      (today.getMonth() < birthDate.getMonth() ||
+      (today.getMonth() === birthDate.getMonth() && today.getDate() < birthDate.getDate())
+        ? 1
+        : 0)
+    : null;
+  const isMinor = age !== null && age < 18;
+
+  const sendEmailOtp = async () => {
+    const email = form.email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error("Enter a valid email address before requesting an OTP");
+      return;
+    }
+
+    setSendingEmailOtp(true);
+    setEmailOtp("");
+    setEmailOtpSessionToken("");
+    setEmailOtpSent(false);
+    setEmailVerified(false);
+    try {
+      const sessionToken = window.crypto.randomUUID();
+      const response = await apiConnector("POST", endpoints.SENDOTP_API, {
+        email,
+        channel: "EMAIL",
+        purpose: "FAMILY_MEMBER_EMAIL_VERIFICATION",
+        memberKey: "family-member",
+        sessionToken,
+        checkUserPresent: true,
+      });
+      const issuedSessionToken = response?.data?.data?.sessionToken;
+      if (!response?.data?.success || !issuedSessionToken) {
+        throw new Error(response?.data?.message || "Unable to send verification code");
+      }
+
+      setEmailOtpSessionToken(issuedSessionToken);
+      setEmailOtpSent(true);
+      toast.success("Verification code sent to the member's email");
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || "Could not send verification code");
+    } finally {
+      setSendingEmailOtp(false);
+    }
+  };
+
+  const verifyEmailOtp = async () => {
+    if (!emailOtp.trim()) {
+      toast.error("Enter the email verification code");
+      return;
+    }
+
+    setVerifyingEmailOtp(true);
+    try {
+      const email = form.email.trim().toLowerCase();
+      const response = await apiConnector("POST", endpoints.VERIFY_OTP_API, {
+        contact: email,
+        email,
+        channel: "EMAIL",
+        purpose: "FAMILY_MEMBER_EMAIL_VERIFICATION",
+        memberKey: "family-member",
+        sessionToken: emailOtpSessionToken,
+        otp: emailOtp.trim(),
+      });
+      if (!response?.data?.success || !response?.data?.data?.verified) {
+        throw new Error(response?.data?.message || "Email verification failed");
+      }
+
+      setEmailVerified(true);
+      toast.success("Member email verified");
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || "Invalid verification code");
+    } finally {
+      setVerifyingEmailOtp(false);
+    }
+  };
 
   const submit = async (e) => {
     e.preventDefault();
@@ -464,8 +566,16 @@ const AddMemberModal = ({ familyId, authConfig, onClose, onSuccess }) => {
       toast.error("Identity verification document (Aadhaar / Birth Certificate) is required");
       return;
     }
-    if (!form.isMinor && !form.temporaryPassword) {
-      toast.error("Temporary password is required for adult member setup");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      toast.error("A valid email address is required for every family member");
+      return;
+    }
+    if (!emailVerified || !emailOtpSessionToken) {
+      toast.error("Verify the member's email address before submitting");
+      return;
+    }
+    if (form.temporaryPassword.trim().length < 8) {
+      toast.error("Temporary password must be at least 8 characters");
       return;
     }
 
@@ -477,6 +587,7 @@ const AddMemberModal = ({ familyId, authConfig, onClose, onSuccess }) => {
           payload.append(k, v);
         }
       });
+      payload.append("emailVerificationSessionToken", emailOtpSessionToken);
       payload.append("document", docFile);
       if (photoFile) payload.append("photo", photoFile);
 
@@ -563,32 +674,14 @@ const AddMemberModal = ({ familyId, authConfig, onClose, onSuccess }) => {
             </Select>
           </div>
 
-          {/* Is Minor Checkbox */}
-          <div className="rounded-2xl border border-[var(--accent-primary)]/20 bg-[var(--accent-primary)]/5 p-3.5">
-            <label className="flex items-center gap-2.5 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={form.isMinor}
-                onChange={(e) => update("isMinor", e.target.checked)}
-                className="h-4 w-4 rounded accent-[var(--accent-primary)]"
-              />
-              <span className="text-xs font-bold text-[var(--text-primary)]">
-                नाबालिग सदस्य / नवजात शिशु (Minor or Newborn Child under 18)
-              </span>
-            </label>
-            <p className="mt-1 text-[11px] text-[var(--text-muted)] pl-6">
-              {form.isMinor
-                ? "नाबालिगों के लिए ईमेल एवं पासवर्ड आवश्यक नहीं है। खाते का नियंत्रण मुख्य अभिभावक (Family Head) के पास रहेगा।"
-                : "यदि सदस्य वयस्क (18+) हैं तो उनके लिए लॉगिन संपर्क व पासवर्ड दर्ज करें।"}
-            </p>
-          </div>
-
           <div className="grid grid-cols-2 gap-3">
             <Input
-              label="Date of Birth"
+              label="Date of Birth *"
               type="date"
               value={form.dateOfBirth}
               onChange={(e) => update("dateOfBirth", e.target.value)}
+              max={new Date().toISOString().slice(0, 10)}
+              required
             />
             <Input
               label="SSSM / Aadhaar No."
@@ -598,8 +691,8 @@ const AddMemberModal = ({ familyId, authConfig, onClose, onSuccess }) => {
             />
           </div>
 
-          {!form.isMinor && (
-            <div className="grid grid-cols-2 gap-3">
+          <div className={`grid gap-3 ${isMinor ? "grid-cols-1" : "grid-cols-2"}`}>
+            {!isMinor && (
               <Input
                 label="Contact Number"
                 type="tel"
@@ -607,26 +700,69 @@ const AddMemberModal = ({ familyId, authConfig, onClose, onSuccess }) => {
                 value={form.contactNumber}
                 onChange={(e) => update("contactNumber", e.target.value)}
               />
+            )}
+            <div className="flex flex-col gap-2">
               <Input
-                label="Email"
+                label="Email *"
                 type="email"
+                autoComplete="email"
                 placeholder="member@example.com"
                 value={form.email}
-                onChange={(e) => update("email", e.target.value)}
+                onChange={(e) => updateEmail(e.target.value)}
+                required
               />
+              <Button
+                type="button"
+                tone={emailVerified ? "success" : "neutral"}
+                onClick={sendEmailOtp}
+                disabled={sendingEmailOtp || emailVerified}
+              >
+                {emailVerified
+                  ? "Email Verified"
+                  : sendingEmailOtp
+                    ? "Sending OTP..."
+                    : emailOtpSent
+                      ? "Resend Email OTP"
+                      : "Send Email OTP"}
+              </Button>
+              {emailOtpSent && !emailVerified && (
+                <div className="flex gap-2">
+                  <Input
+                    label="Email OTP *"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={6}
+                    placeholder="6-digit code"
+                    value={emailOtp}
+                    onChange={(e) => setEmailOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    required
+                  />
+                  <Button
+                    type="button"
+                    tone="success"
+                    onClick={verifyEmailOtp}
+                    disabled={verifyingEmailOtp || emailOtp.length !== 6}
+                  >
+                    {verifyingEmailOtp ? "Checking..." : "Verify"}
+                  </Button>
+                </div>
+              )}
+              <p className="text-[11px] text-[var(--text-muted)]">
+                Email verify hone ke baad hi member form submit hoga.
+              </p>
             </div>
-          )}
+          </div>
 
-          {!form.isMinor && (
-            <Input
-              label="Temporary Password *"
-              type="text"
-              placeholder="e.g. Member@123"
-              value={form.temporaryPassword}
-              onChange={(e) => update("temporaryPassword", e.target.value)}
-              required={!form.isMinor}
-            />
-          )}
+          <Input
+            label="Temporary Password *"
+            type="password"
+            autoComplete="new-password"
+            minLength={8}
+            placeholder="At least 8 characters"
+            value={form.temporaryPassword}
+            onChange={(e) => update("temporaryPassword", e.target.value)}
+            required
+          />
 
           <div>
             <label className="flex flex-col gap-1.5">

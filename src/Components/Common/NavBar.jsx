@@ -207,7 +207,7 @@ const NavBar = () => {
 
   const userRoles = Array.isArray(user?.roles) ? user.roles : [];
   const isAdmin = userRoles.some((r) =>
-    ["SUPER_ADMIN", "Admin", "MODERATOR", "TREASURER", "CONTENT_ADMIN", "MATRIMONIAL_ADMIN", "SCHOLARSHIP_ADMIN", "JOB_ADMIN", "DHARAMSHALA_ADMIN"].includes(r)
+    ["SUPER_ADMIN", "Admin", "COMMUNITY_ADMIN", "MODERATOR", "TREASURER", "CONTENT_ADMIN", "MATRIMONIAL_ADMIN", "SCHOLARSHIP_ADMIN", "JOB_ADMIN", "DHARAMSHALA_ADMIN", "DHARAMSHALA_STAFF"].includes(r)
   );
 
   // Navigation menu structure aligned with platform routes and bilingual support

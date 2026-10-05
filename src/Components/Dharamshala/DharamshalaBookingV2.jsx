@@ -15,11 +15,11 @@ import { useNavigate } from "react-router-dom";
 import {
   FiCalendar, FiUsers, FiHome, FiCheckCircle, FiAlertCircle,
   FiArrowRight, FiArrowLeft, FiTag, FiPhone, FiMail, FiMapPin,
-  FiClock, FiShield, FiLoader, FiX, FiInfo,
+  FiClock, FiShield, FiLoader, FiX, FiInfo, FiUpload, FiTrash2,
 } from "react-icons/fi";
 import { FaRupeeSign } from "react-icons/fa";
 import toast from "react-hot-toast";
-import { apiConnector } from "../../services/apiConnector";
+import { apiConnector as sendApiRequest } from "../../services/apiConnector";
 import { dharamshalaBookingV2Endpoints as API, dharamshalaPublicEndpoints as PUBAPI } from "../../services/apis.jsx";
 import { setGoogleLogin } from "../../services/Operations/authAPI";
 import "./dharamshalaBooking.css";
@@ -40,6 +40,31 @@ const fmt = (paise) =>
   paise === undefined || paise === null
     ? "—"
     : `₹${(paise / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
+
+const apiConnector = (method, url, data, headers) => {
+  if (typeof FormData !== "undefined" && data instanceof FormData) {
+    return sendApiRequest(method, url, data, headers);
+  }
+  if (typeof File !== "undefined" && data?.idDocument instanceof File) {
+    const form = new FormData();
+    Object.entries(data).forEach(([key, value]) => {
+      if (key === "idDocument") form.append(key, value);
+      else form.append(key, typeof value === "object" ? JSON.stringify(value) : String(value));
+    });
+    return sendApiRequest(method, url, form, headers);
+  }
+  return sendApiRequest(method, url, data, headers);
+};
+
+const AADHAAR_ACCEPT = ".jpg,.jpeg,.png,.webp,.pdf,application/pdf,image/jpeg,image/png,image/webp";
+const AADHAAR_MIMES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "application/pdf"];
+const AADHAAR_MAX_BYTES = 15 * 1024 * 1024;
+
+const emptyGuest = (index, user, phone) => ({
+  fullName: index === 0 ? [user?.firstName, user?.lastName].filter(Boolean).join(" ") || user?.name || user?.displayName || "" : "",
+  phone: index === 0 ? phone || user?.additionalDetails?.contactNumber || user?.phone || "" : "",
+  aadhaar: null,
+});
 
 const STATUS_META = {
   PENDING_MEMBERSHIP: { label: "Membership Pending", color: "#f59e0b", bg: "#fef3c7" },
@@ -70,13 +95,25 @@ const DharamshalaBookingV2 = ({ property, roomType, onClose }) => {
   const user = useSelector((s) => s.profile.user);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const availableRoomTypes = (property?.roomTypes || []).filter((item) => item?._id);
+  if (availableRoomTypes.length === 0 && roomType?._id) availableRoomTypes.push(roomType);
+  const [roomSelections, setRoomSelections] = useState(() => {
+    const selectedId = String(roomType?._id || availableRoomTypes[0]?._id || "");
+    const selected = availableRoomTypes.find((item) => String(item._id) === selectedId);
+    return selected ? [{
+      roomTypeId: selected._id,
+      rooms: 1,
+      guestsTotal: Math.max(1, selected.capacity?.base || 1),
+    }] : [];
+  });
+  const selectedRoomTypes = availableRoomTypes.filter((item) =>
+    roomSelections.some((selection) => String(selection.roomTypeId) === String(item._id) && selection.rooms > 0)
+  );
 
   const [step, setStep] = useState(1);     // 1=dates, 2=details, 3=pay, 4=done
   const [dates, setDates] = useState({
     checkIn:  new Date().toISOString().split("T")[0],
     checkOut: new Date(Date.now() + 86400000 * 2).toISOString().split("T")[0],
-    rooms: 1,
-    guestsTotal: roomType?.capacity?.base || 2,
   });
   const [quote, setQuote]           = useState(null);
   const [quoting, setQuoting]       = useState(false);
@@ -86,13 +123,98 @@ const DharamshalaBookingV2 = ({ property, roomType, onClose }) => {
     purpose: "Pilgrimage / Family Yatra",
     specialRequests: "",
     phone: user?.additionalDetails?.contactNumber || user?.phone || "",
-    memberDeclaration: false,
     termsAccepted: false,
   });
+  const [guests, setGuests] = useState(() => [emptyGuest(0, user, user?.additionalDetails?.contactNumber || user?.phone || "")]);
 
   const [booking, setBooking]           = useState(null);
   const [submitting, setSubmitting]     = useState(false);
   const [payProcessing, setPayProcessing] = useState(false);
+  const totalRooms = roomSelections.reduce((sum, item) => sum + item.rooms, 0);
+  const totalGuests = roomSelections.reduce((sum, item) => sum + item.guestsTotal, 0);
+
+  useEffect(() => {
+    setGuests((current) => {
+      const target = Math.max(1, totalGuests || 1);
+      const next = current.slice(0, target);
+      while (next.length < target) {
+        next.push(emptyGuest(next.length, user, guestDetails.phone));
+      }
+      return next;
+    });
+  }, [totalGuests, user, guestDetails.phone]);
+
+  const validateAadhaarFile = (file) => {
+    if (!file) return "Aadhaar file is required";
+    const fileName = file.name || "";
+    const ext = fileName.split(".").pop()?.toLowerCase();
+    const mime = (file.type || "").toLowerCase();
+    const allowed = AADHAAR_MIMES.includes(mime) || ["jpg", "jpeg", "png", "webp", "pdf"].includes(ext);
+    if (!allowed) return "Upload Aadhaar as JPG, PNG, WEBP or PDF";
+    if (file.size > AADHAAR_MAX_BYTES) return "Aadhaar file must be 15 MB or smaller";
+    return "";
+  };
+
+  const updateGuest = (index, patch) => {
+    setGuests((current) => current.map((guest, guestIndex) => (
+      guestIndex === index ? { ...guest, ...patch } : guest
+    )));
+  };
+
+  const handleGuestAadhaar = (index, file) => {
+    const message = validateAadhaarFile(file);
+    if (message) {
+      toast.error(message);
+      return;
+    }
+    updateGuest(index, { aadhaar: file });
+  };
+
+  const hasCompleteGuestDetails = guests.length === totalGuests && guests.every((guest) =>
+    guest.fullName.trim() && guest.phone.trim() && !validateAadhaarFile(guest.aadhaar)
+  );
+
+  const updateRoomCount = (selectedType, countValue) => {
+    const alreadySelectedElsewhere = roomSelections.reduce(
+      (sum, item) => String(item.roomTypeId) === String(selectedType._id) ? sum : sum + item.rooms,
+      0
+    );
+    const bookingRoomLimit = property?.bookingConfig?.maxRoomsPerBooking || Number.MAX_SAFE_INTEGER;
+    const maxAllowed = Math.max(0, Math.min(
+      selectedType.totalUnits || Number.MAX_SAFE_INTEGER,
+      bookingRoomLimit - alreadySelectedElsewhere
+    ));
+    const requestedRooms = Math.max(0, Number(countValue) || 0);
+    const rooms = Math.min(requestedRooms, maxAllowed);
+    if (requestedRooms > maxAllowed) {
+      toast.error(`Choose no more than ${maxAllowed} room(s) of this type within this booking`);
+    }
+    setRoomSelections((current) => {
+      const existing = current.find((item) => String(item.roomTypeId) === String(selectedType._id));
+      if (!rooms) return current.filter((item) => String(item.roomTypeId) !== String(selectedType._id));
+      const maxGuests = Math.max(1, selectedType.capacity?.max || 1) * rooms;
+      const defaultGuests = Math.max(1, selectedType.capacity?.base || 1) * rooms;
+      const updated = {
+        roomTypeId: selectedType._id,
+        rooms,
+        guestsTotal: Math.min(existing?.guestsTotal || defaultGuests, maxGuests),
+      };
+      return existing
+        ? current.map((item) => String(item.roomTypeId) === String(selectedType._id) ? updated : item)
+        : [...current, updated];
+    });
+  };
+
+  const updateGuestCount = (selectedType, countValue) => {
+    const selected = roomSelections.find((item) => String(item.roomTypeId) === String(selectedType._id));
+    const guestsTotal = Math.min(
+      Math.max(1, Number(countValue) || 1),
+      Math.max(1, selectedType.capacity?.max || 1) * (selected?.rooms || 1)
+    );
+    setRoomSelections((current) => current.map((item) =>
+      String(item.roomTypeId) === String(selectedType._id) ? { ...item, guestsTotal } : item
+    ));
+  };
 
   const handleGuestGoogleSuccess = (credentialResponse) => {
     if (!credentialResponse?.credential) {
@@ -111,17 +233,17 @@ const DharamshalaBookingV2 = ({ property, roomType, onClose }) => {
 
   // ── Step 1: fetch quote whenever inputs change ─────────────────────────────
   const fetchQuote = useCallback(async () => {
-    if (!dates.checkIn || !dates.checkOut || !roomType?._id) return;
+    if (!dates.checkIn || !dates.checkOut || roomSelections.length === 0) {
+      setQuote(null);
+      return;
+    }
     setQuoting(true);
     setPriceChanged(false);
     try {
       const res = await apiConnector("POST", API.QUOTE_API, {
-        roomTypeId:  roomType._id,
         checkIn:     dates.checkIn,
         checkOut:    dates.checkOut,
-        rooms:       dates.rooms,
-        guestsTotal: dates.guestsTotal,
-        memberDeclaration: guestDetails.memberDeclaration,
+        roomSelections,
       }, token ? { Authorization: `Bearer ${token}` } : {});
       setQuote(res.data?.data);
     } catch (err) {
@@ -131,7 +253,7 @@ const DharamshalaBookingV2 = ({ property, roomType, onClose }) => {
     } finally {
       setQuoting(false);
     }
-  }, [dates, roomType?._id, guestDetails.memberDeclaration, token]);
+  }, [dates.checkIn, dates.checkOut, roomSelections, token]);
 
   useEffect(() => { if (step === 1 || step === 2) fetchQuote(); }, [fetchQuote, step]);
 
@@ -140,22 +262,29 @@ const DharamshalaBookingV2 = ({ property, roomType, onClose }) => {
     if (!token) { toast.error("Please login to book"); return; }
     if (!guestDetails.termsAccepted) { toast.error("Please accept terms and conditions"); return; }
     if (!guestDetails.phone) { toast.error("Phone number is required"); return; }
+    if (roomSelections.length === 0) { toast.error("Select at least one room"); return; }
+    if (!hasCompleteGuestDetails) { toast.error(`Enter full name, phone and Aadhaar for all ${totalGuests} guest(s)`); return; }
     setSubmitting(true);
     try {
-      const res = await apiConnector("POST", API.CREATE_BOOKING_API, {
-        roomTypeId:    roomType._id,
-        checkIn:       dates.checkIn,
-        checkOut:      dates.checkOut,
-        rooms:         dates.rooms,
-        guestsTotal:   dates.guestsTotal,
-        phone:         guestDetails.phone.trim(),
-        purpose:       guestDetails.purpose,
-        specialRequests: guestDetails.specialRequests,
-        memberDeclaration: guestDetails.memberDeclaration,
-        termsAccepted: true,
-        expectedTotalPaise: quote?.pricing?.totalPaise,
-        idempotencyKey: `${roomType._id}_${dates.checkIn}_${dates.checkOut}_${Date.now()}`,
-      }, { Authorization: `Bearer ${token}` });
+      const form = new FormData();
+      form.append("checkIn", dates.checkIn);
+      form.append("checkOut", dates.checkOut);
+      form.append("roomSelections", JSON.stringify(roomSelections));
+      form.append("phone", guestDetails.phone.trim());
+      form.append("purpose", guestDetails.purpose);
+      form.append("specialRequests", guestDetails.specialRequests);
+      form.append("termsAccepted", "true");
+      form.append("expectedTotalPaise", quote?.pricing?.totalPaise ?? "");
+      form.append("idempotencyKey", `${roomSelections.map((item) => item.roomTypeId).join("-")}_${dates.checkIn}_${dates.checkOut}_${Date.now()}`);
+      form.append("guestDetails", JSON.stringify(guests.map((guest) => ({
+        fullName: guest.fullName.trim(),
+        phone: guest.phone.trim(),
+      }))));
+      guests.forEach((guest, index) => {
+        form.append(`guestAadhaar_${index}`, guest.aadhaar);
+      });
+
+      const res = await apiConnector("POST", API.CREATE_BOOKING_API, form, { Authorization: `Bearer ${token}` });
 
       const created = res.data?.data;
       setBooking(created);
@@ -198,7 +327,7 @@ const DharamshalaBookingV2 = ({ property, roomType, onClose }) => {
           amount,
           currency: currency || "INR",
           name:     property?.name || "Samaj Dharamshala",
-          description: `${booking.bookingRef} — ${roomType?.name}`,
+          description: `${booking.bookingRef} — ${selectedRoomTypes.map((item) => item.name).join(", ")}`,
           order_id: orderId,
           prefill: {
             name:    booking.bookerName || "",
@@ -247,7 +376,7 @@ const DharamshalaBookingV2 = ({ property, roomType, onClose }) => {
         {/* Header */}
         <div className="dhv2-header">
           <div>
-            <h2 className="dhv2-title">Book {roomType?.name || "Room"}</h2>
+            <h2 className="dhv2-title">Book your stay</h2>
             <p className="dhv2-subtitle">{property?.name}</p>
           </div>
           <button className="dhv2-close" onClick={onClose}><FiX size={20} /></button>
@@ -279,36 +408,66 @@ const DharamshalaBookingV2 = ({ property, roomType, onClose }) => {
                   min={dates.checkIn}
                   onChange={(e) => setDates((d) => ({ ...d, checkOut: e.target.value }))} />
               </label>
-              <label className="dhv2-label">
-                Rooms
-                <input type="number" className="dhv2-input" value={dates.rooms} min={1}
-                  max={roomType?.totalUnits || 10}
-                  onChange={(e) => setDates((d) => ({ ...d, rooms: Math.max(1, +e.target.value) }))} />
-              </label>
-              <label className="dhv2-label">
-                Guests
-                <input type="number" className="dhv2-input" value={dates.guestsTotal} min={1}
-                  max={(roomType?.capacity?.max || 4) * dates.rooms}
-                  onChange={(e) => setDates((d) => ({ ...d, guestsTotal: Math.max(1, +e.target.value) }))} />
-              </label>
+            </div>
+
+            <div className="dhv2-room-list">
+              <h3 className="dhv2-section-title">Choose room types and guests</h3>
+              {availableRoomTypes.map((item) => {
+                const selected = roomSelections.find((entry) => String(entry.roomTypeId) === String(item._id));
+                const otherSelectedRooms = roomSelections.reduce(
+                  (sum, entry) => String(entry.roomTypeId) === String(item._id) ? sum : sum + entry.rooms,
+                  0
+                );
+                const roomLimit = property?.bookingConfig?.maxRoomsPerBooking || Number.MAX_SAFE_INTEGER;
+                const maxRoomsForType = Math.max(0, Math.min(item.totalUnits || Number.MAX_SAFE_INTEGER, roomLimit - otherSelectedRooms));
+                const cover = item.images?.find((image) => image.isCover) || item.images?.[0];
+                return (
+                  <div className="dhv2-room-option" key={item._id}>
+                    {cover?.url && <img src={cover.url} alt={item.name} />}
+                    <div className="dhv2-room-info">
+                      <strong>{item.name}</strong>
+                      <span>{item.capacity?.base || 1} base · {item.capacity?.max || 1} max per room · {item.totalUnits || 1} unit(s)</span>
+                      <span>
+                        Public {fmt(item.pricing?.publicPricePaise || 0)} · Member {fmt(item.pricing?.memberPricePaise || 0)}
+                        {" / "}{item.pricing?.pricingUnit === "PER_EVENT" ? "event" : "night"}
+                      </span>
+                    </div>
+                    <label className="dhv2-label dhv2-count-field">
+                      Rooms
+                      <input type="number" className="dhv2-input" min={0} max={maxRoomsForType}
+                        value={selected?.rooms || 0} onChange={(e) => updateRoomCount(item, e.target.value)} />
+                    </label>
+                    {selected && (
+                      <label className="dhv2-label dhv2-count-field">
+                        Guests
+                        <input type="number" className="dhv2-input" min={1}
+                          max={(item.capacity?.max || 1) * selected.rooms} value={selected.guestsTotal}
+                          onChange={(e) => updateGuestCount(item, e.target.value)} />
+                      </label>
+                    )}
+                  </div>
+                );
+              })}
+              {roomSelections.length === 0 && <p className="dhv2-empty-selection">Select one or more room types to see your quote.</p>}
             </div>
 
             {/* Price preview */}
             {quoting && <div className="dhv2-loading"><FiLoader className="spin" /> Calculating price…</div>}
             {pricing && !quoting && (
               <div className="dhv2-price-card">
-                <div className="dhv2-price-row"><span>Base ({nights} night{nights > 1 ? "s" : ""} × {dates.rooms} room{dates.rooms > 1 ? "s" : ""})</span><strong>{fmt(pricing.basePaise)}</strong></div>
+                <div className="dhv2-price-row"><span>Room charges ({nights} night{nights > 1 ? "s" : ""} · {totalRooms} room{totalRooms > 1 ? "s" : ""})</span><strong>{fmt(pricing.basePaise)}</strong></div>
                 {pricing.extraPaise > 0 && <div className="dhv2-price-row"><span>Extra guest charge</span><strong>{fmt(pricing.extraPaise)}</strong></div>}
                 {pricing.taxPaise > 0 && <div className="dhv2-price-row"><span>Tax ({pricing.taxRatePercent}%)</span><strong>{fmt(pricing.taxPaise)}</strong></div>}
                 <div className="dhv2-price-row total"><span>Total</span><strong>{fmt(pricing.totalPaise)}</strong></div>
                 {pricing.advancePaise > 0 && <div className="dhv2-price-row advance"><span>Advance now ({pricing.advancePercent}%)</span><strong>{fmt(pricing.advancePaise)}</strong></div>}
+                {pricing.balancePaise > 0 && <div className="dhv2-price-row"><span>Balance at {property?.bookingConfig?.balanceDueAt === "CHECK_OUT" ? "check-out" : "check-in"}</span><strong>{fmt(pricing.balancePaise)}</strong></div>}
                 {pricing.advancePaise === 0 && <div className="dhv2-pill green">No advance payment required</div>}
                 {pricing.tier === "MEMBER" && <div className="dhv2-pill purple">🏅 Member price applied</div>}
                 {quote?.bookingMode === "REQUIRES_APPROVAL" && <div className="dhv2-pill blue">📋 Requires admin approval</div>}
               </div>
             )}
 
-            <button className="dhv2-btn primary" disabled={!pricing || quoting}
+            <button className="dhv2-btn primary" disabled={!pricing || quoting || roomSelections.length === 0}
               onClick={() => setStep(2)}>
               Continue <FiArrowRight />
             </button>
@@ -345,8 +504,15 @@ const DharamshalaBookingV2 = ({ property, roomType, onClose }) => {
             {/* Booking summary */}
             {pricing && (
               <div className="dhv2-price-card compact">
-                <div className="dhv2-price-row total"><span>{dates.checkIn} → {dates.checkOut} · {nights}N · {dates.rooms}R · {dates.guestsTotal}G</span><strong>{fmt(pricing.totalPaise)}</strong></div>
-                {pricing.advancePaise > 0 && <div className="dhv2-price-row advance"><span>Due now</span><strong>{fmt(pricing.advancePaise)}</strong></div>}
+                <div className="dhv2-price-row total"><span>{dates.checkIn} → {dates.checkOut} · {nights}N · {totalRooms}R · {totalGuests}G</span><strong>{fmt(pricing.totalPaise)}</strong></div>
+                {quote?.roomQuotes?.map((row) => (
+                  <div className="dhv2-price-row" key={row.roomTypeId}>
+                    <span>{row.roomTypeName} · {row.rooms} room(s), {row.guestsTotal} guest(s)</span>
+                    <strong>{fmt(row.pricing.totalPaise)}</strong>
+                  </div>
+                ))}
+                {pricing.advancePaise > 0 && <div className="dhv2-price-row advance"><span>Advance due now ({pricing.advancePercent}%)</span><strong>{fmt(pricing.advancePaise)}</strong></div>}
+                {pricing.balancePaise > 0 && <div className="dhv2-price-row"><span>Balance at {property?.bookingConfig?.balanceDueAt === "CHECK_OUT" ? "check-out" : "check-in"}</span><strong>{fmt(pricing.balancePaise)}</strong></div>}
               </div>
             )}
 
@@ -377,11 +543,48 @@ const DharamshalaBookingV2 = ({ property, roomType, onClose }) => {
                   onChange={(e) => setGuestDetails((d) => ({ ...d, specialRequests: e.target.value }))} />
               </label>
 
-              <label className="dhv2-check">
-                <input type="checkbox" checked={guestDetails.memberDeclaration}
-                  onChange={(e) => setGuestDetails((d) => ({ ...d, memberDeclaration: e.target.checked }))} />
-                <span>I am a Halba/Halbi Samaj member (upload proof if not yet verified)</span>
-              </label>
+              <section className="dhv2-guest-section">
+                <div className="dhv2-guest-heading">
+                  <div>
+                    <h3>Guest Details</h3>
+                    <p>{totalGuests} guest{totalGuests > 1 ? "s" : ""} selected. Aadhaar is stored privately for booking verification.</p>
+                  </div>
+                  {pricing?.tier === "MEMBER" && <span className="dhv2-tier-chip">Member price</span>}
+                </div>
+                <div className="dhv2-guest-grid">
+                  {guests.map((guest, index) => (
+                    <div className="dhv2-guest-card" key={index}>
+                      <div className="dhv2-guest-card-title">
+                        <strong>Guest #{index + 1}</strong>
+                        {guest.aadhaar && (
+                          <button type="button" className="dhv2-icon-btn" onClick={() => updateGuest(index, { aadhaar: null })} aria-label={`Remove Aadhaar for guest ${index + 1}`}>
+                            <FiTrash2 />
+                          </button>
+                        )}
+                      </div>
+                      <label className="dhv2-label">
+                        Full Name *
+                        <input type="text" className="dhv2-input" value={guest.fullName}
+                          onChange={(e) => updateGuest(index, { fullName: e.target.value })} />
+                      </label>
+                      <label className="dhv2-label">
+                        Phone Number *
+                        <input type="tel" className="dhv2-input" value={guest.phone}
+                          onChange={(e) => updateGuest(index, { phone: e.target.value })} />
+                      </label>
+                      <label className="dhv2-upload-box">
+                        <input type="file" accept={AADHAAR_ACCEPT}
+                          onChange={(e) => handleGuestAadhaar(index, e.target.files?.[0] || null)} />
+                        <FiUpload />
+                        <span>{guest.aadhaar ? "Replace Aadhaar" : "Upload Aadhaar *"}</span>
+                      </label>
+                      <p className="dhv2-file-note">
+                        {guest.aadhaar ? guest.aadhaar.name : "JPG, PNG, WEBP or PDF up to 15 MB"}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </section>
 
               <label className="dhv2-check">
                 <input type="checkbox" checked={guestDetails.termsAccepted} required
@@ -392,7 +595,7 @@ const DharamshalaBookingV2 = ({ property, roomType, onClose }) => {
 
             <div className="dhv2-actions">
               <button className="dhv2-btn outline" onClick={() => setStep(1)}><FiArrowLeft /> Back</button>
-              <button className="dhv2-btn primary" disabled={submitting || !guestDetails.termsAccepted} onClick={handleCreateBooking}>
+              <button className="dhv2-btn primary" disabled={submitting || !guestDetails.termsAccepted || roomSelections.length === 0 || !hasCompleteGuestDetails} onClick={handleCreateBooking}>
                 {submitting ? <><FiLoader className="spin" /> Processing…</> : "Confirm Booking"}
               </button>
             </div>
@@ -409,7 +612,7 @@ const DharamshalaBookingV2 = ({ property, roomType, onClose }) => {
               <h3>Complete Your Advance Payment</h3>
               <p>Booking <strong>{booking.bookingRef}</strong> is reserved for <strong>30 minutes</strong>.</p>
               <div className="dhv2-pay-amount">{fmt(booking.pricing?.advancePaise)}</div>
-              <p className="dhv2-pay-sub">Balance of {fmt(booking.pricing?.balancePaise)} due at check-in</p>
+              <p className="dhv2-pay-sub">Balance of {fmt(booking.pricing?.balancePaise)} due at {property?.bookingConfig?.balanceDueAt === "CHECK_OUT" ? "check-out" : "check-in"}</p>
               <button className="dhv2-btn primary large" disabled={payProcessing} onClick={handlePay}>
                 {payProcessing ? <><FiLoader className="spin" /> Opening Razorpay…</> : "Pay Now via Razorpay"}
               </button>
@@ -443,6 +646,17 @@ const DharamshalaBookingV2 = ({ property, roomType, onClose }) => {
                 <div className="dhv2-details-item"><span>Check-out</span><strong>{booking.checkOut}</strong></div>
                 <div className="dhv2-details-item"><span>Rooms</span><strong>{booking.roomsRequested}</strong></div>
                 <div className="dhv2-details-item"><span>Total</span><strong>{fmt(booking.pricing?.totalPaise)}</strong></div>
+                <div className="dhv2-details-item"><span>Advance required</span><strong>{fmt(booking.pricing?.advancePaise)}</strong></div>
+                <div className="dhv2-details-item"><span>Balance due</span><strong>{fmt(booking.pricing?.balancePaise)}</strong></div>
+                <div className="dhv2-details-item"><span>Paid to date</span><strong>{fmt(booking.paidPaise || 0)}</strong></div>
+              </div>
+              <div className="dhv2-booking-allocation">
+                {(booking.roomSelections || []).map((item) => (
+                  <div key={item.roomTypeId}>
+                    <span>{item.roomTypeName} · {item.rooms} room(s) · {item.guestsTotal} guest(s)</span>
+                    <strong>{fmt(item.pricing?.totalPaise)}</strong>
+                  </div>
+                ))}
               </div>
 
               {booking.bookingStatus === "AWAITING_PAYMENT" && (

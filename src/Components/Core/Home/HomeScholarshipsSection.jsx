@@ -39,6 +39,16 @@ const ScholarshipCard = ({ scholarship, isHindi }) => {
   return (
     <article className="group flex flex-col justify-between rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-5 transition-all duration-300 hover:-translate-y-1 hover:border-amber-500/40 hover:shadow-lg">
       <div>
+        {scholarship.posterImage?.url && (
+          <div className="mb-4 aspect-[16/9] overflow-hidden rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-2">
+            <img
+              src={scholarship.posterImage.url}
+              alt={`${scholarship.title} poster`}
+              className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-[1.02]"
+              loading="lazy"
+            />
+          </div>
+        )}
         {/* Top badge row: Category/Provider + Amount */}
         <div className="mb-3 flex items-center justify-between gap-2">
           <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-bold text-amber-600 dark:text-amber-400">

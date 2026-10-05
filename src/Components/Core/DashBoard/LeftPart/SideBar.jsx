@@ -8,7 +8,7 @@ import { FiX } from "react-icons/fi";
 import ConfirmationModal from "../../../Common/ConfirmationModal";
 import { setLogOut } from "../../../../services/Operations/authAPI";
 import { useLanguage } from "../../../../i18n/LanguageContext";
-import { hasPermission } from "../../../../Utilities/permissions";
+import { hasPermission, isOnlyDharamshalaStaff } from "../../../../Utilities/permissions";
 
 const SideBar = ({ isSidebarOpen, setIsSidebarOpen }) => {
   const { loading: authLoading } = useSelector((state) => state.auth);
@@ -29,11 +29,16 @@ const SideBar = ({ isSidebarOpen, setIsSidebarOpen }) => {
 
   const userRoles = user?.roles || [];
   const accountType = user?.accountType || "";
+  const staffOnly = isOnlyDharamshalaStaff(userRoles);
+  const visibleMemberLinks = staffOnly
+    ? memberLinks.filter((link) => link.path === "/dashboard/my-profile")
+    : memberLinks;
 
   // ── Filter admin links by permission ──────────────────────────────────────
-  const visibleAdminLinks = adminLinks.filter((link) =>
-    hasPermission(userRoles, accountType, link.permission)
-  );
+  const visibleAdminLinks = adminLinks.filter((link) => {
+    if (staffOnly) return link.path === "/dashboard/admin/community?tab=staff";
+    return hasPermission(userRoles, accountType, link.permission);
+  });
 
   // ── Group visible admin links into sections ────────────────────────────────
   const adminSections = visibleAdminLinks.reduce((acc, link) => {
@@ -86,7 +91,7 @@ const SideBar = ({ isSidebarOpen, setIsSidebarOpen }) => {
               {isHindi ? "खाता व सेवाएं" : "Account"}
             </p>
             <div className="flex flex-col gap-1">
-              {memberLinks.map((link, idx) => (
+              {visibleMemberLinks.map((link, idx) => (
                 <SlideBarButton
                   key={idx}
                   icon={link.icon}
@@ -123,6 +128,7 @@ const SideBar = ({ isSidebarOpen, setIsSidebarOpen }) => {
 
         {/* Fixed Bottom Actions */}
         <div className="mt-auto shrink-0 p-3 md:p-4 flex text-[var(--text-primary)] flex-col gap-y-2 border-t border-[var(--border-subtle)] bg-[var(--surface-elevated)] backdrop-blur-md z-10 shadow-[0_-4px_20px_rgba(0,0,0,0.15)]">
+          {!staffOnly && (
           <SlideBarButton
             icon="IoMdSettings"
             path="/dashboard/setting"
@@ -130,6 +136,7 @@ const SideBar = ({ isSidebarOpen, setIsSidebarOpen }) => {
             isSidebarOpen={isSidebarOpen}
             onClick={() => setIsSidebarOpen(false)}
           />
+          )}
 
           <button
             className={`flex items-center ${isSidebarOpen ? "justify-start" : "justify-center md:justify-start"} gap-x-3 text-[var(--text-muted)] text-xs font-bold uppercase tracking-wider px-3 py-2.5 rounded-2xl hover:bg-red-500/10 hover:text-red-400 transition-all duration-200 cursor-pointer group`}

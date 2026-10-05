@@ -36,6 +36,7 @@ import {
   dharamshalaAdminEndpoints,
   dharamshalaBookingV2Endpoints as API,
 } from "../../services/apis.jsx";
+import { hasPermission } from "../../Utilities/permissions";
 import { StatusBadge } from "./DharamshalaBookingV2";
 
 const fmt = (p) =>
@@ -210,7 +211,11 @@ const RevCard = ({ label, value, sub, color }) => (
  * ──────────────────────────────────────────────────────────────────────────── */
 export default function DharamshalaStaffPanel({ refreshKey = 0 }) {
   const token = useSelector((s) => s.auth.token);
+  const user = useSelector((s) => s.profile.user);
   const authH = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
+  const userRoles = user?.roles || [];
+  const accountType = user?.accountType || "";
+  const canViewReports = hasPermission(userRoles, accountType, "report:dharamshala");
 
   const [tab, setTab] = useState("today");
   const [busyId, setBusyId] = useState(null);
@@ -382,9 +387,9 @@ export default function DharamshalaStaffPanel({ refreshKey = 0 }) {
 
   useEffect(() => {
     if (tab === "today") loadTodayBoard();
-    if (tab === "revenue") loadRevenue();
-    if (tab === "audit") loadAudit();
-  }, [tab, refreshKey, loadTodayBoard, loadRevenue, loadAudit]);
+    if (tab === "revenue" && canViewReports) loadRevenue();
+    if (tab === "audit" && canViewReports) loadAudit();
+  }, [tab, refreshKey, loadTodayBoard, loadRevenue, loadAudit, canViewReports]);
 
   useEffect(() => {
     if (tab !== "search") return;
@@ -583,28 +588,42 @@ export default function DharamshalaStaffPanel({ refreshKey = 0 }) {
     };
   }, [todayLists]);
 
-  const TABS = [
-    {
-      key: "today",
-      label: "Today Board",
-      icon: <FiClock size={15} />,
-    },
-    {
-      key: "search",
-      label: "Search Bookings",
-      icon: <FiSearch size={15} />,
-    },
-    {
-      key: "revenue",
-      label: "Revenue",
-      icon: <FiBarChart2 size={15} />,
-    },
-    {
-      key: "audit",
-      label: "Audit Log",
-      icon: <FiUser size={15} />,
-    },
-  ];
+  const TABS = useMemo(() => {
+    const baseTabs = [
+      {
+        key: "today",
+        label: "Today Board",
+        icon: <FiClock size={15} />,
+      },
+      {
+        key: "search",
+        label: "Search Bookings",
+        icon: <FiSearch size={15} />,
+      },
+    ];
+
+    if (!canViewReports) return baseTabs;
+
+    return [
+      ...baseTabs,
+      {
+        key: "revenue",
+        label: "Revenue",
+        icon: <FiBarChart2 size={15} />,
+      },
+      {
+        key: "audit",
+        label: "Audit Log",
+        icon: <FiUser size={15} />,
+      },
+    ];
+  }, [canViewReports]);
+
+  useEffect(() => {
+    if (!TABS.some((item) => item.key === tab)) {
+      setTab("today");
+    }
+  }, [TABS, tab]);
 
   const renderBookingCard = (booking) => (
     <BookingCard
@@ -667,15 +686,17 @@ export default function DharamshalaStaffPanel({ refreshKey = 0 }) {
             ))}
           </div>
 
-          <button
-            type="button"
-            className="sp-export-btn"
-            onClick={downloadCSV}
-            title="Download bookings CSV"
-          >
-            <FiDownload size={15} />
-            <span>Export CSV</span>
-          </button>
+          {canViewReports && (
+            <button
+              type="button"
+              className="sp-export-btn"
+              onClick={downloadCSV}
+              title="Download bookings CSV"
+            >
+              <FiDownload size={15} />
+              <span>Export CSV</span>
+            </button>
+          )}
         </nav>
 
         {/* ───────────────────────── Today ───────────────────────── */}

@@ -2001,7 +2001,7 @@ export default function SuggestionsAdmin() {
 
       {/* ── Suggestion Detail Modal ── */}
       {selectedSuggestion && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/75 backdrop-blur-sm animate-fadeIn">
+        <div className="fixed inset-0 z-2000 flex items-center justify-center p-3 sm:p-6 bg-black/75 backdrop-blur-sm animate-fadeIn">
           <div className="w-full max-w-4xl max-h-[92vh] flex flex-col bg-[var(--surface)] border border-[var(--border-subtle)] rounded-3xl shadow-2xl overflow-hidden">
             {/* Modal Header */}
             <div className="px-6 py-4 border-b border-[var(--border-subtle)] flex items-center justify-between gap-4 bg-[var(--bg)]/50">

@@ -17,6 +17,17 @@
 export const ROLE_PERMISSIONS = {
   SUPER_ADMIN: ["*"],
 
+  COMMUNITY_ADMIN: [
+    "issue:*",
+    "dharamshala:*",
+    "poll:*",
+    "community:*",
+    "achievement:*",
+    "shradhanjali:*",
+    "member:verify",
+    "report:*",
+  ],
+
   TREASURER: ["donation:*", "contribution:*", "report:financial"],
 
   MATRIMONIAL_ADMIN: [
@@ -29,6 +40,8 @@ export const ROLE_PERMISSIONS = {
   JOB_ADMIN: ["job:*"],
 
   DHARAMSHALA_ADMIN: ["dharamshala:*"],
+
+  DHARAMSHALA_STAFF: ["dharamshala:staff"],
 
   CONTENT_ADMIN: [
     "notice:*",
@@ -104,6 +117,8 @@ export function hasPermission(roles = [], accountType = "", permission) {
 
   const specificAdminRoles = [
     "SUPER_ADMIN",
+    "COMMUNITY_ADMIN",
+    "DHARAMSHALA_STAFF",
     "MODERATOR",
     "TREASURER",
     "MATRIMONIAL_ADMIN",
@@ -153,6 +168,8 @@ export function isAnyAdmin(roles = [], accountType = "") {
   const adminRoles = [
     "SUPER_ADMIN",
     "ADMIN",
+    "COMMUNITY_ADMIN",
+    "DHARAMSHALA_STAFF",
     "MODERATOR",
     "TREASURER",
     "MATRIMONIAL_ADMIN",
@@ -174,6 +191,8 @@ export function isSuperAdmin(roles = [], accountType = "") {
   if (norm.includes("SUPER_ADMIN") || norm.includes("ADMIN")) return true;
 
   const specificAdminRoles = [
+    "COMMUNITY_ADMIN",
+    "DHARAMSHALA_STAFF",
     "MODERATOR",
     "TREASURER",
     "MATRIMONIAL_ADMIN",
@@ -184,4 +203,19 @@ export function isSuperAdmin(roles = [], accountType = "") {
   ];
   const hasSpecific = norm.some((r) => specificAdminRoles.includes(r));
   return (accountType === "Admin" || accountType === "ADMIN") && !hasSpecific;
+}
+
+/**
+ * Returns true for a user whose only elevated role is DHARAMSHALA_STAFF.
+ * MEMBER is allowed because scoped admin accounts often retain the member baseline.
+ */
+export function isOnlyDharamshalaStaff(roles = []) {
+  const norm = (Array.isArray(roles) ? roles : (roles ? [roles] : []))
+    .filter(Boolean)
+    .map((r) => String(r).toUpperCase().trim());
+
+  if (!norm.includes("DHARAMSHALA_STAFF")) return false;
+
+  const elevatedRoles = norm.filter((role) => !["MEMBER", "DHARAMSHALA_STAFF"].includes(role));
+  return elevatedRoles.length === 0;
 }

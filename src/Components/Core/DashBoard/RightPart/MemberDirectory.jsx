@@ -73,6 +73,8 @@ const MemberDirectory = () => {
   // Normal members data (Non-Admin)
   const [normalMembers, setNormalMembers] = useState([]);
   const [normalMeta, setNormalMeta] = useState({ page: 1, pages: 1, total: 0 });
+  const [totalSamajMembers, setTotalSamajMembers] = useState(null);
+  const [loadingSamajMemberCount, setLoadingSamajMemberCount] = useState(false);
 
   // Selected Family Detail View state (Admin)
   const [selectedFamilyId, setSelectedFamilyId] = useState(urlFamilyId || null);
@@ -98,6 +100,33 @@ const MemberDirectory = () => {
     }),
     [token]
   );
+
+  useEffect(() => {
+    if (selectedFamilyId) return;
+
+    let isCurrent = true;
+    setLoadingSamajMemberCount(true);
+    apiConnector("GET", profileEndpoints.SAMAJ_MEMBER_COUNT_API, null, authConfig)
+      .then((response) => {
+        if (isCurrent) {
+          setTotalSamajMembers(response.data?.data?.totalMembers ?? null);
+        }
+      })
+      .catch((error) => {
+        console.error("Error loading total Samaj member count:", error);
+        if (isCurrent) {
+          setTotalSamajMembers(null);
+          toast.error(error.response?.data?.message || "Unable to load total Samaj member count");
+        }
+      })
+      .finally(() => {
+        if (isCurrent) setLoadingSamajMemberCount(false);
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [authConfig, selectedFamilyId]);
 
   // Fetch Family Directory List
   const fetchFamilies = useCallback(async () => {
@@ -1004,6 +1033,19 @@ const MemberDirectory = () => {
                   ? "Family-Centric Samaj Management: Members grouped by family unit with administrative details, verification status, and head leadership."
                   : "Search Samaj community members by name."}
               </p>
+              {!selectedFamilyId && (
+                <div className="mt-3 inline-flex items-center gap-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-3 py-2 text-xs sm:text-sm">
+                  <FiUsers size={15} className="text-[var(--accent-primary)]" />
+                  <span className="font-medium text-[var(--text-secondary)]">Total Samaj Members</span>
+                  <strong className="font-bold text-[var(--text-primary)]">
+                    {loadingSamajMemberCount && totalSamajMembers === null
+                      ? "Loading…"
+                      : totalSamajMembers === null
+                      ? "Unavailable"
+                      : totalSamajMembers.toLocaleString("en-IN")}
+                  </strong>
+                </div>
+              )}
             </div>
 
             {/* Admin Tab Switching between Families and Unlinked */}

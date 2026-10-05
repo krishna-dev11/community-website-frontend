@@ -7,6 +7,7 @@ import { useSelector } from "react-redux";
 import { apiConnector } from "../services/apiConnector";
 import { paymentEndpoints } from "../services/apis";
 import { useLanguage } from "../i18n/LanguageContext";
+import ReceiptModal from "../Components/Common/ReceiptModal";
 
 const amountOptions = [501, 1100, 2100, 5100];
 
@@ -55,6 +56,8 @@ const DonatePage = () => {
   const [myDonations, setMyDonations] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [receiptModalOpen, setReceiptModalOpen] = useState(false);
+  const [activeReceipt, setActiveReceipt] = useState(null);
 
   const fetchMyDonations = useCallback(async () => {
     if (!token) return;
@@ -72,6 +75,32 @@ const DonatePage = () => {
       toast.error(err?.response?.data?.message || "Failed to load donation history.");
     } finally {
       setHistoryLoading(false);
+    }
+  }, [token]);
+
+  const handleViewReceipt = useCallback(async (donationId) => {
+    if (!token || !donationId) return;
+    const toastId = toast.loading("Loading donation receipt...");
+    try {
+      const authConfig = {
+        headers: { Authorization: `Bearer ${token}` },
+        withCredentials: true,
+      };
+      const res = await apiConnector(
+        "GET",
+        paymentEndpoints.DONATION_RECEIPT_API(donationId),
+        null,
+        authConfig
+      );
+      const receipt = res?.data?.data?.receipt;
+      if (!receipt) throw new Error("Receipt data was not returned.");
+      setActiveReceipt(receipt);
+      setReceiptModalOpen(true);
+    } catch (err) {
+      console.error("Donation receipt fetch error:", err);
+      toast.error(err?.response?.data?.message || err.message || "Failed to load donation receipt.");
+    } finally {
+      toast.dismiss(toastId);
     }
   }, [token]);
 
@@ -199,10 +228,12 @@ const DonatePage = () => {
             toast.success(
               `Donation of ${formatCurrency(amount)} received! Receipt: ${donationInfo?.receiptNumber || "DR-SUCCESS"}`
             );
+            await fetchMyDonations();
           } catch (vErr) {
             console.error("Verification error:", vErr);
             toast.success("Payment submitted. Campaign totals updated.");
             await loadCampaigns();
+            await fetchMyDonations();
           } finally {
             toast.dismiss(verifyToast);
           }
@@ -576,6 +607,16 @@ const DonatePage = () => {
                           &ldquo;{donation.note}&rdquo;
                         </p>
                       )}
+                      {donation.status === "SUCCESS" && (
+                        <button
+                          type="button"
+                          onClick={() => handleViewReceipt(donation._id)}
+                          className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[var(--accent-primary)]/35 bg-[var(--accent-primary)]/10 px-3 py-2 text-xs font-bold text-[var(--accent-primary)] transition hover:bg-[var(--accent-primary)]/15"
+                        >
+                          <FaReceipt size={12} />
+                          <span>{isHindi ? "à¤°à¤¸à¥€à¤¦ à¤¦à¥‡à¤–à¥‡à¤‚ / à¤¡à¤¾à¤‰à¤¨à¤²à¥‹à¤¡" : "View / Download Receipt"}</span>
+                        </button>
+                      )}
                     </div>
                   </article>
                 );
@@ -584,6 +625,11 @@ const DonatePage = () => {
           )}
         </section>
       )}
+      <ReceiptModal
+        isOpen={receiptModalOpen}
+        onClose={() => setReceiptModalOpen(false)}
+        receipt={activeReceipt}
+      />
     </main>
   );
 };

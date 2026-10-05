@@ -69,6 +69,7 @@ const DharamshalaPage = () => {
 
   const [dharamshalas, setDharamshalas] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [listingError, setListingError] = useState(false);
   const [selectedCity, setSelectedCity] = useState("ALL");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -119,83 +120,17 @@ const DharamshalaPage = () => {
     }
   }, [token, activeTab]);
 
-  const FALLBACK_DHARAMSHALAS = [
-    {
-      _id: "ujjain-halba-dharmshala",
-      name: "हल्बा समाज धर्मशाला, उज्जैन",
-      slug: "halba-samaj-dharmshala-ujjain",
-      tagline: "श्री विट्ठल मंदिर परिसर, नरसिंह घाट रोड, कालिका माता मंदिर के पीछे, उज्जैन",
-      description:
-        "आदिवासी हल्बा/हल्बी समाज कल्याण समिति, उज्जैन द्वारा संचालित अधिकृत धर्मशाला। कुल 05 डबल कमरे (अधिकतम क्षमता 4 व्यक्ति प्रति कमरा) एवं 01 विशाल हॉल। सभी अतिथियों के लिए समान मानक दरें लागू हैं।",
-      location: {
-        address: "श्री विट्ठल मंदिर, नरसिंह घाट रोड, कालिका माता मंदिर के पीछे",
-        city: "Ujjain",
-        state: "Madhya Pradesh",
-        pincode: "456006",
-        landmark: "कालिका माता मंदिर के पीछे, नरसिंह घाट",
-      },
-      mainImage: "https://images.unsplash.com/photo-1624462966581-bc6d768cbce5?auto=format&fit=crop&w=1200&q=80",
-      roomTypes: [
-        {
-          name: "AC Double Room (Attached Toilet)",
-          description: "02 AC कमरे — अटैच्ड टॉयलेट युक्त। अधिकतम क्षमता 04 व्यक्ति।",
-          capacity: 4,
-          totalRooms: 2,
-          pricePerNight: 1200,
-          amenities: ["Air Conditioning", "Attached Toilet", "Double Bed", "Clean Water", "Geyser"],
-        },
-        {
-          name: "Non-AC Double Room (Non-Attached Toilet)",
-          description: "03 Non-AC कमरे — नॉन-अटैच्ड टॉयलेट युक्त। अधिकतम क्षमता 04 व्यक्ति।",
-          capacity: 4,
-          totalRooms: 3,
-          pricePerNight: 800,
-          amenities: ["Ceiling Fan", "Non-Attached Toilet", "Double Bed", "Clean Water"],
-        },
-        {
-          name: "Community Hall",
-          description: "01 विशाल सामुदायिक हॉल। बड़े समूहों और सामुदायिक आयोजनों के लिए।",
-          capacity: 25,
-          totalRooms: 1,
-          pricePerNight: 3000,
-          amenities: ["Spacious Hall", "Clean Facilities"],
-        },
-      ],
-      facilities: [
-        "श्री विट्ठल-रुक्मिणी मंदिर परिसर",
-        "नरसिंह घाट व पवित्र क्षिप्रा तट के निकट",
-        "24 घंटे जल एवं प्रकाश व्यवस्था",
-        "शांत एवं सुरक्षित आध्यात्मिक वातावरण",
-      ],
-      rules: [
-        "ओरिजिनल आईडी (Original ID) के बिना प्रवेश की अनुमति नहीं दी जाएगी।",
-        "धूम्रपान (Smoking) परिसर में पूर्णतः वर्जित है।",
-        "मद्यपान / शराब (Drinking) पूर्णतः प्रतिबंधित है।",
-        "मांसाहार (Non-veg) परिसर में सख्त मना है।",
-        "यात्री अपने कीमती सामान की सुरक्षा के लिए स्वयं जिम्मेदार हैं।",
-        "चेक-इन: 12:00 AM (क्लाइंट द्वारा प्रेषित — पुष्टि हेतु चिन्हित) | चेक-आउट: 10:00 AM",
-        "24 घंटे पूर्व निरस्तीकरण पर रिफंड नियम लागू | 24 घंटे के बाद कोई रिफंड नहीं",
-      ],
-      checkInTime: "12:00 AM",
-      checkOutTime: "10:00 AM",
-      contactPhone: "+91 99260 18058",
-      contactEmail: "halbahalbiujjain79@gmail.com",
-    },
-  ];
-
   const fetchDharamshalas = async () => {
     try {
       setLoading(true);
+      setListingError(false);
       const res = await apiConnector("GET", DHARAMSHALAS_API);
       const list = res.data?.data?.properties || res.data?.data?.dharamshalas;
-      if (Array.isArray(list) && list.length > 0) {
-        setDharamshalas(list);
-      } else {
-        setDharamshalas(FALLBACK_DHARAMSHALAS);
-      }
+      setDharamshalas(Array.isArray(list) ? list : []);
     } catch (err) {
-      console.error("Failed to fetch dharamshalas, using official fallback:", err);
-      setDharamshalas(FALLBACK_DHARAMSHALAS);
+      console.error("Failed to fetch dharamshalas:", err);
+      setDharamshalas([]);
+      setListingError(true);
     } finally {
       setLoading(false);
     }
@@ -703,10 +638,19 @@ const DharamshalaPage = () => {
             ) : filteredDharamshalas.length === 0 ? (
               <div className="ka-card p-12 text-center">
                 <FiHome className="mx-auto h-12 w-12 text-[var(--text-muted)] mb-3" />
-                <h3 className="text-lg font-bold text-[var(--text-primary)]">No Dharamshalas Found</h3>
+                <h3 className="text-lg font-bold text-[var(--text-primary)]">
+                  {listingError ? "Dharamshalas Could Not Be Loaded" : "No Dharamshalas Found"}
+                </h3>
                 <p className="text-xs text-[var(--text-secondary)] mt-1">
-                  Try adjusting your city filter or search query.
+                  {listingError
+                    ? "Please check your connection and try again."
+                    : "Try adjusting your city filter or search query."}
                 </p>
+                {listingError && (
+                  <button type="button" onClick={fetchDharamshalas} className="btn-primary mt-4">
+                    Try Again
+                  </button>
+                )}
               </div>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -882,7 +826,7 @@ const DharamshalaPage = () => {
           <div className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-bold text-emerald-400 uppercase tracking-wider mb-1 max-w-full">
             <FiMapPin size={12} className="shrink-0" />
             <span className="truncate">
-              {detailsModalItem.address?.line1 || detailsModalItem.location?.address}, {detailsModalItem.address?.city || detailsModalItem.location?.city}
+              {[detailsModalItem.address?.line1 || detailsModalItem.location?.address, detailsModalItem.address?.city || detailsModalItem.location?.city, detailsModalItem.address?.state || detailsModalItem.location?.state].filter(Boolean).join(", ") || "Location not provided"}
             </span>
           </div>
           <h2 className="text-lg sm:text-2xl md:text-3xl font-black text-[var(--text-primary)] leading-snug break-words">
@@ -908,11 +852,18 @@ const DharamshalaPage = () => {
         
         {/* Responsive Grid: Image + Info */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-5 items-start">
-          <div className="md:col-span-5 h-40 sm:h-56 md:h-full min-h-[160px] w-full rounded-xl sm:rounded-2xl bg-[var(--surface-elevated)] overflow-hidden shrink-0">
-            {detailsModalItem.mainImage ? (
-              <img src={detailsModalItem.mainImage} alt={detailsModalItem.name} className="h-full w-full object-cover" />
+          <div className="md:col-span-5 min-h-[160px] w-full rounded-xl sm:rounded-2xl bg-[var(--surface-elevated)] overflow-hidden shrink-0">
+            {(detailsModalItem.mainImage || detailsModalItem.coverImage?.url || detailsModalItem.images?.[0]?.url) ? (
+              <img src={detailsModalItem.mainImage || detailsModalItem.coverImage?.url || detailsModalItem.images?.[0]?.url} alt={detailsModalItem.name} className="h-40 sm:h-56 w-full object-cover" />
             ) : (
-              <ImageSkeleton aspectRatio="landscape" className="h-full w-full rounded-xl sm:rounded-2xl" caption={detailsModalItem.name} />
+              <ImageSkeleton aspectRatio="landscape" className="h-40 sm:h-56 w-full rounded-xl sm:rounded-2xl" caption={detailsModalItem.name} />
+            )}
+            {detailsModalItem.images?.length > 1 && (
+              <div className="grid grid-cols-4 gap-1.5 p-2">
+                {detailsModalItem.images.map((image, imageIdx) => (
+                  <img key={image._id || image.publicId || imageIdx} src={image.url} alt={image.caption || `${detailsModalItem.name} photo ${imageIdx + 1}`} className="h-14 w-full rounded-md object-cover" loading="lazy" />
+                ))}
+              </div>
             )}
           </div>
           
@@ -926,15 +877,14 @@ const DharamshalaPage = () => {
               </p>
             </div>
 
-            {/* Timings & Rules */}
-            <div className="grid grid-cols-2 gap-2 sm:gap-3 rounded-xl bg-[var(--surface-elevated)] p-2.5 sm:p-3 border border-[var(--border-subtle)]">
+            <div className="dh-details-timings-only rounded-xl bg-[var(--surface-elevated)] p-2.5 sm:p-3 border border-[var(--border-subtle)]">
               <div>
                 <h4 className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[var(--text-primary)] mb-1 flex items-center gap-1">
                   <FiClock size={11} className="text-[var(--accent-primary)] shrink-0" />
                   Timings
                 </h4>
-                <p className="text-[11px] sm:text-xs text-[var(--text-secondary)]"><strong>In:</strong> {detailsModalItem.checkInTime || "12:00 PM"}</p>
-                <p className="text-[11px] sm:text-xs text-[var(--text-secondary)]"><strong>Out:</strong> {detailsModalItem.checkOutTime || "10:00 AM"}</p>
+                <p className="text-[11px] sm:text-xs text-[var(--text-secondary)]"><strong>In:</strong> {detailsModalItem.policies?.checkInTime || detailsModalItem.checkInTime || "12:00 PM"}</p>
+                <p className="text-[11px] sm:text-xs text-[var(--text-secondary)]"><strong>Out:</strong> {detailsModalItem.policies?.checkOutTime || detailsModalItem.checkOutTime || "10:00 AM"}</p>
               </div>
 
               <div>
@@ -943,12 +893,34 @@ const DharamshalaPage = () => {
                   Rules
                 </h4>
                 <ul className="space-y-0.5 text-[11px] sm:text-xs text-[var(--text-secondary)]">
-                  {detailsModalItem.rules?.slice(0, 2).map((rule, rIdx) => (
+                  {(detailsModalItem.policies?.houseRules || detailsModalItem.rules || []).slice(0, 2).map((rule, rIdx) => (
                     <li key={rIdx} className="truncate">• {rule}</li>
                   ))}
                 </ul>
               </div>
             </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-3">
+            <h3 className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1">Address & contact</h3>
+            <p className="text-xs text-[var(--text-primary)]">
+              {[detailsModalItem.address?.line1, detailsModalItem.address?.line2, detailsModalItem.address?.landmark, detailsModalItem.address?.city, detailsModalItem.address?.state, detailsModalItem.address?.pincode].filter(Boolean).join(", ") || detailsModalItem.location?.address || "Address not provided"}
+            </p>
+            {detailsModalItem.contact?.phones?.length > 0 && <p className="mt-1 text-xs text-[var(--text-secondary)]">Phone: {detailsModalItem.contact.phones.join(", ")}</p>}
+            {detailsModalItem.contact?.email && <p className="mt-1 break-all text-xs text-[var(--text-secondary)]">Email: {detailsModalItem.contact.email}</p>}
+            {detailsModalItem.address?.mapUrl && <a className="mt-1 inline-block text-xs text-emerald-400 underline" href={detailsModalItem.address.mapUrl} target="_blank" rel="noreferrer">Open map</a>}
+          </div>
+          <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-3">
+            <h3 className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1">Booking policies</h3>
+            <p className="text-xs text-[var(--text-secondary)]">
+              {detailsModalItem.bookingConfig?.bookingMode === "REQUIRES_APPROVAL" ? "Request to book" : "Instant booking"}
+              {" · "}{detailsModalItem.bookingConfig?.advancePercent ?? 0}% advance
+              {" · Balance at "}{detailsModalItem.bookingConfig?.balanceDueAt === "CHECK_OUT" ? "check-out" : "check-in"}
+            </p>
+            {detailsModalItem.policies?.idRequired && <p className="mt-1 text-xs text-[var(--text-secondary)]">Government ID is required at booking/check-in.</p>}
+            {detailsModalItem.bookingConfig?.minNights && <p className="mt-1 text-xs text-[var(--text-secondary)]">Stay: {detailsModalItem.bookingConfig.minNights}–{detailsModalItem.bookingConfig.maxNights || "any"} nights</p>}
           </div>
         </div>
 
@@ -967,14 +939,22 @@ const DharamshalaPage = () => {
                   <div className="flex justify-between items-start gap-2">
                     <h4 className="font-bold text-xs sm:text-sm text-[var(--text-primary)]">{room.name}</h4>
                     <span className="text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] shrink-0">
-                      Cap: {getRoomCapacity(room)} Guests
+                      {room.capacity?.base || 1}–{getRoomCapacity(room)} guests · {room.totalUnits || 1} units
                     </span>
                   </div>
-                  <p className="text-xs text-[var(--text-secondary)] mt-1 line-clamp-2">{room.description}</p>
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {room.amenities?.map((amenity, aIdx) => (
-                      <span key={aIdx} className="text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-[var(--text-muted)]">
-                        ✓ {amenity}
+                  {room.images?.length > 0 && (
+                    <div className="mt-2 grid grid-cols-3 gap-1.5">
+                      {room.images.map((image, imageIdx) => (
+                        <img key={image._id || image.publicId || imageIdx} src={image.url} alt={image.caption || `${room.name} photo ${imageIdx + 1}`} className="h-20 w-full rounded-lg object-cover" loading="lazy" />
+                      ))}
+                    </div>
+                  )}
+                  <p className="text-xs text-[var(--text-secondary)] mt-1 whitespace-pre-line">{room.description || "Room description not provided."}</p>
+                  {room.bedConfig && <p className="text-[10px] text-[var(--text-muted)] mt-1">Beds: {room.bedConfig}</p>}
+                  <div className="hidden flex-wrap gap-1 mt-2">
+                    {(room.amenities || room.amenityIds || []).map((amenity, aIdx) => (
+                      <span key={amenity?._id || aIdx} className="text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-[var(--text-muted)]">
+                        ✓ {typeof amenity === "string" ? amenity : amenity?.name}
                       </span>
                     ))}
                   </div>
@@ -983,7 +963,14 @@ const DharamshalaPage = () => {
                 <div className="pt-2 border-t border-[var(--border-subtle)] flex items-center justify-between gap-2">
                   <div>
                     <div className="text-xs font-bold text-emerald-400">
-                      {formatDharamshalaPrice(getDharamshalaPrice(room))} {getDharamshalaPrice(room) && <span className="text-[9px] text-[var(--text-muted)] font-normal">/ night</span>}
+                      Public: {formatDharamshalaPrice(getDharamshalaPrice(room))} {getDharamshalaPrice(room) && <span className="text-[9px] text-[var(--text-muted)] font-normal">/ {room.pricing?.pricingUnit === "PER_EVENT" ? "event" : "night"}</span>}
+                    </div>
+                    <div className="text-[10px] text-[var(--text-secondary)]">
+                      Member: {formatDharamshalaPrice(room.pricing?.memberPricePaise ? Math.round(room.pricing.memberPricePaise / 100) : null)}
+                      {" · "}Deposit: {formatDharamshalaPrice(room.pricing?.depositPaise ? Math.round(room.pricing.depositPaise / 100) : null)}
+                    </div>
+                    <div className="text-[10px] text-[var(--text-muted)]">
+                      Extra guest: public {formatDharamshalaPrice(room.pricing?.extraGuestPublicPaise ? Math.round(room.pricing.extraGuestPublicPaise / 100) : null)}, member {formatDharamshalaPrice(room.pricing?.extraGuestMemberPaise ? Math.round(room.pricing.extraGuestMemberPaise / 100) : null)}
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
@@ -1016,15 +1003,15 @@ const DharamshalaPage = () => {
         </div>
 
         {/* Facilities Section */}
-        <div>
+        <div className="hidden">
           <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2">
             Facilities & Amenities
           </h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-            {detailsModalItem.facilities?.map((facility, idx) => (
-              <div key={idx} className="flex items-center gap-1.5 text-[11px] sm:text-xs text-[var(--text-secondary)] bg-[var(--surface-elevated)]/40 p-1.5 sm:p-2 rounded-lg border border-[var(--border-subtle)]">
+            {(detailsModalItem.facilities || detailsModalItem.amenityIds || []).map((facility, idx) => (
+              <div key={facility?._id || idx} className="flex items-center gap-1.5 text-[11px] sm:text-xs text-[var(--text-secondary)] bg-[var(--surface-elevated)]/40 p-1.5 sm:p-2 rounded-lg border border-[var(--border-subtle)]">
                 <FiCheck className="text-emerald-400 shrink-0" size={12} />
-                <span className="truncate">{facility}</span>
+                <span className="truncate">{typeof facility === "string" ? facility : facility?.name}</span>
               </div>
             ))}
           </div>

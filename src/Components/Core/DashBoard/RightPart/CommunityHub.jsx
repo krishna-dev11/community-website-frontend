@@ -680,84 +680,654 @@ const CommunityHub = () => {
             )}
 
             {/* TAB 2: ISSUES & PUBLIC SOLUTIONS */}
-            {activeTab === "issues" && (
-              <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
-                <form onSubmit={submitIssue} className="grid gap-4 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-4 sm:p-5">
-                  <div>
-                    <h2 className="text-lg font-bold text-[var(--text-primary)]">Submit Community Issue</h2>
-                    <p className="mt-1 text-xs text-[var(--text-secondary)]">
-                      Report community issues or civic concerns for management committee review.
-                    </p>
-                  </div>
-                  <Field label="Title *">
-                    <input className={inputClass} value={issueForm.title} onChange={(event) => updateIssue("title", event.target.value)} placeholder="Summary of the issue" required />
-                  </Field>
-                  <Field label="Description *">
-                    <textarea className={textareaClass} value={issueForm.description} onChange={(event) => updateIssue("description", event.target.value)} placeholder="Detailed explanation..." required />
-                  </Field>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <Field label="Category">
-                      <input className={inputClass} value={issueForm.category} onChange={(event) => updateIssue("category", event.target.value)} placeholder="e.g. Water, Civic, Education" />
-                    </Field>
-                    <Field label="Priority">
-                      <select className={inputClass} value={issueForm.priority} onChange={(event) => updateIssue("priority", event.target.value)}>
-                        <option value="LOW" className="bg-gray-900">Low</option>
-                        <option value="MEDIUM" className="bg-gray-900">Medium</option>
-                        <option value="HIGH" className="bg-gray-900">High</option>
-                        <option value="URGENT" className="bg-gray-900">Urgent</option>
-                      </select>
-                    </Field>
-                  </div>
-                  <Field label="Location / Area">
-                    <input className={inputClass} value={issueForm.location} onChange={(event) => updateIssue("location", event.target.value)} placeholder="City, ward, or community center" />
-                  </Field>
-                  <Button icon={FaPaperPlane} tone="success" disabled={busyId === "issue"}>
-                    {busyId === "issue" ? "Submitting Issue..." : "Submit Issue"}
-                  </Button>
-                </form>
+{activeTab === "issues" && (
+  <div className="space-y-6">
 
-                <section className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-5">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-bold text-[var(--text-primary)]">Your Submitted Issues</h2>
-                    <Link to="/solutions" className="text-xs font-bold text-[var(--brand)] hover:underline flex items-center gap-1">
-                      <span>Public Solutions Hub</span>
-                      <FiExternalLink size={11} />
-                    </Link>
-                  </div>
-                  <div className="mt-4 divide-y divide-[var(--border-subtle)]">
-                    {issues.map((issue) => (
-                      <article key={issue._id} className="py-4">
-                        <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-                          <div>
-                            <h3 className="font-bold text-[var(--text-primary)]">{issue.title}</h3>
-                            <p className="mt-1 text-xs text-[var(--text-secondary)]">
-                              {issue.category || "General"} · {formatDate(issue.createdAt)} {issue.location ? `· ${issue.location}` : ""}
-                            </p>
-                          </div>
-                          <Status value={issue.status} />
-                        </div>
-                        <p className="mt-2 text-xs text-[var(--text-secondary)]">{issue.description}</p>
-                        
-                        {/* Admin Status Note Callout */}
-                        {issue.adminStatusNote && (
-                          <div className="mt-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-300">
-                            <strong className="block font-bold text-emerald-200 mb-0.5">Admin Response & Resolution Note:</strong>
-                            {issue.adminStatusNote}
-                          </div>
-                        )}
-                        {issue.moderationReason && !issue.adminStatusNote && (
-                          <div className="mt-3 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-300">
-                            <strong className="block font-bold text-red-200 mb-0.5">Committee Review Note:</strong>
-                            {issue.moderationReason}
-                          </div>
-                        )}
-                      </article>
-                    ))}
-                    {issues.length === 0 && <Empty text="No community issues submitted yet." />}
-                  </div>
-                </section>
+    {/* =========================================================
+        ISSUE & RESOLUTION CENTER — PREMIUM HEADER
+    ========================================================== */}
+    <section className="relative overflow-hidden rounded-[28px] border border-[var(--border-subtle)] bg-[var(--surface-raised)] shadow-[var(--shadow-card)]">
+
+      {/* Decorative background */}
+      <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-[var(--brand)]/10 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-emerald-500/10 blur-3xl" />
+
+      <div className="relative p-5 sm:p-7 lg:p-8">
+
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+
+          {/* Header */}
+          <div className="max-w-3xl">
+
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[var(--brand)]/20 bg-[var(--brand)]/10 px-3.5 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-[var(--brand)]">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--brand)]/15">
+                🛠️
+              </span>
+              Community Support Center
+            </div>
+
+            <h1 className="text-3xl font-black tracking-tight text-[var(--text-primary)] sm:text-4xl">
+              Issue
+              <span className="ml-2 text-gradient">
+                &amp; Resolution
+              </span>
+            </h1>
+
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--text-secondary)]">
+              Raise a genuine community concern and keep track of its progress
+              from committee review to final resolution.
+            </p>
+
+            {/* Process */}
+            <div className="mt-5 flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-wider">
+
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-subtle)] bg-[var(--surface)] px-3 py-1.5 text-[var(--text-secondary)]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand)]" />
+                Report
+              </span>
+
+              <span className="text-[var(--text-muted)]">→</span>
+
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-subtle)] bg-[var(--surface)] px-3 py-1.5 text-[var(--text-secondary)]">
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                Review
+              </span>
+
+              <span className="text-[var(--text-muted)]">→</span>
+
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-subtle)] bg-[var(--surface)] px-3 py-1.5 text-[var(--text-secondary)]">
+                <span className="h-1.5 w-1.5 rounded-full bg-sky-400" />
+                Action
+              </span>
+
+              <span className="text-[var(--text-muted)]">→</span>
+
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-emerald-500">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                Resolution
+              </span>
+
+            </div>
+          </div>
+
+          {/* Public hub */}
+          <Link
+            to="/solutions"
+            className="group inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] px-4 py-3 text-xs font-bold text-[var(--text-primary)] shadow-sm transition-all hover:-translate-y-0.5 hover:border-[var(--brand)]/30 hover:shadow-md"
+          >
+            <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-[var(--brand)]/10 text-[var(--brand)]">
+              <FiExternalLink size={13} />
+            </span>
+
+            <span>
+              <span className="block text-[9px] uppercase tracking-wider text-[var(--text-muted)]">
+                Explore
+              </span>
+              Public Solutions Hub
+            </span>
+
+            <span className="ml-1 transition-transform group-hover:translate-x-0.5">
+              →
+            </span>
+          </Link>
+
+        </div>
+      </div>
+    </section>
+
+
+    {/* =========================================================
+        MAIN WORKSPACE
+    ========================================================== */}
+    <div className="grid gap-6 xl:grid-cols-[0.92fr_1.08fr]">
+
+      {/* =======================================================
+          LEFT — REPORT ISSUE
+      ======================================================== */}
+      <section className="relative overflow-hidden rounded-[26px] border border-[var(--border-subtle)] bg-[var(--surface-raised)] shadow-[var(--shadow-card)]">
+
+        {/* Top accent */}
+        <div className="h-1 w-full bg-gradient-to-r from-[var(--brand)] via-cyan-400 to-emerald-400" />
+
+        <form
+          onSubmit={submitIssue}
+          className="p-5 sm:p-6 lg:p-7"
+        >
+
+          {/* Form heading */}
+          <div className="mb-6 flex items-start gap-4">
+
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--brand)]/10 text-[var(--brand)] shadow-sm">
+              <FaPaperPlane size={18} />
+            </div>
+
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-xl font-black tracking-tight text-[var(--text-primary)]">
+                  Report a Community Issue
+                </h2>
+
+                <span className="rounded-full border border-[var(--brand)]/20 bg-[var(--brand)]/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[var(--brand)]">
+                  New Report
+                </span>
               </div>
-            )}
+
+              <p className="mt-1.5 text-xs leading-5 text-[var(--text-secondary)]">
+                Share enough detail so the management committee can understand
+                the concern and take appropriate action.
+              </p>
+            </div>
+
+          </div>
+
+
+          {/* Issue title */}
+          <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] p-4 transition-all focus-within:border-[var(--brand)]/40 focus-within:shadow-sm">
+
+            <Field label="Issue Title *">
+              <input
+                className={inputClass}
+                value={issueForm.title}
+                onChange={(event) =>
+                  updateIssue("title", event.target.value)
+                }
+                placeholder="e.g. Street light not working near community hall"
+                required
+              />
+            </Field>
+
+          </div>
+
+
+          {/* Description */}
+          <div className="mt-4 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] p-4 transition-all focus-within:border-[var(--brand)]/40 focus-within:shadow-sm">
+
+            <Field label="Describe the Issue *">
+              <textarea
+                className={`${textareaClass} min-h-[145px]`}
+                value={issueForm.description}
+                onChange={(event) =>
+                  updateIssue("description", event.target.value)
+                }
+                placeholder="Explain what happened, where it is happening, who may be affected, and any useful details the committee should know..."
+                required
+              />
+            </Field>
+
+            <div className="mt-2 flex items-center justify-between text-[9px] font-medium text-[var(--text-muted)]">
+              <span>Be clear and specific for faster review.</span>
+              <span>
+                {issueForm.description?.length || 0} characters
+              </span>
+            </div>
+
+          </div>
+
+
+          {/* Category + Priority */}
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+
+            <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] p-4 transition-all focus-within:border-[var(--brand)]/40">
+
+              <Field label="Issue Category">
+                <input
+                  className={inputClass}
+                  value={issueForm.category}
+                  onChange={(event) =>
+                    updateIssue("category", event.target.value)
+                  }
+                  placeholder="Water, Civic, Education..."
+                />
+              </Field>
+
+              <p className="mt-2 text-[9px] text-[var(--text-muted)]">
+                Helps the committee route the issue correctly.
+              </p>
+
+            </div>
+
+
+            <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] p-4 transition-all focus-within:border-[var(--brand)]/40">
+
+              <Field label="Priority Level">
+                <select
+                  className={inputClass}
+                  value={issueForm.priority}
+                  onChange={(event) =>
+                    updateIssue("priority", event.target.value)
+                  }
+                >
+                  <option value="LOW" className="bg-gray-900">
+                    Low
+                  </option>
+
+                  <option value="MEDIUM" className="bg-gray-900">
+                    Medium
+                  </option>
+
+                  <option value="HIGH" className="bg-gray-900">
+                    High
+                  </option>
+
+                  <option value="URGENT" className="bg-gray-900">
+                    Urgent
+                  </option>
+                </select>
+              </Field>
+
+              <div className="mt-2 flex items-center gap-1.5 text-[9px] text-[var(--text-muted)]">
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                Select urgency based on community impact.
+              </div>
+
+            </div>
+
+          </div>
+
+
+          {/* Location */}
+          <div className="mt-4 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] p-4 transition-all focus-within:border-[var(--brand)]/40">
+
+            <Field label="Location / Area">
+
+              <input
+                className={inputClass}
+                value={issueForm.location}
+                onChange={(event) =>
+                  updateIssue("location", event.target.value)
+                }
+                placeholder="City, ward, street, community center or affected area"
+              />
+
+            </Field>
+
+            <div className="mt-2 flex items-center gap-2 text-[9px] text-[var(--text-muted)]">
+              <span>📍</span>
+              A precise location can help the committee investigate faster.
+            </div>
+
+          </div>
+
+
+          {/* Submit */}
+          <div className="mt-5 rounded-2xl border border-[var(--brand)]/15 bg-[var(--brand)]/5 p-3">
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+
+              <div className="flex items-start gap-2.5">
+
+                <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--brand)]/10 text-[var(--brand)]">
+                  ✓
+                </div>
+
+                <div>
+                  <p className="text-[10px] font-bold text-[var(--text-primary)]">
+                    Committee Review
+                  </p>
+
+                  <p className="mt-0.5 text-[9px] leading-4 text-[var(--text-muted)]">
+                    Your report will be submitted for management committee
+                    review and action.
+                  </p>
+                </div>
+
+              </div>
+
+              <Button
+                icon={FaPaperPlane}
+                tone="success"
+                disabled={busyId === "issue"}
+              >
+                {busyId === "issue"
+                  ? "Submitting Issue..."
+                  : "Submit Issue"}
+              </Button>
+
+            </div>
+
+          </div>
+
+        </form>
+      </section>
+
+
+      {/* =======================================================
+          RIGHT — ISSUE TRACKER
+      ======================================================== */}
+      <section className="relative overflow-hidden rounded-[26px] border border-[var(--border-subtle)] bg-[var(--surface-raised)] shadow-[var(--shadow-card)]">
+
+        {/* Header */}
+        <div className="border-b border-[var(--border-subtle)] bg-[var(--surface)]/70 p-5 sm:p-6">
+
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+
+            <div className="flex items-center gap-3">
+
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-500">
+                📋
+              </div>
+
+              <div>
+                <h2 className="text-xl font-black tracking-tight text-[var(--text-primary)]">
+                  My Issues
+                </h2>
+
+                <p className="mt-0.5 text-[10px] text-[var(--text-muted)]">
+                  Track your submitted concerns and committee responses.
+                </p>
+              </div>
+
+            </div>
+
+            <div className="flex items-center gap-2">
+
+              <span className="rounded-full border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-3 py-1.5 text-[10px] font-bold text-[var(--text-secondary)]">
+                {issues.length}{" "}
+                {issues.length === 1 ? "Issue" : "Issues"}
+              </span>
+
+              <Link
+                to="/solutions"
+                className="inline-flex items-center gap-1.5 rounded-full border border-[var(--brand)]/20 bg-[var(--brand)]/5 px-3 py-1.5 text-[10px] font-bold text-[var(--brand)] transition hover:bg-[var(--brand)]/10"
+              >
+                Solutions
+                <FiExternalLink size={10} />
+              </Link>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        {/* Issue list */}
+        <div className="p-4 sm:p-5">
+
+          {issues.length > 0 ? (
+
+            <div className="space-y-4">
+
+              {issues.map((issue, index) => (
+
+                <article
+                  key={issue._id}
+                  className="group relative overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--brand)]/25 hover:shadow-md"
+                >
+
+                  {/* Left status rail */}
+                  <div
+                    className={`absolute left-0 top-0 h-full w-1 ${
+                      issue.status === "RESOLVED" ||
+                      issue.status === "CLOSED"
+                        ? "bg-emerald-500"
+                        : issue.status === "REJECTED"
+                        ? "bg-red-500"
+                        : issue.status === "IN_PROGRESS"
+                        ? "bg-sky-500"
+                        : "bg-amber-400"
+                    }`}
+                  />
+
+
+                  <div className="p-4 pl-5 sm:p-5 sm:pl-6">
+
+                    {/* Top row */}
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+
+                      <div className="min-w-0">
+
+                        <div className="mb-2 flex flex-wrap items-center gap-2">
+
+                          <span className="rounded-md bg-[var(--surface-raised)] px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                            Issue #{index + 1}
+                          </span>
+
+                          {issue.category && (
+                            <span className="rounded-md border border-[var(--brand)]/15 bg-[var(--brand)]/5 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-[var(--brand)]">
+                              {issue.category}
+                            </span>
+                          )}
+
+                          {issue.priority && (
+                            <span
+                              className={`rounded-md px-2 py-1 text-[9px] font-bold uppercase tracking-wider ${
+                                issue.priority === "URGENT"
+                                  ? "border border-red-500/20 bg-red-500/10 text-red-400"
+                                  : issue.priority === "HIGH"
+                                  ? "border border-orange-500/20 bg-orange-500/10 text-orange-400"
+                                  : issue.priority === "MEDIUM"
+                                  ? "border border-amber-500/20 bg-amber-500/10 text-amber-400"
+                                  : "border border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
+                              }`}
+                            >
+                              {issue.priority}
+                            </span>
+                          )}
+
+                        </div>
+
+
+                        <h3 className="text-base font-extrabold leading-6 text-[var(--text-primary)] sm:text-lg">
+                          {issue.title}
+                        </h3>
+
+
+                        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-[var(--text-muted)]">
+
+                          <span>
+                            {formatDate(issue.createdAt)}
+                          </span>
+
+                          {issue.location && (
+                            <>
+                              <span className="opacity-40">•</span>
+                              <span className="truncate">
+                                📍 {issue.location}
+                              </span>
+                            </>
+                          )}
+
+                        </div>
+
+                      </div>
+
+
+                      <div className="shrink-0">
+                        <Status value={issue.status} />
+                      </div>
+
+                    </div>
+
+
+                    {/* Description */}
+                    <div className="mt-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-3.5">
+
+                      <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[var(--text-muted)]">
+                        Your Report
+                      </p>
+
+                      <p className="mt-1.5 text-xs leading-5 text-[var(--text-secondary)]">
+                        {issue.description}
+                      </p>
+
+                    </div>
+
+
+                    {/* Resolution */}
+                    {issue.adminStatusNote && (
+
+                      <div className="relative mt-3 overflow-hidden rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
+
+                        <div className="absolute right-0 top-0 h-20 w-20 rounded-full bg-emerald-500/10 blur-2xl" />
+
+                        <div className="relative flex items-start gap-3">
+
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500">
+                            ✓
+                          </div>
+
+                          <div className="min-w-0">
+
+                            <div className="flex flex-wrap items-center gap-2">
+
+                              <p className="text-[10px] font-black uppercase tracking-[0.1em] text-emerald-500">
+                                Committee Response
+                              </p>
+
+                              <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider text-emerald-500">
+                                Resolution Update
+                              </span>
+
+                            </div>
+
+                            <p className="mt-1.5 text-xs leading-5 text-[var(--text-secondary)]">
+                              {issue.adminStatusNote}
+                            </p>
+
+                          </div>
+
+                        </div>
+
+                      </div>
+
+                    )}
+
+
+                    {/* Moderation */}
+                    {issue.moderationReason && !issue.adminStatusNote && (
+
+                      <div className="relative mt-3 overflow-hidden rounded-xl border border-red-500/20 bg-red-500/5 p-4">
+
+                        <div className="flex items-start gap-3">
+
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-red-400">
+                            !
+                          </div>
+
+                          <div className="min-w-0">
+
+                            <p className="text-[10px] font-black uppercase tracking-[0.1em] text-red-400">
+                              Committee Review Note
+                            </p>
+
+                            <p className="mt-1.5 text-xs leading-5 text-[var(--text-secondary)]">
+                              {issue.moderationReason}
+                            </p>
+
+                          </div>
+
+                        </div>
+
+                      </div>
+
+                    )}
+
+
+                    {/* Bottom workflow indicator */}
+                    <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-[var(--border-subtle)] pt-3">
+
+                      <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                        Resolution Journey
+                      </span>
+
+                      <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand)]" />
+
+                      <span className="text-[9px] text-[var(--text-muted)]">
+                        Submitted
+                      </span>
+
+                      <span className="text-[var(--text-muted)]">→</span>
+
+                      <span className="text-[9px] text-[var(--text-muted)]">
+                        Committee Review
+                      </span>
+
+                      <span className="text-[var(--text-muted)]">→</span>
+
+                      <span
+                        className={`text-[9px] font-bold ${
+                          issue.status === "RESOLVED" ||
+                          issue.status === "CLOSED"
+                            ? "text-emerald-500"
+                            : "text-[var(--text-muted)]"
+                        }`}
+                      >
+                        {issue.status === "RESOLVED" ||
+                        issue.status === "CLOSED"
+                          ? "Resolved"
+                          : "Action Pending"}
+                      </span>
+
+                    </div>
+
+                  </div>
+
+                </article>
+
+              ))}
+
+            </div>
+
+          ) : (
+
+            /* Empty state */
+            <div className="flex min-h-[360px] flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--border-subtle)] bg-[var(--surface)] px-6 py-12 text-center">
+
+              <div className="relative mb-5">
+
+                <div className="flex h-20 w-20 items-center justify-center rounded-[26px] border border-[var(--brand)]/15 bg-[var(--brand)]/5 text-3xl shadow-sm">
+                  🛠️
+                </div>
+
+                <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-[var(--surface)] bg-emerald-500 text-[10px] text-white">
+                  ✓
+                </span>
+
+              </div>
+
+              <h3 className="text-lg font-black text-[var(--text-primary)]">
+                No Issues Reported
+              </h3>
+
+              <p className="mt-2 max-w-sm text-xs leading-5 text-[var(--text-muted)]">
+                Your community concerns will appear here once you submit your
+                first issue. Every report can be tracked through the review
+                and resolution process.
+              </p>
+
+              <div className="mt-5 flex flex-wrap justify-center gap-2">
+
+                <span className="rounded-full border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-3 py-1.5 text-[9px] font-bold text-[var(--text-muted)]">
+                  Report
+                </span>
+
+                <span className="text-[var(--text-muted)]">→</span>
+
+                <span className="rounded-full border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-3 py-1.5 text-[9px] font-bold text-[var(--text-muted)]">
+                  Review
+                </span>
+
+                <span className="text-[var(--text-muted)]">→</span>
+
+                <span className="rounded-full border border-emerald-500/20 bg-emerald-500/5 px-3 py-1.5 text-[9px] font-bold text-emerald-500">
+                  Resolve
+                </span>
+
+              </div>
+
+            </div>
+
+          )}
+
+        </div>
+
+      </section>
+
+    </div>
+
+  </div>
+)}
 
             {/* TAB 3: POLLS & VOTING */}
             {activeTab === "polls" && (

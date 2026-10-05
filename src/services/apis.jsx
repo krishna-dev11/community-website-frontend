@@ -17,6 +17,7 @@ export const endpoints = {
 export const profileEndpoints = {
   GET_USER_DETAILS_API: BASE_URL + "/profile/getAllUserDetails",
   MEMBER_DIRECTORY_API: BASE_URL + "/profile/directory",
+  SAMAJ_MEMBER_COUNT_API: BASE_URL + "/profile/directory/count",
   FAMILY_DIRECTORY_API: BASE_URL + "/profile/directory/families",
   FAMILY_DIRECTORY_DETAIL_API: (familyId) => BASE_URL + `/profile/directory/families/${familyId}`,
   UNLINKED_DIRECTORY_API: BASE_URL + "/profile/directory/unlinked",
@@ -132,6 +133,7 @@ export const paymentEndpoints = {
   DONATIONS_API: BASE_URL + "/payments/donations",
   PUBLIC_SUPPORTERS_API: BASE_URL + "/payments/donations/supporters",
   MY_DONATIONS_API: BASE_URL + "/payments/me/donations",
+  DONATION_RECEIPT_API: (donationId) => BASE_URL + `/payments/donations/${donationId}/receipt`,
   CONTRIBUTIONS_API: BASE_URL + "/payments/contributions",
   MY_CONTRIBUTIONS_API: BASE_URL + "/payments/me/contributions",
   MY_CONTRIBUTIONS_SUMMARY_API: BASE_URL + "/payments/me/contributions/summary",
@@ -164,6 +166,7 @@ export const familyContributionEndpoints = {
   // Admin APIs
   ADMIN_ACCOUNTS_API: BASE_URL + "/payments/admin/family-contributions",
   ADMIN_ACCOUNT_DETAIL_API: (familyId) => BASE_URL + `/payments/admin/family-contributions/${familyId}`,
+  ADMIN_QUOTE_API: (familyId) => BASE_URL + `/payments/admin/family-contributions/${familyId}/quote`,
   RECORD_CASH_API: (familyId) => BASE_URL + `/payments/admin/family-contributions/${familyId}/cash`,
   WAIVE_FINE_API: (familyId) => BASE_URL + `/payments/admin/family-contributions/${familyId}/waive-fine`,
   RECORD_ADJUSTMENT_API: (familyId) => BASE_URL + `/payments/admin/family-contributions/${familyId}/adjustment`,
@@ -398,6 +401,8 @@ export const dharamshalaBookingV2Endpoints = {
   CREATE_BOOKING_API:  BASE_URL + "/dharamshala/bookings",
   MY_BOOKINGS_API:     BASE_URL + "/dharamshala/bookings/my",
   GET_BOOKING_API:     (id) => BASE_URL + `/dharamshala/bookings/${id}`,
+  GET_ID_DOCUMENT_API:(id) => BASE_URL + `/dharamshala/bookings/${id}/id-document`,
+  GET_GUEST_AADHAAR_API:(id, guestNumber) => BASE_URL + `/dharamshala/bookings/${id}/guest-documents/${guestNumber}`,
   CANCEL_BOOKING_API:  (id) => BASE_URL + `/dharamshala/bookings/${id}/cancel`,
 
   // Payment (Phase 5)

@@ -19,8 +19,10 @@ import {
 } from "react-icons/fa";
 import { FiX, FiFileText, FiEye, FiSearch, FiCheckCircle, FiClock, FiDownload } from "react-icons/fi";
 import { useSelector } from "react-redux";
+import { useSearchParams } from "react-router-dom";
 import { apiConnector } from "../../../../services/apiConnector";
 import { communityEndpoints } from "../../../../services/apis";
+import { hasPermission } from "../../../../Utilities/permissions";
 import DocViewer from "../../../Common/DocViewer";
 import { formatDharamshalaPrice } from "../../../../Utilities/dharamshalaPricing";
 import DharamshalaBookingsAdmin from "./DharamshalaAdmin/DharamshalaBookingsAdmin";
@@ -314,9 +316,11 @@ const applyFilter = (records, statusKey, rawQuery, searchFn) =>
 const CommunityAdmin = () => {
   const { token } = useSelector((state) => state.auth);
   const { user }  = useSelector((state) => state.profile);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedTab = searchParams.get("tab");
 
   // ── Module navigation ──────────────────────────────────────────────────────
-  const [activeTab, setActiveTab] = useState("issues");
+  const [activeTab, setActiveTab] = useState(requestedTab || "issues");
   const [loading,   setLoading]   = useState(false);
   const [busyId,    setBusyId]    = useState(null);
   const [staffRefreshKey, setStaffRefreshKey] = useState(0);
@@ -373,23 +377,33 @@ const CommunityAdmin = () => {
 
   // ── Role / permission checks (unchanged) ──────────────────────────────────
   const userRoles            = user?.roles || [];
-  const isPlatformAdmin      = userRoles.some((r) => ["SUPER_ADMIN", "Admin"].includes(r)) || user?.accountType === "Admin";
-  const canModerateCommunity = isPlatformAdmin || userRoles.includes("MODERATOR");
-  const canReviewStories     = canModerateCommunity;
-  const canManageBookings    = isPlatformAdmin || userRoles.includes("DHARAMSHALA_ADMIN");
-  const canManagePolls       = isPlatformAdmin;
+  const accountType          = user?.accountType || "";
+  const canModerateCommunity = hasPermission(userRoles, accountType, "community:moderate");
+  const canReviewStories     = hasPermission(userRoles, accountType, "achievement:review") ||
+                               hasPermission(userRoles, accountType, "shradhanjali:review");
+  const canManageDharamshala = hasPermission(userRoles, accountType, "dharamshala:read") ||
+                               hasPermission(userRoles, accountType, "dharamshala:block") ||
+                               hasPermission(userRoles, accountType, "dharamshala:review");
+  const canUseStaffPanel     = hasPermission(userRoles, accountType, "dharamshala:staff");
+  const canManagePolls       = hasPermission(userRoles, accountType, "poll:update");
 
   const visibleTabs = useMemo(
     () =>
       tabs.filter((tab) => {
         if (tab.key === "issues"  || tab.key === "reports")          return canModerateCommunity;
         if (tab.key === "achievements" || tab.key === "shradhanjali") return canReviewStories;
-        if (tab.key === "properties" || tab.key === "bookings" || tab.key === "blocks" || tab.key === "staff") return canManageBookings;
+        if (tab.key === "properties" || tab.key === "bookings" || tab.key === "blocks") return canManageDharamshala;
+        if (tab.key === "staff") return canManageDharamshala || canUseStaffPanel;
         if (tab.key === "polls")                                       return canManagePolls;
         return false;
       }),
-    [canModerateCommunity, canManageBookings, canManagePolls, canReviewStories]
+    [canModerateCommunity, canManageDharamshala, canManagePolls, canReviewStories, canUseStaffPanel]
   );
+
+  const handleTabChange = (tabKey) => {
+    setActiveTab(tabKey);
+    setSearchParams({ tab: tabKey }, { replace: true });
+  };
 
   // ── Data loaders (unchanged, limit bumped to 100 for proper tab counts) ───
   const loadIssues = async () => {
@@ -449,10 +463,14 @@ const CommunityAdmin = () => {
   };
 
   useEffect(() => {
+    if (requestedTab && visibleTabs.some((t) => t.key === requestedTab) && activeTab !== requestedTab) {
+      setActiveTab(requestedTab);
+      return;
+    }
     if (visibleTabs.length > 0 && !visibleTabs.some((t) => t.key === activeTab)) {
       setActiveTab(visibleTabs[0].key);
     }
-  }, [visibleTabs, activeTab]);
+  }, [visibleTabs, requestedTab]);
 
   useEffect(() => {
     if (!visibleTabs.some((t) => t.key === activeTab)) return;
@@ -785,7 +803,7 @@ const CommunityAdmin = () => {
                 return (
                   <button
                     key={tab.key}
-                    onClick={() => setActiveTab(tab.key)}
+                    onClick={() => handleTabChange(tab.key)}
                     className={`flex h-10 items-center justify-center gap-2 rounded-full px-4 text-xs font-bold uppercase tracking-wider transition cursor-pointer ${
                       active
                         ? "bg-[var(--accent-primary)] text-[#070707] shadow-md"

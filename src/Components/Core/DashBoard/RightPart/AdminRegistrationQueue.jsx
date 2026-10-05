@@ -70,6 +70,8 @@ const statusStyles = {
 
 const adminRoleOptions = [
   { id: "SUPER_ADMIN", label: "Super Admin", desc: "Full platform permissions & system access", superAdminOnly: true },
+  { id: "COMMUNITY_ADMIN", label: "Community Admin", desc: "Manage broad community operations and Dharamshala admin" },
+  { id: "DHARAMSHALA_STAFF", label: "Dharamshala Staff", desc: "Operational access to the Dharamshala Staff Panel only" },
   { id: "MODERATOR", label: "Community Moderator", desc: "Moderate posts, discussions, and reported content" },
   { id: "TREASURER", label: "Treasurer", desc: "Manage donations, funds, and financial records" },
   { id: "MATRIMONIAL_ADMIN", label: "Matrimonial Admin", desc: "Verify matrimony profiles and contact requests" },
@@ -143,6 +145,8 @@ const AdminRegistrationQueue = () => {
 
   // Assignable administrative roles — SUPER_ADMIN is explicitly protected and excluded
   const ASSIGNABLE_ADMIN_ROLES = useMemo(() => [
+    { key: "COMMUNITY_ADMIN", label: "Community Admin", desc: "Samuday operations, registration verification, polls, issues, pride/tribute and Dharamshala admin. (Broad community operations)" },
+    { key: "DHARAMSHALA_STAFF", label: "Dharamshala Staff", desc: "Dharamshala employee ke liye sirf Staff Panel. (Arrivals, departures, search, check-in/out and cash balance)" },
     { key: "CONTENT_ADMIN", label: "Content Admin", desc: "सूचनाएं, पत्रिका, गैलरी व मीडिया (Notices, gallery & news)" },
     { key: "MODERATOR", label: "Moderator", desc: "सदस्य सत्यापन व सामग्री मॉडरेशन (Member verification & moderation)" },
     { key: "TREASURER", label: "Treasurer", desc: "दान, वित्तीय लेखा-जोखा व रसीदें (Donations & financial records)" },
@@ -151,6 +155,67 @@ const AdminRegistrationQueue = () => {
     { key: "JOB_ADMIN", label: "Job Admin", desc: "रोजगार अवसर व आवेदन प्रबंधन (Employment & career postings)" },
     { key: "DHARAMSHALA_ADMIN", label: "Dharamshala Admin", desc: "समाज भवन व कक्ष आरक्षण (Room bookings & facilities)" },
   ], []);
+
+  const roleMeta = useMemo(() => ({
+    COMMUNITY_ADMIN: {
+      scope: "Community operations + Dharamshala management",
+      risk: "High access",
+      access: ["Registration Queue", "Community Admin", "Dharamshala Admin", "Polls"],
+    },
+    DHARAMSHALA_STAFF: {
+      scope: "Only Community Admin > Staff Panel",
+      risk: "Operational only",
+      access: ["Dharamshala Staff Panel"],
+    },
+    CONTENT_ADMIN: {
+      scope: "Website content management",
+      risk: "Scoped",
+      access: ["Content Admin"],
+    },
+    MODERATOR: {
+      scope: "Registration, moderation and suggestions",
+      risk: "Review access",
+      access: ["Registration Queue", "Community Moderation", "Suggestions Admin"],
+    },
+    TREASURER: {
+      scope: "Finance, donations and contribution receipts",
+      risk: "Sensitive finance",
+      access: ["Finance Admin", "Donations", "Contributions"],
+    },
+    MATRIMONIAL_ADMIN: {
+      scope: "Matrimonial review and reports",
+      risk: "Personal data",
+      access: ["Matrimonial Admin"],
+    },
+    SCHOLARSHIP_ADMIN: {
+      scope: "Scholarship applications",
+      risk: "Scoped",
+      access: ["Scholarship Admin"],
+    },
+    JOB_ADMIN: {
+      scope: "Jobs moderation",
+      risk: "Scoped",
+      access: ["Jobs Admin"],
+    },
+    DHARAMSHALA_ADMIN: {
+      scope: "Full Dharamshala administration",
+      risk: "Operational admin",
+      access: ["Dharamshala Properties", "Bookings", "Blocks", "Staff Panel"],
+    },
+  }), []);
+
+  const selectedRoleDetails = useMemo(
+    () => ASSIGNABLE_ADMIN_ROLES.filter((role) => modalSelectedRoles.includes(role.key)),
+    [ASSIGNABLE_ADMIN_ROLES, modalSelectedRoles]
+  );
+
+  const selectedAccessSummary = useMemo(() => {
+    const access = new Set();
+    selectedRoleDetails.forEach((role) => {
+      (roleMeta[role.key]?.access || []).forEach((item) => access.add(item));
+    });
+    return Array.from(access);
+  }, [roleMeta, selectedRoleDetails]);
 
   // Rejection / Correction Modal State
   const [rejectingUser, setRejectingUser] = useState(null);
@@ -1681,6 +1746,7 @@ const AdminRegistrationQueue = () => {
           >
             {ASSIGNABLE_ADMIN_ROLES.map((role) => {
               const isSelected = modalSelectedRoles.includes(role.key);
+              const meta = roleMeta[role.key] || {};
 
               return (
                 <button
@@ -1731,10 +1797,67 @@ const AdminRegistrationQueue = () => {
                   <span className="text-[9px] sm:text-[10px] leading-relaxed text-[var(--text-muted)]">
                     {role.desc}
                   </span>
+
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {meta.scope && (
+                      <span className="rounded-full border border-[var(--border-subtle)] px-2 py-0.5 text-[9px] font-bold text-[var(--text-muted)]">
+                        {meta.scope}
+                      </span>
+                    )}
+                    {meta.risk && (
+                      <span className={`rounded-full px-2 py-0.5 text-[9px] font-black ${
+                        meta.risk.toLowerCase().includes("high") || meta.risk.toLowerCase().includes("finance")
+                          ? "bg-amber-400/15 text-amber-300"
+                          : "bg-cyan-400/10 text-cyan-300"
+                      }`}>
+                        {meta.risk}
+                      </span>
+                    )}
+                  </div>
                 </button>
               );
             })}
           </div>
+        </div>
+
+        <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)]/80 p-3 sm:p-4">
+          <div className="mb-2 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--text-muted)]">
+              Access Summary
+            </p>
+            <span className="text-[10px] font-bold text-[var(--text-muted)]">
+              {selectedRoleDetails.length} role(s), {selectedAccessSummary.length} area(s)
+            </span>
+          </div>
+
+          {selectedRoleDetails.length === 0 ? (
+            <p className="text-xs text-[var(--text-muted)]">
+              No admin access selected. Existing roles are preserved until you save explicit changes.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex flex-wrap gap-2">
+                {selectedRoleDetails.map((role) => (
+                  <span
+                    key={role.key}
+                    className="rounded-full bg-[var(--accent-primary)]/10 px-2.5 py-1 text-[10px] font-black text-[var(--accent-primary)]"
+                  >
+                    {role.label}
+                  </span>
+                ))}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {selectedAccessSummary.map((item) => (
+                  <span
+                    key={item}
+                    className="rounded-full border border-[var(--border-subtle)] px-2.5 py-1 text-[10px] font-bold text-[var(--text-secondary)]"
+                  >
+                    {item}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* ===================================================== */}
