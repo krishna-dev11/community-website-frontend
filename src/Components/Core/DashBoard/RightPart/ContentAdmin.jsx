@@ -1388,6 +1388,7 @@ import { useSelector } from "react-redux";
 import { apiConnector } from "../../../../services/apiConnector";
 import { contentEndpoints } from "../../../../services/apis";
 import FileUploadWithPreview from "../../../Common/FileUploadWithPreview";
+import ManagementCommitteeCard from "../../../Common/ManagementCommitteeCard";
 
 // ─── Top-level tabs ────────────────────────────────────────────────────────
 const tabs = [
@@ -1632,6 +1633,9 @@ const ContentAdmin = () => {
 
   const [managementForm, setManagementForm]             = useState(initialManagement);
   const [managementImageFile, setManagementImageFile]   = useState(null);
+  const [editingManagementId, setEditingManagementId]   = useState(null);
+  const [managementRemoveImage, setManagementRemoveImage] = useState(false);
+  const [managementRoleFilter, setManagementRoleFilter] = useState("ALL");
 
   const [gotraForm, setGotraForm]                       = useState(initialGotra);
 
@@ -1673,7 +1677,7 @@ const ContentAdmin = () => {
   };
 
   const loadManagement = async () => {
-    const response = await apiConnector("GET", contentEndpoints.MANAGEMENT_API, null, authConfig, { includePast: "true", limit: 100 });
+    const response = await apiConnector("GET", contentEndpoints.ADMIN_MANAGEMENT_API, null, authConfig, { limit: 200 });
     setManagement(response.data?.data?.members || []);
   };
 
@@ -1864,10 +1868,36 @@ const ContentAdmin = () => {
     }
   };
 
-  const createManagement = async (event) => {
+  const resetManagementForm = () => {
+    setManagementForm(initialManagement);
+    setManagementImageFile(null);
+    setEditingManagementId(null);
+    setManagementRemoveImage(false);
+  };
+
+  const editManagement = (member) => {
+    setEditingManagementId(member._id);
+    setManagementForm({
+      name: member.name || "",
+      roleTitle: member.roleTitle || "",
+      bio: member.bio || "",
+      phone: member.phone || "",
+      email: member.email || "",
+      displayOrder: member.displayOrder ?? 0,
+      status: member.status || "ACTIVE",
+    });
+    setManagementImageFile(null);
+    setManagementRemoveImage(false);
+  };
+
+  const saveManagement = async (event) => {
     event.preventDefault();
     setBusyId("management");
     try {
+      if (managementImageFile instanceof File && !managementImageFile.type?.startsWith("image/")) {
+        toast.error("Please upload a valid image file");
+        return;
+      }
       const formData = new FormData();
       formData.append("name", managementForm.name);
       formData.append("roleTitle", managementForm.roleTitle);
@@ -1877,14 +1907,31 @@ const ContentAdmin = () => {
       formData.append("displayOrder", Number(managementForm.displayOrder || 0));
       formData.append("status", managementForm.status);
       if (managementImageFile instanceof File) formData.append("image", managementImageFile);
+      if (managementRemoveImage) formData.append("removeImage", "true");
 
-      await apiConnector("POST", contentEndpoints.MANAGEMENT_API, formData, authConfig);
-      toast.success("Management member saved");
-      setManagementForm(initialManagement);
-      setManagementImageFile(null);
+      const method = editingManagementId ? "PATCH" : "POST";
+      const endpoint = editingManagementId
+        ? contentEndpoints.MANAGEMENT_MEMBER_API(editingManagementId)
+        : contentEndpoints.MANAGEMENT_API;
+      await apiConnector(method, endpoint, formData, authConfig);
+      toast.success(editingManagementId ? "Management member updated" : "Management member saved");
+      resetManagementForm();
       await loadManagement();
     } catch (error) {
       toast.error(error.response?.data?.message || "Unable to save management member");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const updateManagementStatus = async (member, status) => {
+    setBusyId(member._id);
+    try {
+      await apiConnector("PATCH", contentEndpoints.MANAGEMENT_MEMBER_API(member._id), { status }, authConfig);
+      toast.success(status === "ACTIVE" ? "Management member activated" : "Management member updated");
+      await loadManagement();
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Unable to update management member");
     } finally {
       setBusyId(null);
     }
@@ -1991,10 +2038,31 @@ const ContentAdmin = () => {
     const query = (moduleSearch.management || "").trim().toLowerCase();
     return management.filter((m) => {
       const matchStatus = statusKey === "ALL" || m.status === statusKey;
+      const matchRole = managementRoleFilter === "ALL" || m.roleTitle === managementRoleFilter;
       const searchBlob  = `${m.name} ${m.roleTitle} ${m.phone || ""} ${m.email || ""}`.toLowerCase();
-      return matchStatus && (!query || searchBlob.includes(query));
+      return matchStatus && matchRole && (!query || searchBlob.includes(query));
+    }).sort((a, b) => {
+      const orderDiff = Number(a.displayOrder || 0) - Number(b.displayOrder || 0);
+      if (orderDiff !== 0) return orderDiff;
+      const createdDiff = new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
+      if (createdDiff !== 0) return createdDiff;
+      return String(a.name || "").localeCompare(String(b.name || ""));
     });
-  }, [management, statusFilters.management, moduleSearch.management]);
+  }, [management, statusFilters.management, moduleSearch.management, managementRoleFilter]);
+
+  const managementRoleOptions = useMemo(
+    () => Array.from(new Set(management.map((m) => m.roleTitle).filter(Boolean))).sort((a, b) => a.localeCompare(b)),
+    [management]
+  );
+
+  const managementPreview = useMemo(() => {
+    const editingMember = management.find((member) => member._id === editingManagementId);
+    return {
+      ...(editingMember || {}),
+      ...managementForm,
+      image: managementRemoveImage ? null : editingMember?.image,
+    };
+  }, [editingManagementId, management, managementForm, managementRemoveImage]);
 
   const filteredGotras = useMemo(() => {
     const query = (moduleSearch.gotra || "").trim().toLowerCase();
@@ -2543,8 +2611,22 @@ const ContentAdmin = () => {
             ══════════════════════════════════════════════════════════════ */}
             {activeTab === "management" && (
               <div className="grid min-w-0 gap-4 sm:gap-5 lg:grid-cols-[minmax(280px,0.9fr)_minmax(0,1.1fr)]">
-                <form onSubmit={createManagement} className="grid h-fit min-w-0 gap-4 rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-5">
-                  <h2 className="text-base font-bold text-[var(--text-primary)]">Add Management Member</h2>
+                <form onSubmit={saveManagement} className="grid h-fit min-w-0 gap-4 rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-5">
+                  <div className="flex min-w-0 items-start justify-between gap-3">
+                    <div>
+                      <h2 className="text-base font-bold text-[var(--text-primary)]">
+                        {editingManagementId ? "Edit Management Member" : "Add Management Member"}
+                      </h2>
+                      <p className="mt-1 text-xs leading-relaxed text-[var(--text-muted)]">
+                        Active records here power the public committee page.
+                      </p>
+                    </div>
+                    {editingManagementId && (
+                      <button type="button" onClick={resetManagementForm} className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 text-[var(--text-muted)] transition hover:border-white/20 hover:text-white" title="Cancel edit">
+                        <FiX size={14} />
+                      </button>
+                    )}
+                  </div>
                   <div className="grid gap-4 md:grid-cols-2">
                     <Field label="Full Name *"><input className={inputClass} value={managementForm.name} onChange={(e) => setManagementForm((cur) => ({ ...cur, name: e.target.value }))} required /></Field>
                     <Field label="Role Title *"><input className={inputClass} value={managementForm.roleTitle} onChange={(e) => setManagementForm((cur) => ({ ...cur, roleTitle: e.target.value }))} placeholder="President, Secretary, Trustee..." required /></Field>
@@ -2557,6 +2639,21 @@ const ContentAdmin = () => {
 
                   <div className="rounded-2xl border border-white/10 bg-black/30 p-3.5">
                     <FileUploadWithPreview label="Member Photo" required={false} accept="image/jpeg,image/jpg,image/png,image/webp" maxSizeMB={10} helperText="Portrait photo" file={managementImageFile} onFileSelect={(f) => setManagementImageFile(f)} />
+                    {editingManagementId && managementPreview?.image?.url && (
+                      <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <img src={managementPreview.image.url} alt={managementPreview.name} className="h-12 w-12 shrink-0 rounded-full border border-white/10 object-cover" />
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold text-[var(--text-primary)]">Current photo</p>
+                            <p className="truncate text-[11px] text-[var(--text-muted)]">Upload a replacement or remove it.</p>
+                          </div>
+                        </div>
+                        <label className="flex shrink-0 cursor-pointer items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-red-300">
+                          <input type="checkbox" checked={managementRemoveImage} onChange={(e) => setManagementRemoveImage(e.target.checked)} />
+                          Remove
+                        </label>
+                      </div>
+                    )}
                   </div>
 
                   <div className="grid gap-4 md:grid-cols-2">
@@ -2565,10 +2662,19 @@ const ContentAdmin = () => {
                       <select className={inputClass} value={managementForm.status} onChange={(e) => setManagementForm((cur) => ({ ...cur, status: e.target.value }))}>
                         <option value="ACTIVE">Active</option>
                         <option value="PAST">Past</option>
+                        <option value="ARCHIVED">Archived</option>
                       </select>
                     </Field>
                   </div>
-                  <Button className="w-full sm:w-fit" icon={FaPaperPlane} tone="success" disabled={busyId === "management"}>Save Member</Button>
+                  {(managementForm.name || managementForm.roleTitle || managementForm.bio) && (
+                    <div className="rounded-2xl border border-emerald-400/10 bg-emerald-400/[0.03] p-3">
+                      <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-300">Public Card Preview</p>
+                      <ManagementCommitteeCard member={managementPreview} />
+                    </div>
+                  )}
+                  <Button className="w-full sm:w-fit" icon={FaPaperPlane} tone="success" disabled={busyId === "management"}>
+                    {editingManagementId ? "Update Member" : "Save Member"}
+                  </Button>
                 </form>
 
                 <section className="grid min-w-0 content-start gap-3">
@@ -2585,17 +2691,33 @@ const ContentAdmin = () => {
                       onChange={(v) => setSearch("management", v)}
                       placeholder="Search member name, role, phone, email..."
                     />
+                    <Field label="Filter By Role">
+                      <select className={inputClass} value={managementRoleFilter} onChange={(e) => setManagementRoleFilter(e.target.value)}>
+                        <option value="ALL">All roles</option>
+                        {managementRoleOptions.map((role) => (
+                          <option key={role} value={role}>{role}</option>
+                        ))}
+                      </select>
+                    </Field>
                   </div>
 
                   {filteredManagement.length === 0 ? (
-                    <ModuleEmptyState statusKey={statusFilters.management} moduleLabel="management members" />
+                    <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-white/10 bg-white/[0.01] py-12 text-center">
+                      <FiSearch size={24} className="text-[var(--text-muted)]" />
+                      <p className="text-sm font-semibold text-[var(--text-secondary)]">No management members found</p>
+                      <p className="max-w-md text-xs leading-relaxed text-[var(--text-muted)]">Adjust status, role, or search filters.</p>
+                    </div>
                   ) : (
                     <div className="grid min-w-0 gap-3">
                       {filteredManagement.map((member) => (
-                        <article key={member._id} className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 flex items-start gap-3">
+                        <article key={member._id} className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 flex flex-col gap-3 sm:flex-row sm:items-start">
                           {member.image?.url ? (
                             <img src={member.image.url} alt={member.name} className="h-14 w-14 rounded-full object-cover shrink-0 border border-white/10" />
-                          ) : null}
+                          ) : (
+                            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-lg font-black text-emerald-300">
+                              {member.name?.charAt(0)?.toUpperCase() || "M"}
+                            </div>
+                          )}
                           <div className="min-w-0 flex-1 overflow-hidden">
                             <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
                               <div>
@@ -2607,6 +2729,21 @@ const ContentAdmin = () => {
                             {(member.phone || member.email) && (
                               <p className="mt-1 text-xs text-gray-400">{[member.phone, member.email].filter(Boolean).join(" · ")}</p>
                             )}
+                            {member.bio && <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-[var(--text-muted)]">{member.bio}</p>}
+                            <div className="mt-3 grid gap-2 text-[11px] text-[var(--text-muted)] sm:grid-cols-3">
+                              <span>Order: <b className="text-[var(--text-secondary)]">{member.displayOrder ?? 0}</b></span>
+                              <span>Created: <b className="text-[var(--text-secondary)]">{formatDate(member.createdAt)}</b></span>
+                              <span>Updated: <b className="text-[var(--text-secondary)]">{formatDate(member.updatedAt)}</b></span>
+                            </div>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              <Button icon={FaEdit} onClick={() => editManagement(member)} disabled={busyId === member._id}>Edit</Button>
+                              {member.status !== "ACTIVE" && (
+                                <Button icon={FiCheckCircle} tone="success" onClick={() => updateManagementStatus(member, "ACTIVE")} disabled={busyId === member._id}>Activate</Button>
+                              )}
+                              {member.status === "ACTIVE" && (
+                                <Button icon={FiClock} tone="warning" onClick={() => updateManagementStatus(member, "PAST")} disabled={busyId === member._id}>Mark Past</Button>
+                              )}
+                            </div>
                             {member.status !== "ARCHIVED" && (
                               <Button icon={FaArchive} tone="danger" className="mt-3" onClick={() => archiveManagement(member._id)} disabled={busyId === member._id}>Archive</Button>
                             )}

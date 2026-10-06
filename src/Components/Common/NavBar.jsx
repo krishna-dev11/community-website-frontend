@@ -1,7 +1,9 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Link, matchPath, useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { setLogOut } from "../../services/Operations/authAPI";
+import { apiConnector } from "../../services/apiConnector";
+import { notificationEndpoints } from "../../services/apis";
 import { useTheme } from "../../Utilities/useTheme";
 import { useLanguage } from "../../i18n/LanguageContext";
 
@@ -203,12 +205,37 @@ const NavBar = () => {
   const [openMobileSection, setOpenMobileSection] = useState(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
   const profileDropdownRef = useRef(null);
 
   const userRoles = Array.isArray(user?.roles) ? user.roles : [];
   const isAdmin = userRoles.some((r) =>
     ["SUPER_ADMIN", "Admin", "COMMUNITY_ADMIN", "MODERATOR", "TREASURER", "CONTENT_ADMIN", "MATRIMONIAL_ADMIN", "SCHOLARSHIP_ADMIN", "JOB_ADMIN", "DHARAMSHALA_ADMIN", "DHARAMSHALA_STAFF"].includes(r)
   );
+  const notificationBadgeText = notificationUnreadCount > 99 ? "99+" : String(notificationUnreadCount);
+
+  const loadNotificationUnreadCount = useCallback(async () => {
+    if (!token) {
+      setNotificationUnreadCount(0);
+      return;
+    }
+
+    try {
+      const response = await apiConnector(
+        "GET",
+        notificationEndpoints.NOTIFICATIONS_API,
+        null,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          withCredentials: true,
+        },
+        { limit: 1 }
+      );
+      setNotificationUnreadCount(Math.max(Number(response.data?.data?.unreadCount) || 0, 0));
+    } catch {
+      setNotificationUnreadCount(0);
+    }
+  }, [token]);
 
   // Navigation menu structure aligned with platform routes and bilingual support
   const navigationItems = [
@@ -370,6 +397,28 @@ const NavBar = () => {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  useEffect(() => {
+    loadNotificationUnreadCount();
+  }, [loadNotificationUnreadCount]);
+
+  useEffect(() => {
+    const handleUnreadCountChange = (event) => {
+      const count = event.detail?.unreadCount;
+      if (Number.isFinite(Number(count))) {
+        setNotificationUnreadCount(Math.max(Number(count), 0));
+        return;
+      }
+      loadNotificationUnreadCount();
+    };
+
+    window.addEventListener("notifications:unread-count", handleUnreadCountChange);
+    window.addEventListener("focus", loadNotificationUnreadCount);
+    return () => {
+      window.removeEventListener("notifications:unread-count", handleUnreadCountChange);
+      window.removeEventListener("focus", loadNotificationUnreadCount);
+    };
+  }, [loadNotificationUnreadCount]);
 
   // Close profile dropdown when clicking outside
   useEffect(() => {
@@ -589,6 +638,7 @@ const NavBar = () => {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
+                    position: "relative",
                     width: 36,
                     height: 36,
                     borderRadius: 10,
@@ -601,6 +651,31 @@ const NavBar = () => {
                   }}
                 >
                   <FiBell size={15} />
+                  {notificationUnreadCount > 0 && (
+                    <span
+                      aria-label={`${notificationUnreadCount} unread notifications`}
+                      style={{
+                        position: "absolute",
+                        top: -5,
+                        right: -5,
+                        minWidth: 18,
+                        height: 18,
+                        padding: "0 5px",
+                        borderRadius: 999,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        background: "var(--danger)",
+                        color: "#fff",
+                        border: "2px solid var(--nav-bg)",
+                        fontSize: 9,
+                        fontWeight: 900,
+                        lineHeight: 1,
+                      }}
+                    >
+                      {notificationBadgeText}
+                    </span>
+                  )}
                 </Link>
 
                 {/* Profile Avatar & Full Rich Dropdown */}
@@ -779,8 +854,34 @@ const NavBar = () => {
               title="Notifications"
               aria-label="Notifications"
               className="mobile-notification-icon-btn nav-icon-btn"
+              style={{ position: "relative" }}
             >
               <FiBell size={15} />
+              {notificationUnreadCount > 0 && (
+                <span
+                  aria-label={`${notificationUnreadCount} unread notifications`}
+                  style={{
+                    position: "absolute",
+                    top: -5,
+                    right: -5,
+                    minWidth: 18,
+                    height: 18,
+                    padding: "0 5px",
+                    borderRadius: 999,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: "var(--danger)",
+                    color: "#fff",
+                    border: "2px solid var(--nav-bg)",
+                    fontSize: 9,
+                    fontWeight: 900,
+                    lineHeight: 1,
+                  }}
+                >
+                  {notificationBadgeText}
+                </span>
+              )}
             </Link>
 
             {/* Mobile Hamburger Button */}

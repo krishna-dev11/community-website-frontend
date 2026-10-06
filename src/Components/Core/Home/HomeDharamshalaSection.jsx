@@ -75,7 +75,7 @@ const HomeDharamshalaSection = () => {
 
             {/* Room Tariff Cards with Classic Highlight */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-              <div className="p-3.5 rounded-2xl border-2 border-emerald-500/30 bg-[var(--surface)] shadow-sm">
+              {/* <div className="p-3.5 rounded-2xl border-2 border-emerald-500/30 bg-[var(--surface)] shadow-sm">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
                     {isHindi ? "AC डबल रूम (02 कमरे)" : "AC Double Rooms (02)"}
@@ -87,9 +87,9 @@ const HomeDharamshalaSection = () => {
                 <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">
                   {isHindi ? "अटैच्ड टॉयलेट युक्त • अधिकतम 4 व्यक्ति" : "Attached Toilet • Max 4 Persons"}
                 </p>
-              </div>
+              </div> */}
 
-              <div className="p-3.5 rounded-2xl border-2 border-amber-500/30 bg-[var(--surface)] shadow-sm">
+              {/* <div className="p-3.5 rounded-2xl border-2 border-amber-500/30 bg-[var(--surface)] shadow-sm">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">
                     {isHindi ? "Non-AC डबल रूम (03 कमरे)" : "Non-AC Double Rooms (03)"}
@@ -101,7 +101,7 @@ const HomeDharamshalaSection = () => {
                 <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">
                   {isHindi ? "नॉन-अटैच्ड टॉयलेट • अधिकतम 4 व्यक्ति" : "Non-Attached Toilet • Max 4 Persons"}
                 </p>
-              </div>
+              </div> */}
             </div>
 
             {/* Guidelines Strip */}

@@ -1386,7 +1386,7 @@ const FinanceAdmin = () => {
                     >
                       Family Ledger (Auto Recurring)
                     </button>
-                    <button
+                    {/* <button
                       type="button"
                       onClick={() => setContributionMode("legacy")}
                       className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition cursor-pointer ${
@@ -1396,7 +1396,7 @@ const FinanceAdmin = () => {
                       }`}
                     >
                       Historical Cycles (Archive)
-                    </button>
+                    </button> */}
                   </div>
 
                   {contributionMode === "family" && (

@@ -913,64 +913,152 @@ const MyDues = () => {
           </div>
 
           {/* Payment Receipts History Table */}
-          {historyData?.payments && historyData.payments.length > 0 && (
-            <div className="pt-4 border-t border-[var(--border-subtle)]">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-3 flex items-center gap-2">
-                <FaReceipt className="text-emerald-400" />
-                <span>Verified Payment Receipts ({historyData.payments.length})</span>
-              </h3>
+{historyData?.payments && historyData.payments.length > 0 && (
+  <div className="pt-4 border-t border-[var(--border-subtle)]">
+    <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-3 flex items-center gap-2">
+      <FaReceipt className="text-emerald-400 shrink-0" />
+      <span>
+        Verified Payment Receipts ({historyData.payments.length})
+      </span>
+    </h3>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs text-[var(--text-secondary)]">
-                  <thead className="bg-[var(--surface)] text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] border-b border-[var(--border-subtle)]">
-                    <tr>
-                      <th className="py-2.5 px-3">Receipt No</th>
-                      <th className="py-2.5 px-3">Date</th>
-                      <th className="py-2.5 px-3">Amount</th>
-                      <th className="py-2.5 px-3">Method</th>
-                      <th className="py-2.5 px-3">Status</th>
-                      <th className="py-2.5 px-3 text-right">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[var(--border-subtle)]">
-                    {historyData.payments.map((p) => (
-                      <tr key={p._id} className="hover:bg-[var(--surface)]/50 transition">
-                        <td className="py-3 px-3 font-mono font-bold text-[var(--text-primary)]">
-                          {p.receiptNumber || "N/A"}
-                        </td>
-                        <td className="py-3 px-3">
-                          {p.receiptDate ? new Date(p.receiptDate).toLocaleDateString("en-IN") : "N/A"}
-                        </td>
-                        <td className="py-3 px-3 font-black text-emerald-400">
-                          ₹{p.amountRupees}
-                        </td>
-                        <td className="py-3 px-3 font-medium">
-                          <span className="px-2 py-0.5 rounded-full bg-[var(--surface)] border border-[var(--border-subtle)] text-[10px] uppercase font-bold">
-                            {p.paymentMethod}
-                          </span>
-                        </td>
-                        <td className="py-3 px-3">
-                          <span className="text-[10px] font-bold uppercase text-emerald-400">
-                            {p.status}
-                          </span>
-                        </td>
-                        <td className="py-3 px-3 text-right">
-                          <button
-                            type="button"
-                            onClick={() => handleViewReceipt(p._id)}
-                            className="btn-secondary !py-1 !px-2.5 !text-[11px] inline-flex items-center gap-1 cursor-pointer"
-                          >
-                            <FiFileText size={11} />
-                            <span>View Receipt</span>
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+    {/* ================= DESKTOP / LAPTOP ================= */}
+    <div className="hidden sm:block overflow-x-auto rounded-xl border border-[var(--border-subtle)]">
+      <table className="w-full min-w-[720px] text-left text-xs text-[var(--text-secondary)]">
+        <thead className="bg-[var(--surface)] text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] border-b border-[var(--border-subtle)]">
+          <tr>
+            <th className="py-2.5 px-3">Receipt No</th>
+            <th className="py-2.5 px-3">Date</th>
+            <th className="py-2.5 px-3">Amount</th>
+            <th className="py-2.5 px-3">Method</th>
+            <th className="py-2.5 px-3">Status</th>
+            <th className="py-2.5 px-3 text-right">Action</th>
+          </tr>
+        </thead>
+
+        <tbody className="divide-y divide-[var(--border-subtle)]">
+          {historyData.payments.map((p) => (
+            <tr
+              key={p._id}
+              className="hover:bg-[var(--surface)]/50 transition"
+            >
+              <td className="py-3 px-3 font-mono font-bold text-[var(--text-primary)]">
+                {p.receiptNumber || "N/A"}
+              </td>
+
+              <td className="py-3 px-3">
+                {p.receiptDate
+                  ? new Date(p.receiptDate).toLocaleDateString("en-IN")
+                  : "N/A"}
+              </td>
+
+              <td className="py-3 px-3 font-black text-emerald-400">
+                ₹{p.amountRupees}
+              </td>
+
+              <td className="py-3 px-3 font-medium">
+                <span className="px-2 py-0.5 rounded-full bg-[var(--surface)] border border-[var(--border-subtle)] text-[10px] uppercase font-bold">
+                  {p.paymentMethod}
+                </span>
+              </td>
+
+              <td className="py-3 px-3">
+                <span className="text-[10px] font-bold uppercase text-emerald-400">
+                  {p.status}
+                </span>
+              </td>
+
+              <td className="py-3 px-3 text-right">
+                <button
+                  type="button"
+                  onClick={() => handleViewReceipt(p._id)}
+                  className="btn-secondary !py-1 !px-2.5 !text-[11px] inline-flex items-center gap-1 cursor-pointer"
+                >
+                  <FiFileText size={11} />
+                  <span>View Receipt</span>
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+
+    {/* ================= MOBILE ================= */}
+    <div className="sm:hidden space-y-3">
+      {historyData.payments.map((p) => (
+        <div
+          key={p._id}
+          className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] p-3.5 shadow-sm"
+        >
+          {/* Top row */}
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                Receipt Number
+              </p>
+
+              <p className="mt-1 truncate font-mono text-xs font-bold text-[var(--text-primary)]">
+                {p.receiptNumber || "N/A"}
+              </p>
             </div>
-          )}
+
+            {/* Status */}
+            <span className="shrink-0 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-1 text-[9px] font-bold uppercase tracking-wide text-emerald-400">
+              {p.status}
+            </span>
+          </div>
+
+          {/* Amount */}
+          <div className="mt-3 rounded-xl border border-emerald-500/10 bg-emerald-500/[0.06] px-3 py-2.5">
+            <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+              Amount Paid
+            </p>
+
+            <p className="mt-0.5 text-lg font-black text-emerald-400">
+              ₹{p.amountRupees}
+            </p>
+          </div>
+
+          {/* Payment information */}
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <div className="min-w-0 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-2.5 py-2">
+              <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                Date
+              </p>
+
+              <p className="mt-1 truncate text-[11px] font-semibold text-[var(--text-secondary)]">
+                {p.receiptDate
+                  ? new Date(p.receiptDate).toLocaleDateString("en-IN")
+                  : "N/A"}
+              </p>
+            </div>
+
+            <div className="min-w-0 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-2.5 py-2">
+              <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                Method
+              </p>
+
+              <p className="mt-1 truncate text-[11px] font-bold uppercase text-[var(--text-secondary)]">
+                {p.paymentMethod || "N/A"}
+              </p>
+            </div>
+          </div>
+
+          {/* Receipt button */}
+          <button
+            type="button"
+            onClick={() => handleViewReceipt(p._id)}
+            className="btn-secondary mt-3 !min-h-[42px] !w-full !justify-center !py-2.5 !px-3 !text-xs inline-flex items-center gap-2 cursor-pointer"
+          >
+            <FiFileText size={14} />
+            <span>View Receipt</span>
+          </button>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
         </div>
 
         {/* 4. LEGACY INDIVIDUAL DUES (BACKWARD COMPATIBILITY ACCORDION) */}

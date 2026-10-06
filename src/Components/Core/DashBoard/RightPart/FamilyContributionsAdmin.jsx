@@ -546,7 +546,7 @@ const FamilyContributionsAdmin = () => {
       </div>
 
       {isDetailOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/75 p-3 backdrop-blur-sm">
+        <div className="fixed inset-0 z-2000 flex items-center justify-center overflow-y-auto bg-black/75 p-3 backdrop-blur-sm">
           <div className="my-6 flex max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] shadow-2xl">
             <div className="flex items-start justify-between gap-4 border-b border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-4">
               <div>
@@ -677,7 +677,7 @@ const FamilyContributionsAdmin = () => {
       )}
 
       {isCashOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/75 p-3 backdrop-blur-sm">
+        <div className="fixed inset-0 z-2000 flex items-center justify-center overflow-y-auto bg-black/75 p-3 backdrop-blur-sm">
           <div className="my-6 w-full max-w-3xl overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] shadow-2xl">
             <div className="flex items-start justify-between border-b border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-4">
               <div>

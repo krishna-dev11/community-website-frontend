@@ -25,6 +25,12 @@ const formatDateTime = (value) => {
   }).format(new Date(value));
 };
 
+const publishUnreadCount = (unreadCount) => {
+  window.dispatchEvent(new CustomEvent("notifications:unread-count", {
+    detail: { unreadCount: Math.max(Number(unreadCount) || 0, 0) },
+  }));
+};
+
 const NotificationsPage = () => {
   const { token } = useSelector((state) => state.auth);
   const { t, isHindi } = useLanguage();
@@ -49,7 +55,9 @@ const NotificationsPage = () => {
       if (status) params.status = status;
       const response = await apiConnector("GET", notificationEndpoints.NOTIFICATIONS_API, null, authConfig, params);
       setNotifications(response.data?.data?.notifications || []);
-      setUnreadCount(response.data?.data?.unreadCount || 0);
+      const nextUnreadCount = response.data?.data?.unreadCount || 0;
+      setUnreadCount(nextUnreadCount);
+      publishUnreadCount(nextUnreadCount);
     } catch (error) {
       toast.error(error.response?.data?.message || "Unable to load notifications");
     } finally {
@@ -64,13 +72,18 @@ const NotificationsPage = () => {
   const markRead = async (notificationId) => {
     setBusyId(notificationId);
     try {
-      await apiConnector("PATCH", notificationEndpoints.MARK_NOTIFICATION_READ_API(notificationId), null, authConfig);
+      const response = await apiConnector("PATCH", notificationEndpoints.MARK_NOTIFICATION_READ_API(notificationId), null, authConfig);
       setNotifications((current) =>
         current.map((item) =>
           item._id === notificationId ? { ...item, status: "READ", readAt: new Date().toISOString() } : item
         )
       );
-      setUnreadCount((current) => Math.max(current - 1, 0));
+      const nextUnreadCount = response.data?.data?.unreadCount;
+      setUnreadCount((current) => {
+        const updated = Number.isFinite(Number(nextUnreadCount)) ? Number(nextUnreadCount) : Math.max(current - 1, 0);
+        publishUnreadCount(updated);
+        return updated;
+      });
     } catch (error) {
       toast.error(error.response?.data?.message || "Unable to mark notification read");
     } finally {
@@ -81,11 +94,13 @@ const NotificationsPage = () => {
   const markAllRead = async () => {
     setBusyId("all");
     try {
-      await apiConnector("PATCH", notificationEndpoints.MARK_ALL_NOTIFICATIONS_READ_API, null, authConfig);
+      const response = await apiConnector("PATCH", notificationEndpoints.MARK_ALL_NOTIFICATIONS_READ_API, null, authConfig);
       setNotifications((current) =>
         current.map((item) => ({ ...item, status: "READ", readAt: item.readAt || new Date().toISOString() }))
       );
-      setUnreadCount(0);
+      const nextUnreadCount = response.data?.data?.unreadCount || 0;
+      setUnreadCount(nextUnreadCount);
+      publishUnreadCount(nextUnreadCount);
       toast.success("All notifications marked as read");
     } catch (error) {
       toast.error(error.response?.data?.message || "Unable to mark all read");

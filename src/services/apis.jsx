@@ -83,6 +83,7 @@ export const contentEndpoints = {
   PUBLICATION_VIEW_FILE_API: (publicationId) => BASE_URL + `/content/publications/${publicationId}/view-file`,
   PUBLICATION_DOWNLOAD_FILE_API: (publicationId) => BASE_URL + `/content/publications/${publicationId}/download-file`,
   MANAGEMENT_API: BASE_URL + "/content/management",
+  ADMIN_MANAGEMENT_API: BASE_URL + "/content/admin/management",
   MANAGEMENT_MEMBER_API: (memberId) => BASE_URL + `/content/management/${memberId}`,
   ARCHIVE_MANAGEMENT_MEMBER_API: (memberId) => BASE_URL + `/content/management/${memberId}/archive`,
   CMS_CONTENT_API: (key) => BASE_URL + `/content/cms/${key}`,
